@@ -9,7 +9,7 @@ import {
     SamCliProcessInvokeOptions,
     SamCliProcessInvoker,
 } from '../../../../shared/sam/cli/samCliInvokerUtils'
-import { ChildProcessResult } from '../../../../shared/utilities/childProcess'
+import { ChildProcessResult } from '../../../../shared/utilities/processUtils'
 
 export class MockSamCliProcessInvoker implements SamCliProcessInvoker {
     public constructor(private readonly validateArgs: (args: string[]) => void) {}

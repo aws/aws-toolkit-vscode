@@ -42,11 +42,15 @@ The test suite has the following categories of tests:
     -   Live in `src/testE2E`
     -   These tests are heavier than Integration tests.
     -   Some E2E tests have a more complicated architecture, described in [TEST_E2E](./TEST_E2E.md)
+-   Performance Tests: **slow** tests
+    -   Live in `src/testInteg/perf`.
+    -   A subset of integration tests focused on catching performance regressions.
+    -   Use a combination of operation counting and system usage statistics such as cpu usage, memory usage, and duration.
+    -   Each test is often repeated 10 or more times for less variant system usage statistics, then median of runs is used.
 
 ## Test files
 
-Currently, most if not all testing code lives in the subproject `packages/core/`.
-For more information, see [arch_develop.md](./arch_develop.md#monorepo-structure)
+Currently, most testing code lives in the subproject `packages/core/` due to the move to monorepo. See [arch_develop.md](./arch_develop.md#monorepo-structure).
 
 -   `src/test/` : unit tests
     -   `src/test/globalSetup.test.ts` :
@@ -59,6 +63,8 @@ For more information, see [arch_develop.md](./arch_develop.md#monorepo-structure
     -   used by both unit and integration tests
 -   `.vscode/launch.json` : defines VSCode launch configs useful for Toolkit
     developers, e.g. the `Extension Tests` config runs all tests in `src/test/`.
+
+Many tests required running in an activated extension environment, but the core-lib is just a library and does not have any extension to activate itself. Core-lib tests are run from `packages/toolkit`, and web tests are run from `packages/amazonq`.
 
 ## How we test
 
@@ -104,7 +110,7 @@ Checking the state works well if user interactions are not required by the code 
 To handle this, test code can register event handler that listen for when a certain type of UI element is shown. For example, if we wanted to always accept the first item of a quick pick we can do this:
 
 ```ts
-getTestWindow().onDidShowQuickPick(async picker => {
+getTestWindow().onDidShowQuickPick(async (picker) => {
     // Some pickers load items asychronously
     // Wait until the picker is not busy before accepting an item
     await picker.untilReady()
@@ -121,3 +127,9 @@ const secondPicker = await pickers.next()
 ```
 
 Exceptions thrown within one of these handlers will cause the current test to fail. This allows you to make assertions within the callback without worrying about causing the test to hang.
+
+## Common issues
+
+### Stubbing VSCode outside of core
+
+-   Stubbing VSCode imports (like executeCommand) does not work outside of core. For now you will need to put any tests that require spying/stubbing VSCode imports in core until we move more source files into the amazon q package

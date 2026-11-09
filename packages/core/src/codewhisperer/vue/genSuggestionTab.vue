@@ -68,7 +68,7 @@ export default defineComponent({
                         {
                             column1: [
                                 'AmazonQ_generate_suggestion.py',
-                                `# TODO: place your cursor at the end of line 5 and press Enter to generate a suggestion.${'\n'}# Tip: press tab to accept the suggestion.${'\n'}${'\n'}fake_users = [${'\n'}    { "name": "User 1", "id": "user1", "city": "San Francisco", "state": "CA" },`,
+                                `# TODO: place your cursor at the end of line 6 and press Enter to generate a suggestion.${'\n'}# Tip: press tab to accept the suggestion.${'\n'}${'\n'}fake_users = [${'\n'}    { "name": "User 1", "id": "user1", "city": "San Francisco", "state": "CA" },\n]`,
                             ],
                             column2: [
                                 'AmazonQ_manual_invoke.py',

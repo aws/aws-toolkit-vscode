@@ -4,35 +4,29 @@
  */
 
 import assert from 'assert'
-import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
 import { SharedCredentialsProvider } from '../../../auth/providers/sharedCredentialsProvider'
 import { stripUndefined } from '../../../shared/utilities/collectionUtils'
 import * as process from '@aws-sdk/credential-provider-process'
 import { ParsedIniData } from '@smithy/shared-ini-file-loader'
-import { installFakeClock } from '../../testUtil'
 import { SsoClient } from '../../../auth/sso/clients'
 import { stub } from '../../utilities/stubber'
 import { SsoAccessTokenProvider } from '../../../auth/sso/ssoAccessTokenProvider'
 import { createTestSections } from '../testUtil'
+import { DefaultStsClient } from '../../../shared/clients/stsClient'
+import { oneDay } from '../../../shared/datetime'
+import { getTestWindow } from '../../shared/vscode/window'
 
 const missingPropertiesFragment = 'missing properties'
 
 describe('SharedCredentialsProvider', async function () {
-    let clock: FakeTimers.InstalledClock
     let sandbox: sinon.SinonSandbox
 
     before(function () {
         sandbox = sinon.createSandbox()
-        clock = installFakeClock()
-    })
-
-    after(function () {
-        clock.uninstall()
     })
 
     afterEach(function () {
-        clock.reset()
         sandbox.restore()
     })
 
@@ -459,9 +453,81 @@ describe('SharedCredentialsProvider', async function () {
             })
         })
     })
+
+    describe('makeSharedIniFileCredentialsProvider', function () {
+        let defaultSection: string
+
+        before(function () {
+            defaultSection = `[profile default]
+                aws_access_key_id = x
+                aws_secret_access_key = y`
+        })
+
+        beforeEach(function () {
+            sandbox.stub(DefaultStsClient.prototype, 'assumeRole').callsFake(async (request) => {
+                assert.strictEqual(request.RoleArn, 'testarn')
+                if (request.SerialNumber) {
+                    assert.strictEqual(request.SerialNumber, 'mfaSerialToken')
+                    assert.strictEqual(request.TokenCode, 'mfaToken')
+                }
+                return {
+                    Credentials: {
+                        AccessKeyId: 'id',
+                        SecretAccessKey: 'secret',
+                        SessionToken: 'token',
+                        Expiration: new Date(Date.now() + oneDay),
+                    },
+                }
+            })
+        })
+
+        it('assumes role given in ini data', async function () {
+            const sections = await createTestSections(`
+                ${defaultSection}
+                [profile assume]
+                source_profile = default
+                role_arn = testarn
+                `)
+
+            const sut = new SharedCredentialsProvider('assume', sections)
+            const creds = await sut.getCredentials()
+            assert.strictEqual(creds.accessKeyId, 'id')
+            assert.strictEqual(creds.secretAccessKey, 'secret')
+            assert.strictEqual(creds.sessionToken, 'token')
+        })
+
+        it('assumes role with mfa token', async function () {
+            const sections = await createTestSections(`
+                ${defaultSection}
+                [profile assume]
+                source_profile = default
+                role_arn = testarn
+                mfa_serial= mfaSerialToken
+                `)
+            const sut = new SharedCredentialsProvider('assume', sections)
+
+            getTestWindow().onDidShowInputBox((inputBox) => {
+                inputBox.acceptValue('mfaToken')
+            })
+
+            const creds = await sut.getCredentials()
+            assert.strictEqual(creds.accessKeyId, 'id')
+            assert.strictEqual(creds.secretAccessKey, 'secret')
+            assert.strictEqual(creds.sessionToken, 'token')
+        })
+
+        it('does not assume role when no roleArn is present', async function () {
+            const sut = new SharedCredentialsProvider('default', await createTestSections(defaultSection))
+            const creds = await sut.getCredentials()
+            assert.strictEqual(creds.accessKeyId, 'x')
+            assert.strictEqual(creds.secretAccessKey, 'y')
+        })
+    })
 })
 
 function assertSubstringsInText(text: string | undefined, ...substrings: string[]) {
     assert.ok(text)
-    substrings.forEach((substring) => assert.notStrictEqual(text!.indexOf(substring), -1))
+    for (const substring of substrings) {
+        assert.notStrictEqual(text!.indexOf(substring), -1)
+    }
 }

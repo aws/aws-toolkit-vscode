@@ -142,6 +142,7 @@ button,
 button:disabled {
     /* TODO: use VSC webcomponent library instead */
     filter: brightness(0.8);
+    cursor: default;
 }
 
 /* Text area */

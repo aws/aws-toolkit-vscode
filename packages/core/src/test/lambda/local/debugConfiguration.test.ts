@@ -6,7 +6,6 @@
 import assert from 'assert'
 import * as os from 'os'
 import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
 import { RuntimeFamily } from '../../../lambda/models/samLambdaRuntime'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { DefaultSamLocalInvokeCommand } from '../../../shared/sam/cli/samCliLocalInvoke'
@@ -19,7 +18,8 @@ import { CloudFormationTemplateRegistry } from '../../../shared/fs/templateRegis
 import { getArchitecture, isImageLambdaConfig } from '../../../lambda/local/debugConfiguration'
 import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 import globals from '../../../shared/extensionGlobals'
-import { Runtime } from '../../../shared/telemetry/telemetry'
+import { Runtime } from '@aws-sdk/client-lambda'
+import { fs } from '../../../shared'
 
 describe('makeCoreCLRDebugConfiguration', function () {
     let tempFolder: string
@@ -35,7 +35,7 @@ describe('makeCoreCLRDebugConfiguration', function () {
     })
 
     afterEach(async function () {
-        await fs.remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
 
     async function makeFakeSamLaunchConfig() {
@@ -60,7 +60,7 @@ describe('makeCoreCLRDebugConfiguration', function () {
             templatePath: '/fake/sam/path',
             samLocalInvokeCommand: new DefaultSamLocalInvokeCommand(),
 
-            //debuggerPath?:
+            // debuggerPath?:
 
             invokeTarget: {
                 target: 'code',

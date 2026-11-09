@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SSM } from 'aws-sdk'
+import { CreateDocumentRequest, UpdateDocumentRequest } from '@aws-sdk/client-ssm'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
@@ -11,7 +11,7 @@ import { DefaultSsmDocumentClient, SsmDocumentClient } from '../../shared/client
 import { ssmJson, ssmYaml } from '../../shared/constants'
 
 import * as localizedText from '../../shared/localizedText'
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger, Logger } from '../../shared/logger/logger'
 import {
     PublishSSMDocumentAction,
     PublishSSMDocumentWizard,
@@ -75,7 +75,7 @@ export async function createDocument(
     logger.info(`Creating Systems Manager Document '${wizardResponse.name}'`)
 
     try {
-        const request: SSM.CreateDocumentRequest = {
+        const request: CreateDocumentRequest = {
             Content: textDocument.getText(),
             Name: wizardResponse.name,
             DocumentType: wizardResponse.documentType,
@@ -83,7 +83,7 @@ export async function createDocument(
         }
 
         const createResult = await client.createDocument(request)
-        logger.info(`Created Systems Manager Document: ${JSON.stringify(createResult.DocumentDescription)}`)
+        logger.info(`Created Systems Manager Document: %O`, createResult.DocumentDescription)
         void vscode.window.showInformationMessage(`Created Systems Manager Document: ${wizardResponse.name}`)
     } catch (err) {
         const error = err as Error
@@ -109,7 +109,7 @@ export async function updateDocument(
     logger.info(`Updating Systems Manager Document '${wizardResponse.name}'`)
 
     try {
-        const request: SSM.UpdateDocumentRequest = {
+        const request: UpdateDocumentRequest = {
             Content: textDocument.getText(),
             Name: wizardResponse.name,
             DocumentVersion: '$LATEST',
@@ -118,7 +118,7 @@ export async function updateDocument(
 
         const updateResult = await client.updateDocument(request)
 
-        logger.info(`Updated Systems Manager Document: ${JSON.stringify(updateResult.DocumentDescription)}`)
+        logger.info(`Updated Systems Manager Document: %O`, updateResult.DocumentDescription)
         void vscode.window.showInformationMessage(`Updated Systems Manager Document: ${wizardResponse.name}`)
 
         const isConfirmed = await showConfirmationMessage({

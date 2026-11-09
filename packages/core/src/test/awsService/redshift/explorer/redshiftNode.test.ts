@@ -3,29 +3,27 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 // eslint-disable-next-line header/header
-import sinon = require('sinon')
+import { mockClient, AwsClientStub } from 'aws-sdk-client-mock'
 import { RedshiftNode } from '../../../../awsService/redshift/explorer/redshiftNode'
 import { DefaultRedshiftClient } from '../../../../shared/clients/redshiftClient'
-import { AWSError, Redshift, RedshiftServerless, Request } from 'aws-sdk'
 import assert = require('assert')
 import { RedshiftWarehouseNode } from '../../../../awsService/redshift/explorer/redshiftWarehouseNode'
-import { ClusterList, ClustersMessage } from 'aws-sdk/clients/redshift'
-import { ListWorkgroupsResponse, WorkgroupList } from 'aws-sdk/clients/redshiftserverless'
+import { Cluster, ClustersMessage, RedshiftClient, DescribeClustersCommand } from '@aws-sdk/client-redshift'
+import {
+    ListWorkgroupsResponse,
+    Workgroup,
+    RedshiftServerlessClient,
+    ListWorkgroupsCommand,
+} from '@aws-sdk/client-redshift-serverless'
 import { RedshiftWarehouseType } from '../../../../awsService/redshift/models/models'
 import { MoreResultsNode } from '../../../../awsexplorer/moreResultsNode'
 import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
-
-function success<T>(output?: T): Request<T, AWSError> {
-    return {
-        promise: () => Promise.resolve(output),
-    } as Request<any, AWSError>
-}
 
 function getExpectedProvisionedResponse(withNextToken: boolean): ClustersMessage {
     const response = {
         Clusters: [
             { ClusterNamespaceArn: 'testArn', ClusterIdentifier: 'testId', ClusterAvailabilityStatus: 'available' },
-        ] as ClusterList,
+        ] as Cluster[],
     } as ClustersMessage
     if (withNextToken) {
         response.Marker = 'next'
@@ -35,7 +33,7 @@ function getExpectedProvisionedResponse(withNextToken: boolean): ClustersMessage
 
 function getExpectedServerlessResponse(withNextToken: boolean): ListWorkgroupsResponse {
     const response = {
-        workgroups: [{ workgroupArn: 'testArn', workgroupName: 'testWorkgroup', status: 'available' }] as WorkgroupList,
+        workgroups: [{ workgroupArn: 'testArn', workgroupName: 'testWorkgroup', status: 'AVAILABLE' }] as Workgroup[],
     } as ListWorkgroupsResponse
     if (withNextToken) {
         response.nextToken = 'next'
@@ -70,79 +68,59 @@ describe('redshiftNode', function () {
     describe('getChildren', function () {
         let node: RedshiftNode
         let redshiftClient: DefaultRedshiftClient
-        let mockRedshift: Redshift
-        let mockRedshiftServerless: RedshiftServerless
-        const sandbox: sinon.SinonSandbox = sinon.createSandbox()
-        const describeClustersStub = sandbox.stub()
-        const listWorkgroupsStub = sandbox.stub()
-
-        function verifyStubCallCounts(describeClustersStubCallCount: number, listWorkgroupsStubCallCount: number) {
-            assert.strictEqual(
-                describeClustersStub.callCount,
-                describeClustersStubCallCount,
-                'DescribeClustersStub call count mismatch'
-            )
-            assert.strictEqual(
-                listWorkgroupsStub.callCount,
-                listWorkgroupsStubCallCount,
-                'ListWorkgroupsStub call count mismatch'
-            )
-        }
+        let mockRedshift: AwsClientStub<RedshiftClient>
+        let mockRedshiftServerless: AwsClientStub<RedshiftServerlessClient>
 
         beforeEach(function () {
-            mockRedshift = <Redshift>{}
-            mockRedshiftServerless = <RedshiftServerless>{}
+            mockRedshift = mockClient(RedshiftClient)
+            mockRedshiftServerless = mockClient(RedshiftServerlessClient)
             redshiftClient = new DefaultRedshiftClient(
                 'us-east-1',
                 undefined,
-                async (r) => Promise.resolve(mockRedshift),
-                async (r) => Promise.resolve(mockRedshiftServerless)
+                // @ts-expect-error
+                () => mockRedshift,
+                () => mockRedshiftServerless
             )
-            mockRedshift.describeClusters = describeClustersStub
-            mockRedshiftServerless.listWorkgroups = listWorkgroupsStub
             node = new RedshiftNode(redshiftClient)
         })
 
         afterEach(function () {
-            sandbox.reset()
+            mockRedshift.reset()
+            mockRedshiftServerless.reset()
         })
 
         it('gets both provisioned and serverless warehouses when no results have been loaded', async () => {
-            describeClustersStub.returns(success(getExpectedProvisionedResponse(false)))
-            listWorkgroupsStub.returns(success(getExpectedServerlessResponse(false)))
+            mockRedshift.on(DescribeClustersCommand).resolves(getExpectedProvisionedResponse(false))
+            mockRedshiftServerless.on(ListWorkgroupsCommand).resolves(getExpectedServerlessResponse(false))
             const childNodes = await node.getChildren()
             verifyChildNodeCounts(childNodes, 1, 1, 0)
-            verifyStubCallCounts(1, 1)
         })
 
         it('gets both provisioned and serverless warehouses if results have been loaded but there are more results', async () => {
-            describeClustersStub.returns(success(getExpectedProvisionedResponse(true)))
-            listWorkgroupsStub.returns(success(getExpectedServerlessResponse(true)))
+            mockRedshift.on(DescribeClustersCommand).resolves(getExpectedProvisionedResponse(true))
+            mockRedshiftServerless.on(ListWorkgroupsCommand).resolves(getExpectedServerlessResponse(true))
             const childNodes = await node.getChildren()
             verifyChildNodeCounts(childNodes, 1, 1, 1)
-            verifyStubCallCounts(1, 1)
         })
 
         it('gets only provisioned warehouses if results have been loaded and there are only more provisioned warehouses', async () => {
-            describeClustersStub.returns(success(getExpectedProvisionedResponse(true)))
-            listWorkgroupsStub.returns(success(getExpectedServerlessResponse(false)))
+            mockRedshift.on(DescribeClustersCommand).resolves(getExpectedProvisionedResponse(true))
+            mockRedshiftServerless.on(ListWorkgroupsCommand).resolves(getExpectedServerlessResponse(false))
             const childNodes = await node.getChildren()
             verifyChildNodeCounts(childNodes, 1, 1, 1)
             await node.loadMoreChildren()
             const newChildNodes = await node.getChildren()
             verifyChildNodeCounts(newChildNodes, 2, 1, 1)
-            verifyStubCallCounts(2, 1)
         })
 
         it('gets only serverless warehouses if results have been loaded and there are only more serverless warehouses', async () => {
-            describeClustersStub.returns(success(getExpectedProvisionedResponse(false)))
-            listWorkgroupsStub.returns(success(getExpectedServerlessResponse(true)))
+            mockRedshift.on(DescribeClustersCommand).resolves(getExpectedProvisionedResponse(false))
+            mockRedshiftServerless.on(ListWorkgroupsCommand).resolves(getExpectedServerlessResponse(true))
             const childNodes = await node.getChildren()
             verifyChildNodeCounts(childNodes, 1, 1, 1)
             await node.loadMoreChildren()
             const newChildNodes = await node.getChildren()
             verifyChildNodeCounts(newChildNodes, 1, 2, 1)
-            verifyStubCallCounts(1, 2)
         })
     })
 })

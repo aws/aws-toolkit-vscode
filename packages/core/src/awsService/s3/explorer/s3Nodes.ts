@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
-import { CreateBucketRequest, CreateBucketResponse, S3Client } from '../../../shared/clients/s3Client'
+import { CreateBucketRequest, CreateBucketResponse, S3Client } from '../../../shared/clients/s3'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { makeChildrenNodes } from '../../../shared/treeview/utils'

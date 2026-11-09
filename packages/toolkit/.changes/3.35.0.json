@@ -1,0 +1,38 @@
+{
+	"date": "2024-11-22",
+	"version": "3.35.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "SAM: Update Sync and Deploy prompter titles for parameter source"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "SAM: Add artifact bucket source prompter for SAM sync command"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "SAM: Update Sync prompter title for sync parameters"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "SAM: Fix prompter button URLs for build, deploy and sync commands"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "EC2: terminated instances no longer show pending icon"
+		},
+		{
+			"type": "Feature",
+			"description": "python 3.13 support for SAM and lambda"
+		},
+		{
+			"type": "Feature",
+			"description": "nodejs22.x support for SAM and lambda"
+		},
+		{
+			"type": "Feature",
+			"description": "Notifications: Support for delivering critical alerts and product updates"
+		}
+	]
+}

@@ -42,8 +42,11 @@ Then clone the repository and install NPM packages:
 
 ### Run
 
-Due to the monorepo structure of the project, you must have the `aws-toolkit-vscode/packages/toolkit` folder open as root folder in the workspace.
-The easiest way to open the project: File > Open Workspace from File > choose `aws-toolkit-vscode/aws-toolkit-vscode.code-workspace`
+Due to the monorepo structure of the project, you must open the project using the
+`aws-toolkit-vscode.code-workspace` project file.
+
+1. Run the `File: Open Workspace from File...` command in vscode.
+2. Select the `aws-toolkit-vscode.code-workspace` project file.
 
 To run the extension from VSCode as a Node.js app:
 
@@ -132,8 +135,8 @@ You can also use these NPM tasks (see `npm run` for the full list):
 
     1. Declare a global unhandledRejection handler.
         ```ts
-        process.on('unhandledRejection', e => {
-            getLogger('channel').error(
+        process.on('unhandledRejection', (e) => {
+            getLogger().error(
                 localize(
                     'AWS.channel.aws.toolkit.activation.error',
                     'Error Activating {0} Toolkit: {1}',
@@ -164,8 +167,7 @@ See [web.md](./docs/web.md) for working with the web mode implementation of the 
 See [TESTPLAN.md](./docs/TESTPLAN.md) to understand the project's test
 structure, mechanics and philosophy.
 
-You can run tests directly from VSCode. Due to the monorepo structure of the project, you must have the `aws-toolkit-vscode/packages/toolkit` folder open as root folder in the workspace.
-The easiest way to open the project: File > Open Workspace from File > choose `aws-toolkit-vscode/aws-toolkit-vscode.code-workspace`
+You can run tests directly from VSCode. Due to the monorepo structure of the project, you must [open the project via the `aws-toolkit-vscode.code-workspace` project file](#run).
 
 1. Select `View > Debug`, or select the Debug pane from the sidebar.
 2. From the dropdown at the top of the Debug pane, select the `Extension Tests` configuration.
@@ -180,22 +182,22 @@ Tests will write logs to `./.test-reports/testLog.log`.
 
 #### Run a specific test
 
-To run a single test in VSCode, do any one of:
+To run a single test in VSCode, do any _one_ of the following:
 
 -   Run the _Extension Tests (current file)_ launch-config.
--   Use Mocha's [it.only()](https://mochajs.org/#exclusive-tests) or `describe.only()`.
--   Run in your terminal:
-
+    -   Note: if you don't see this in the vscode debug menu, confirm that you opened the project
+        [via the `aws-toolkit-vscode.code-workspace` project file](#run).
+-   or... Use Mocha's [it.only()](https://mochajs.org/#exclusive-tests) or `describe.only()`.
+-   or... Run in your terminal:
     -   Unix/macOS/POSIX shell:
         ```
-        TEST_FILE=src/test/foo.test.ts npm run test
+        TEST_FILE=../core/src/test/foo.test.ts npm run test
         ```
     -   Powershell:
         ```
-        $Env:TEST_FILE = "src/test/foo.test.ts"; npm run test
+        $Env:TEST_FILE = "../core/src/test/foo.test.ts"; npm run test
         ```
-
--   To run all tests in a particular subdirectory, you can edit
+-   or... To run all tests in a particular subdirectory, you can edit
     `src/test/index.ts:rootTestsPath` to point to a subdirectory:
     ```
     rootTestsPath: __dirname + '/shared/sam/debugger/'
@@ -209,21 +211,26 @@ To run tests against a specific folder in VSCode, do any one of:
 -   Run in your terminal
     -   Unix/macOS/POSIX shell:
         ```
-        TEST_DIR=src/test/foo npm run test
+        TEST_DIR=../core/src/test/foo npm run test
         ```
     -   Powershell:
         ```
-        $Env:TEST_DIR = "src/test/foo"; npm run test
+        $Env:TEST_DIR = "../core/src/test/foo"; npm run test
         ```
+
+#### Run jscpd ("Copy-Paste Detection")
+
+If the "Copy-Paste Detection" CI job fails, you will find it useful to check things locally. To
+check a specific file:
+
+    npx jscpd --config .github/workflows/jscpd.json --pattern packages/…/src/foo.ts
+
+See the [jscpd cli documentation](https://github.com/kucherenko/jscpd/tree/master/apps/jscpd) for
+more options.
 
 ### Coverage report
 
-You can find the coverage report at `./coverage/index.html` after running the tests. Tests ran from the workspace launch config won't generate a coverage report automatically because it can break file watching. A few manual steps are needed instead:
-
--   Run the command `Tasks: Run Build Task` if not already active
--   Instrument built code with `npm run instrument`
--   Exercise the code (`Extension Tests`, `Integration Tests`, etc.)
--   Generate a report with `npm run report`
+You can find the coverage report at `./coverage/toolkit/lcov-report/index.html` after running the tests. Tests ran from the workspace launch config won't generate a coverage report automatically because it can break file watching.
 
 ### CodeCatalyst Blueprints
 
@@ -233,9 +240,12 @@ You can find documentation to create VSCode IDE settings for CodeCatalyst bluepr
 
 Before sending a pull request:
 
+1. Treat all work as PUBLIC. Private `feature/x` branches will _not_ be squash-merged at release time. This has several benefits:
+    - Avoids mistakes (accidental exposure to public)!
+    - Avoids needing to erase (squash-merge) history.
 1. Check that you are working against the latest source on the `master` branch.
-2. Check existing open, and recently merged, pull requests to make sure someone else hasn't addressed the problem already.
-3. Open an issue to discuss any significant work.
+1. Check existing open, and recently merged, pull requests to make sure someone else hasn't addressed the problem already.
+1. Open an issue to discuss any significant work.
 
 To send a pull request:
 
@@ -284,34 +294,50 @@ user's point of view.
 > -   If there are multiple unrelated changes, run `npm run newChange` for each change.
 > -   Include the feature that the change affects, Q, CodeWhisperer, etc.
 
-### Commit messages
+### Pull request title
 
-Generally your PR description should be a copy-paste of your commit message(s).
-If your PR description provides insight and context, that also should exist in
-the commit message. Source control (Git) is our source-of-truth, not GitHub.
+The title of your pull request must follow this format (checked by [lintcommit.js](.github/workflows/lintcommit.js)):
 
-Follow these [commit message guidelines](https://cbea.ms/git-commit/):
+-   format: `type(scope): subject...`
+-   type: must be a valid type (`build`, `ci`, `config`, `deps`, `docs`, `feat`, `fix`, `perf`, `refactor`, `style`, `telemetry`, `test`, `types`)
+    -   see [lintcommit.js](.github/workflows/lintcommit.js))
+    -   "chore" is intentionally rejected because it tends to be over-used.
+    -   user-facing changes should always choose "feat" or "fix", and include a [changelog](#changelog) item.
+-   scope: lowercase, <30 chars
+-   subject: must be <100 chars
 
--   Subject: single line up to 50-72 characters
-    -   Imperative voice ("Fix bug", not "Fixed"/"Fixes"/"Fixing").
--   Body: for non-trivial or uncommon changes, explain your motivation for the
-    change and contrast your implementation with previous behavior.
-    -   Often you can save a _lot_ of words by using this simple template:
-        ```
-        Problem: …
-        Solution: …
-        ```
+### Pull request description
 
-A [good commit message](https://git-scm.com/book/en/v2/Distributed-Git-Contributing-to-a-Project)
-has a short subject line and unlimited detail in the body.
+Your PR description should provide a brief "Problem" and "Solution" pair. This
+structure often gives much more clarity, more concisely, than a typical
+paragraph of explanation.
+
+    Problem:
+    Foo does nothing when user clicks it.
+
+    Solution:
+    - Listen to the click event.
+    - Emit telemetry on success/failure.
+
 [Good explanations](https://nav.al/explanations) are acts of creativity. The
 "tiny subject line" constraint reminds you to clarify the essence of the
 commit, and makes the log easy for humans to scan. The commit log is an
 artifact that will outlive most code.
 
-Prefix the subject with `type(topic):` ([conventional
-commits](https://www.conventionalcommits.org/) format): this again helps humans
-(and scripts) scan and omit ranges of the history at a glance.
+### Commit messages
+
+Source control (Git) is our source-of-truth, not GitHub. However since most PRs
+are squash-merged, it's most important that your [pull request description](#pull-request-description)
+is well-formed so that the merged commit has the relevant info.
+
+If you expect your commits to be preserved ("regular merge"), then follow [these
+guidelines](https://cbea.ms/git-commit/):
+
+-   Subject: single line up to 50-72 characters
+    -   Imperative voice ("Fix bug", not "Fixed"/"Fixes"/"Fixing").
+    -   [Formatted as `type(scope): subject...`](#pull-request-title).
+        -   Helps humans _and_ scripts scan and omit ranges of the history at a glance.
+-   Body: describe the change as a [Problem/Solution pair](#pull-request-description).
 
 ## Tooling
 
@@ -323,8 +349,10 @@ generating SDKs, etc.
 
 The [DevSettings](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/shared/settings.ts#L553) class defines various developer-only settings that change the behavior of the
 Toolkit for testing and development purposes. To use a setting just add it to
-your `settings.json`. At runtime, if the Toolkit reads any of these settings,
+your user `settings.json`. At runtime, if the Toolkit reads any of these settings,
 the "AWS" statusbar item will [change its color](https://github.com/aws/aws-toolkit-vscode/blob/479b9d45b5f5ad30fc10567e649b59801053aeba/src/credentials/awsCredentialsStatusBarItem.ts#L45).
+
+**Note:** `aws.dev.*` settings are only read from **user-level settings** (not workspace or folder settings). Set them via `Preferences: Open User Settings (JSON)` in VS Code.
 
 The `aws.dev.forceDevMode` setting enables or disables Toolkit "dev mode". Without this setting, the presence of any other `aws.dev.*` setting defined in `DevSettings` implicitly enables "dev mode".
 
@@ -333,33 +361,46 @@ The `aws.dev.forceDevMode` setting enables or disables Toolkit "dev mode". Witho
 -   Use `getLogger()` to log debugging messages, warnings, etc.
     -   Example: `getLogger().error('topic: widget failed: %O', { foo: 'bar', baz: 42 })`
 -   Log messages are written to the extension Output channel, which you can view in vscode by visiting the "Output" panel and selecting `AWS Toolkit Logs` or `Amazon Q Logs`.
--   While viewing the Output channel (`AWS Toolkit Logs` or `Amazon Q Logs`) in vscode:
-    -   Click the "gear" icon to [select a log level](https://github.com/aws/aws-toolkit-vscode/pull/4859) ("Debug", "Info", "Error", …).
-    -   Click the "..." icon to open the log file.
 -   Use the `aws.dev.logfile` setting to set the logfile path to a fixed location, so you can follow
-    and filter logs using shell tools like `tail` and `grep`. For example in settings.json,
-    ```
-    "aws.dev.logfile": "~/awstoolkit.log",
-    ```
-    then you can tail the logfile in your terminal:
-    ```
-    tail -F ~/awstoolkit.log
-    ```
--   Use the `AWS (Developer): Watch Logs` command to watch and filter Toolkit logs (including
-    telemetry) in VSCode.
-    -   Only available if you enabled "dev mode" (`aws.dev.forceDevMode` setting, see above).
-    -   Enter text in the Debug Console filter box to show only log messages with that text. <br/>
-        <img src="./docs/images/debug-console-filter.png" alt="VSCode Debug Console" width="320"/>
+    and filter logs using shell tools like `tail` and `grep`.
+    -   Note: this always logs at **debug log-level** (though you can temporarily override that from the `AWS Toolkit Logs` UI).
+    -   Example `settings.json`:
+        ```
+        "aws.dev.logfile": "~/awstoolkit.log",
+        ```
+        then you can tail the logfile in your terminal:
+        ```
+        tail -F ~/awstoolkit.log
+        ```
+-   Use the Output panel to watch and filter Toolkit logs (including telemetry) in VSCode.
+    -   Enter text in the Output panel filter box to show only log messages with that text.
+
+#### Enabling Debug Logs
+
+How to enable more detailed debug logs in the extensions.
+If you need to report an issue attach these to give the most detailed information.
+
+1. Open the Command Palette (`cmd/ctrl` + `shift` + `p`), then search for "View Logs". Choose either `AWS: View Logs` or `Amazon Q: View Logs`.
+    - ![](./docs/images/logsView.png)
+2. Click the gear icon on the bottom right and select `Debug`
+    - ![](./docs/images/logsSetDebug.png)
+3. Click the gear icon again and select `Set As Default`. This will ensure we stay in `Debug` until explicitly changed.
+    - ![](./docs/images/logsSetDefault.png)
+4. Open the Command Palette again and select `Reload Window`.
+5. Now you should see additional `[debug]` prefixed logs in the output.
+    - ![](./docs/images/logsDebugLog.png)
+6. To export logs, click the kebab (`...`), select `Export Logs`, and then select the appropriate channel (`Amazon Q Logs` for Amazon Q)
+    - ![](./docs/images/openExportLogs.png)
+    - ![](./docs/images/exportAmazonQLogs.png)
 
 ### Telemetry
 
 -   See [docs/telemetry.md](./docs/telemetry.md) for guidelines on developing telemetry in this project.
--   To watch Toolkit telemetry events, use the `AWS (Developer): Watch Logs` command (see [Logging](#logging) above) and enter "telemetry" in the Debug Console filter box.
+-   To watch Toolkit telemetry events, use the `Amazon Q: View Logs` command (see [Logging](#logging) above) and enter "telemetry" in the filter box.
 
 ### Service Endpoints
 
 Endpoint overrides can be set per-service using the `aws.dev.endpoints` settings. This is a JSON object where each key is the service ID (case-insensitive) and each value is the endpoint. Refer to the SDK [API models](https://github.com/aws/aws-sdk-js/tree/master/apis) to find relevant service IDs.
-
 Example:
 
 ```json
@@ -389,6 +430,33 @@ Example:
 "aws.dev.codewhispererService": {
     "region": "us-west-2",
     "endpoint": "https://codewhisperer-gamma.example.com"
+}
+```
+
+<a name="amazonqLsp-settings">Overrides specifically for the Amazon Q language server</a> can be set using the `aws.dev.amazonqLsp` setting. This is a JSON object consisting of keys/values required to override language server: `manifestUrl`, `supportedVersions`, `id`, and `path`.
+
+Example:
+
+```json
+"aws.dev.amazonqLsp": {
+    "manifestUrl": "https://custom.url/manifest.json",
+    "supportedVersions": "4.0.0",
+    "id": "AmazonQ",
+    "path": "/custom/path/to/local/lsp/folder",
+    "ui": "/custom/path/to/chat-client/ui"
+}
+```
+
+<a name="amazonqWorkspaceLsp-settings">Overrides specifically for the Amazon Q Workspace Context language server</a> can be set using the `aws.dev.amazonqWorkspaceLsp` setting. This is a JSON object consisting of keys/values required to override language server: `manifestUrl`, `supportedVersions`, `id`, and `path`.
+
+Example:
+
+```json
+"aws.dev.amazonqWorkspaceLsp": {
+    "manifestUrl": "https://custom.url/manifest.json",
+    "supportedVersions": "4.0.0",
+    "id": "AmazonQ",
+    "path": "/custom/path/to/local/lsp/folder",
 }
 ```
 
@@ -437,6 +505,15 @@ Unlike the user setting overrides, not all of these environment variables have t
 
 -   `__CODEWHISPERER_REGION`: for aws.dev.codewhispererService.region
 -   `__CODEWHISPERER_ENDPOINT`: for aws.dev.codewhispererService.endpoint
+-   `__AMAZONQLSP_MANIFEST_URL`: for aws.dev.amazonqLsp.manifestUrl
+-   `__AMAZONQLSP_SUPPORTED_VERSIONS`: for aws.dev.amazonqLsp.supportedVersions
+-   `__AMAZONQLSP_ID`: for aws.dev.amazonqLsp.id
+-   `__AMAZONQLSP_PATH`: for aws.dev.amazonqLsp.path
+-   `__AMAZONQLSP_UI`: for aws.dev.amazonqLsp.ui
+-   `__AMAZONQWORKSPACELSP_MANIFEST_URL`: for aws.dev.amazonqWorkspaceLsp.manifestUrl
+-   `__AMAZONQWORKSPACELSP_SUPPORTED_VERSIONS`: for aws.dev.amazonqWorkspaceLsp.supportedVersions
+-   `__AMAZONQWORKSPACELSP_ID`: for aws.dev.amazonqWorkspaceLsp.id
+-   `__AMAZONQWORKSPACELSP_PATH`: for aws.dev.amazonqWorkspaceLsp.path
 
 #### Lambda
 
@@ -451,6 +528,11 @@ Unlike the user setting overrides, not all of these environment variables have t
 
 -   `SSMDOCUMENT_LANGUAGESERVER_PORT`: The port the ssm document language server should start debugging on
 
+#### CloudFormation LSP
+
+-   `__CLOUDFORMATIONLSP_PATH`: for aws.dev.cloudformationLsp.path
+-   `__CLOUDFORMATIONLSP_CLOUDFORMATION_ENDPOINT`: for aws.dev.cloudformationLsp.cloudformationEndpoint
+
 #### CI/Testing
 
 -   `GITHUB_ACTION`: The name of the current GitHub Action workflow step that is running
@@ -461,6 +543,7 @@ Unlike the user setting overrides, not all of these environment variables have t
 -   `AWS_TOOLKIT_TEST_NO_COLOR`: If the tests should include colour in their output
 -   `DEVELOPMENT_PATH`: The path to the aws toolkit vscode project
 -   `TEST_DIR` - The directory where the test runner should find the tests
+-   `AMAZONQ_FEATUREDEV_ITERATION_TEST` - Controls whether to enable multiple iteration testing for Amazon Q feature development
 
 ### SAM/CFN ("goformation") JSON schema
 
@@ -554,7 +637,7 @@ For extensions to contribute their own codicons, VSCode requires a font file as 
 As a simple example, let's say I wanted to add a new icon for CloudWatch log streams. I would do the following:
 
 1. Place the icon in `resources/icons/aws/cloudwatch`. I'l name the icon `log-stream.svg`.
-1. Use `npm run generatePackage` to update `package.json`. Commit this change with the new icon.
+1. Use `npm run generateIcons` to update `package.json`. Commit this change with the new icon.
 1. You can now use the icon in the Toolkit:
 
     ```ts
@@ -595,7 +678,7 @@ If you are contribuing visual assets from other open source repos, the source re
 ## Using new vscode APIs
 
 The minimum required vscode version specified in [package.json](https://github.com/aws/aws-toolkit-vscode/blob/07119655109bb06105a3f53bbcd86b812b32cdbe/package.json#L16)
-is decided by the version of vscode running in Cloud9 and other vscode-compatible targets.
+is decided by the version of vscode running in other supported vscode-compatible targets (e.g. web).
 
 But you can still use the latest vscode APIs, by checking the current running vscode version. For example, to use a vscode 1.64 API:
 

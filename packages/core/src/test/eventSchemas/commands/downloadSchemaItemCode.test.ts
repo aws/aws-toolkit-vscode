@@ -4,11 +4,14 @@
  */
 
 import assert from 'assert'
-import * as fs from 'fs-extra'
 import * as path from 'path'
 import * as vscode from 'vscode'
 
-import { Schemas } from 'aws-sdk'
+import {
+    DescribeCodeBindingResponse,
+    GetCodeBindingSourceResponse,
+    PutCodeBindingResponse,
+} from '@aws-sdk/client-schemas'
 import * as sinon from 'sinon'
 
 import {
@@ -25,6 +28,8 @@ import { MockOutputChannel } from '../../../test/mockOutputChannel'
 import admZip from 'adm-zip'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { DefaultSchemaClient } from '../../../shared/clients/schemaClient'
+import { fs } from '../../../shared'
+import * as nodefs from 'fs' // eslint-disable-line no-restricted-imports
 
 describe('CodeDownloader', function () {
     let tempFolder: string
@@ -48,7 +53,7 @@ describe('CodeDownloader', function () {
 
     afterEach(async function () {
         sandbox.restore()
-        await fs.remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
     const testSchemaName = 'testSchema'
     const testRegistryName = 'testRegistry'
@@ -60,8 +65,8 @@ describe('CodeDownloader', function () {
 
     describe('codeDownloader', async function () {
         it('should return an error if the response body is not Buffer', async function () {
-            const response: Schemas.GetCodeBindingSourceResponse = {
-                Body: 'Invalied body',
+            const response: GetCodeBindingSourceResponse = {
+                Body: 'Invalied body' as any,
             }
             sandbox.stub(schemaClient, 'getCodeBindingSource').returns(Promise.resolve(response))
 
@@ -74,8 +79,8 @@ describe('CodeDownloader', function () {
 
         it('should return arrayBuffer for valid Body type', async function () {
             const myBuffer = Buffer.from('TEST STRING')
-            const response: Schemas.GetCodeBindingSourceResponse = {
-                Body: myBuffer,
+            const response: GetCodeBindingSourceResponse = {
+                Body: myBuffer as any,
             }
 
             sandbox.stub(schemaClient, 'getCodeBindingSource').returns(Promise.resolve(response))
@@ -128,7 +133,7 @@ describe('CodeGenerator', function () {
 
     afterEach(async function () {
         sandbox.restore()
-        await fs.remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
     const testSchemaName = 'testSchema'
     const testRegistryName = 'testRegistry'
@@ -147,7 +152,7 @@ describe('CodeGenerator', function () {
 
     describe('codeGenerator', async function () {
         it('should return the current status of code generation', async function () {
-            const response: Schemas.PutCodeBindingResponse = {
+            const response: PutCodeBindingResponse = {
                 Status: CodeGenerationStatus.CREATE_IN_PROGRESS,
             }
             sandbox.stub(schemaClient, 'putCodeBinding').returns(Promise.resolve(response))
@@ -163,7 +168,7 @@ describe('CodeGenerator', function () {
         // If code bindings were not generated, but putCodeBinding was already called, ConflictException occurs
         // Return CREATE_IN_PROGRESS and keep polling in this case
         it('should return valid code generation status if it gets ConflictException', async function () {
-            const response: Schemas.PutCodeBindingResponse = {
+            const response: PutCodeBindingResponse = {
                 Status: CodeGenerationStatus.CREATE_IN_PROGRESS,
             }
 
@@ -201,7 +206,7 @@ describe('CodeGeneratorStatusPoller', function () {
 
     afterEach(async function () {
         sandbox.restore()
-        await fs.remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
     const testSchemaName = 'testSchema'
     const testRegistryName = 'testRegistry'
@@ -223,10 +228,10 @@ describe('CodeGeneratorStatusPoller', function () {
 
     describe('getCurrentStatus', async function () {
         it('should return the current status of code generation', async function () {
-            const firstStatus: Schemas.DescribeCodeBindingResponse = {
+            const firstStatus: DescribeCodeBindingResponse = {
                 Status: CodeGenerationStatus.CREATE_IN_PROGRESS,
             }
-            const secondStatus: Schemas.DescribeCodeBindingResponse = {
+            const secondStatus: DescribeCodeBindingResponse = {
                 Status: CodeGenerationStatus.CREATE_COMPLETE,
             }
 
@@ -244,7 +249,7 @@ describe('CodeGeneratorStatusPoller', function () {
 
     describe('codeGeneratorStatusPoller', async function () {
         it('fails if code generation status is invalid without retry', async function () {
-            const schemaResponse: Schemas.DescribeCodeBindingResponse = {
+            const schemaResponse: DescribeCodeBindingResponse = {
                 Status: CodeGenerationStatus.CREATE_FAILED,
             }
 
@@ -265,7 +270,7 @@ describe('CodeGeneratorStatusPoller', function () {
         })
 
         it('times out after max attempts if status is still in progress', async function () {
-            const schemaResponse: Schemas.DescribeCodeBindingResponse = {
+            const schemaResponse: DescribeCodeBindingResponse = {
                 Status: CodeGenerationStatus.CREATE_IN_PROGRESS,
             }
 
@@ -289,7 +294,7 @@ describe('CodeGeneratorStatusPoller', function () {
         })
 
         it('succeeds when code is previously generated without retry', async function () {
-            const schemaResponse: Schemas.DescribeCodeBindingResponse = {
+            const schemaResponse: DescribeCodeBindingResponse = {
                 Status: CodeGenerationStatus.CREATE_COMPLETE,
             }
 
@@ -352,7 +357,7 @@ describe('SchemaCodeDownload', function () {
 
     afterEach(async function () {
         sandbox.restore()
-        await fs.remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
     const testSchemaName = 'testSchema'
     const testRegistryName = 'testRegistry'
@@ -383,7 +388,7 @@ describe('SchemaCodeDownload', function () {
 
             // should extract the zip file with provided fileContent
             const expectedFilePath = path.join(request.destinationDirectory.fsPath, fileName)
-            const response = fs.readFileSync(expectedFilePath, 'utf8')
+            const response = await fs.readFileText(expectedFilePath)
             assert.strictEqual(response, fileContent, `${expectedFilePath} :file content do not match`)
         })
 
@@ -401,7 +406,7 @@ describe('SchemaCodeDownload', function () {
         it('should generate code if download fails with ResourceNotFound and place it into requested directory', async function () {
             sandbox.stub(poller, 'pollForCompletion').returns(Promise.resolve('CREATE_COMPLETE'))
             const codeDownloaderStub = sandbox.stub(downloader, 'download')
-            const codeGeneratorResponse: Schemas.PutCodeBindingResponse = {
+            const codeGeneratorResponse: PutCodeBindingResponse = {
                 Status: 'CREATE_IN_PROGRESS',
             }
             sandbox.stub(generator, 'generate').returns(Promise.resolve(codeGeneratorResponse))
@@ -420,7 +425,7 @@ describe('SchemaCodeDownload', function () {
             )
 
             const expectedFilePath = path.join(request.destinationDirectory.fsPath, fileName)
-            const response = fs.readFileSync(expectedFilePath, 'utf8')
+            const response = await fs.readFileText(expectedFilePath)
             assert.strictEqual(response, fileContent, 'Extracted file content do not match with expected')
         })
 
@@ -449,7 +454,7 @@ describe('CodeExtractor', function () {
     })
 
     afterEach(async function () {
-        await fs.remove(destinationDirectory)
+        await fs.delete(destinationDirectory, { recursive: true })
         sandbox.restore()
     })
 
@@ -469,7 +474,7 @@ describe('CodeExtractor', function () {
             let zipHandler = createZipFileInTempDirectory(fileName, 'First file content', zipName)
             zipHandler.extractAllTo(destinationDirectory)
 
-            //Create a zip file that clashes with destination content
+            // Create a zip file that clashes with destination content
             zipHandler = createZipFileInTempDirectory(fileName, 'Second file content', zipName)
 
             const collisionOccured = codeExtractor.checkFileCollisions(zipName, destinationDirectory)
@@ -486,7 +491,7 @@ describe('CodeExtractor', function () {
             let zipHandler = createZipFileInTempDirectory(fileName1, 'First file content', zipName)
             zipHandler.extractAllTo(destinationDirectory)
 
-            //Create a zip file with same directory path but diff fileName
+            // Create a zip file with same directory path but diff fileName
             const fileName2 = 'test2.txt'
             zipHandler = createZipFileInTempDirectory(fileName2, 'Second file content', zipName)
 
@@ -524,7 +529,7 @@ describe('CodeExtractor', function () {
 
         afterEach(async function () {
             sandbox.restore()
-            await fs.remove(destinationDirectory)
+            await fs.delete(destinationDirectory, { recursive: true })
         })
 
         it('should extract files if no collision present', async function () {
@@ -546,12 +551,12 @@ describe('CodeExtractor', function () {
             const file2Path = path.join(destinationDirectory, fileName2)
 
             // confirm both file exist
-            assert.ok(fs.existsSync(file1Path), `${file1Path} should exist`)
-            assert.ok(fs.existsSync(file2Path), `${file2Path} should exist`)
+            assert.ok(await fs.exists(file1Path), `${file1Path} should exist`)
+            assert.ok(await fs.exists(file2Path), `${file2Path} should exist`)
 
-            //confirm file contents
-            const file1Content = fs.readFileSync(file1Path, { encoding: 'utf8' })
-            const file2Content = fs.readFileSync(file2Path, { encoding: 'utf8' })
+            // confirm file contents
+            const file1Content = await fs.readFileText(file1Path)
+            const file2Content = await fs.readFileText(file2Path)
 
             assert.strictEqual(file1Content, 'First file content', `${file1Path} : file content do not match`)
             assert.strictEqual(file2Content, 'Second file content', `${file2Path} : file content do not match`)
@@ -568,7 +573,7 @@ describe('CodeExtractor', function () {
             const zipHandler = createZipFileInTempDirectory(fileName1, expectedFileContent, zipFileName)
             zipHandler.extractAllTo(destinationDirectory)
 
-            //same file name -  collision occurs
+            // same file name -  collision occurs
             const fileName2 = fileName1
             const zip = new admZip()
             zip.addFile(fileName2, Buffer.from('Second file content'))
@@ -577,7 +582,7 @@ describe('CodeExtractor', function () {
             await codeExtractor.extractAndPlace(buffer, request)
 
             const file1Path = path.join(destinationDirectory, fileName1)
-            const file1Content = fs.readFileSync(file1Path, { encoding: 'utf8' })
+            const file1Content = await fs.readFileText(file1Path)
 
             assert.strictEqual(file1Content, expectedFileContent, `${file1Path} :File content should not be overriden`)
         })
@@ -593,7 +598,7 @@ describe('CodeExtractor', function () {
             const zipHandler = createZipFileInTempDirectory(fileName1, initialFileContent, zipFileName)
             zipHandler.extractAllTo(destinationDirectory)
 
-            //same file name, different file content -  collision occurs
+            // same file name, different file content -  collision occurs
             const fileName2 = fileName1
             const zip = new admZip()
             const overridenFileContent = 'Replaced file content'
@@ -603,7 +608,7 @@ describe('CodeExtractor', function () {
             await codeExtractor.extractAndPlace(buffer, request)
 
             const file1Path = path.join(destinationDirectory, fileName1)
-            const file1Content = fs.readFileSync(file1Path, { encoding: 'utf8' })
+            const file1Content = await fs.readFileText(file1Path)
 
             assert.strictEqual(file1Content, overridenFileContent, `${file1Path} :File content should be overriden`)
         })
@@ -620,7 +625,7 @@ describe('CodeExtractor', function () {
             const zipHandler = createZipFileInTempDirectory(fileName1, expectedFileContent, zipFileName)
             zipHandler.extractAllTo(destinationDirectory)
 
-            //same file name -  collision occurs
+            // same file name -  collision occurs
             const fileName2 = fileName1
             const zip = new admZip()
             zip.addFile(fileName2, Buffer.from('Second file content'))
@@ -633,13 +638,13 @@ describe('CodeExtractor', function () {
             )
 
             const file1Path = path.join(destinationDirectory, fileName1)
-            const file1Content = fs.readFileSync(file1Path, { encoding: 'utf8' })
+            const file1Content = await fs.readFileText(file1Path)
 
             assert.strictEqual(file1Content, expectedFileContent, `${file1Path} :File content should not be overriden`)
         })
 
         it('should return coreCodeFilePath if it exists inside zip content', async function () {
-            //grab the title from schemaName
+            // grab the title from schemaName
             const title = testSchemaName.split('.').pop()
             const fileName = title!.concat('.java')
 
@@ -681,9 +686,9 @@ describe('CodeExtractor', function () {
         const zip = new admZip()
         zip.addFile(fileName, Buffer.from(fileContent))
         const buffer = zip.toBuffer()
-        const fd = fs.openSync(zipFileName, 'w')
-        fs.writeSync(fd, buffer, 0, buffer.byteLength, 0)
-        fs.closeSync(fd)
+        const fd = nodefs.openSync(zipFileName, 'w')
+        nodefs.writeSync(fd, buffer, 0, buffer.byteLength, 0)
+        nodefs.closeSync(fd)
 
         return zip
     }

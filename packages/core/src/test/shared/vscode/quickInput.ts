@@ -107,11 +107,11 @@ function assertItems<T extends vscode.QuickPickItem>(actual: T[], expected: Item
         return throwError('Picker had different number of items', actual, expected)
     }
 
-    actual.forEach((actualItem, index) => {
+    for (const [index, actualItem] of actual.entries()) {
         if (!matchItem(actualItem, expected[index])) {
             throwError(`Unexpected item found at index ${index}`, actual, expected[index])
         }
-    })
+    }
 }
 
 function assertItemButtons<T extends vscode.QuickInputButton>(actual: T[], expected: ItemButtonMatcher<T>[]): void {
@@ -119,11 +119,11 @@ function assertItemButtons<T extends vscode.QuickInputButton>(actual: T[], expec
         return throwError('Item had different number of buttons', actual, expected)
     }
 
-    actual.forEach((actualItem, index) => {
+    for (const [index, actualItem] of actual.entries()) {
         if (!matchItemButton(actualItem, expected[index])) {
             throwError(`Unexpected item button found at index ${index}`, actual, expected[index])
         }
-    })
+    }
 }
 
 function findButtonOrThrow(
@@ -222,6 +222,15 @@ export class PickerTester<T extends vscode.QuickPickItem> {
      */
     public acceptItems(...items: ItemMatcher<T>[]): void {
         this.picker.selectedItems = items.map((i) => findItemOrThrow(this.picker, i))
+        this.triggers.onDidAccept.fire()
+    }
+
+    /**
+     * Attempts to accept the default state. Used to test Multipick
+     *
+     * See {@link acceptItem}.
+     */
+    public acceptDefault(): void {
         this.triggers.onDidAccept.fire()
     }
 
@@ -329,7 +338,9 @@ export function createTestQuickPick<T extends vscode.QuickPickItem>(picker: vsco
     const emitters = toRecord(pickerEvents, () => new vscode.EventEmitter<any>())
     const triggers = toRecord(pickerEvents, (k) => emitters[k].fire.bind(emitters[k]))
     const extraEmitters = createExtraEmitters()
-    keys(emitters).forEach((key) => picker[key](triggers[key]))
+    for (const key of keys(emitters)) {
+        picker[key](triggers[key])
+    }
 
     const state = { visible: false }
     const tester = new PickerTester(picker, emitters, extraEmitters)
@@ -430,7 +441,9 @@ export function createTestInputBox(inputBox: vscode.InputBox): TestInputBox {
     const triggers = toRecord(inputEvents, (k) => emitters[k].fire.bind(emitters[k]))
     const extraEmitters = createExtraEmitters()
 
-    keys(emitters).forEach((key) => inputBox[key](triggers[key]))
+    for (const key of keys(emitters)) {
+        inputBox[key](triggers[key])
+    }
 
     const state = { visible: false }
     const tester = new InputBoxTester(inputBox, emitters, extraEmitters)

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-//@ts-check
+// @ts-check
 
 'use strict'
 
@@ -14,7 +14,7 @@ const baseConfigFactory = require('./webpack.base.config')
 const { merge } = require('webpack-merge')
 const currentDir = process.cwd()
 
-//@ts-check
+// @ts-check
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
 
 /**
@@ -22,7 +22,7 @@ const currentDir = process.cwd()
  * Example: `src/lambda/vue/index.ts` -> `dist/src/lambda/vue/index.js`
  * @param {string} file
  */
-const createVueBundleName = file => {
+const createVueBundleName = (file) => {
     return path.relative(currentDir, file).split('.').slice(0, -1).join(path.sep)
 }
 
@@ -33,7 +33,7 @@ const createVueBundleName = file => {
 const createVueEntries = (targetPattern = 'index.ts') => {
     return glob
         .sync(path.resolve(currentDir, 'src', '**', 'vue', '**', targetPattern).replace(/\\/g, '/'))
-        .map(f => ({ name: createVueBundleName(f), path: f }))
+        .map((f) => ({ name: createVueBundleName(f), path: f }))
         .reduce((a, b) => ((a[b.name] = b.path), a), {})
 }
 

@@ -15,12 +15,10 @@ import {
     getCodeCatalystConfig,
 } from '../shared/clients/codecatalystClient'
 import { DevEnvClient } from '../shared/clients/devenvClient'
-import { getLogger } from '../shared/logger'
+import { getLogger } from '../shared/logger/logger'
 import { AsyncCollection, toCollection } from '../shared/utilities/asyncCollection'
 import { getCodeCatalystSpaceName, getCodeCatalystProjectName, getCodeCatalystDevEnvId } from '../shared/vscode/env'
-import { writeFile } from 'fs-extra'
 import { sshAgentSocketVariable, startSshAgent, startVscodeRemote } from '../shared/extensions/ssh'
-import { ChildProcess } from '../shared/utilities/childProcess'
 import { isDevenvVscode } from './utils'
 import { Timeout } from '../shared/utilities/timeoutUtils'
 import { Commands } from '../shared/vscode/commands2'
@@ -29,56 +27,25 @@ import { fileExists } from '../shared/filesystemUtilities'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { ToolkitError } from '../shared/errors'
 import { Result } from '../shared/utilities/result'
-import { VscodeRemoteConnection, ensureDependencies } from '../shared/remoteSession'
+import { EnvProvider, VscodeRemoteConnection, createBoundProcess, ensureDependencies } from '../shared/remoteSession'
 import { SshConfig, sshLogFileLocation } from '../shared/sshConfig'
+import { fs } from '../shared/fs/fs'
 
 export type DevEnvironmentId = Pick<DevEnvironment, 'id' | 'org' | 'project'>
 export const connectScriptPrefix = 'codecatalyst_connect'
 
 export const docs = {
-    vscode: {
-        main: vscode.Uri.parse('https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codecatalyst-service'),
-        overview: vscode.Uri.parse(
-            'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codecatalyst-overview.html'
-        ),
-        devenv: vscode.Uri.parse(
-            'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codecatalyst-devenvironment.html'
-        ),
-        setup: vscode.Uri.parse(
-            'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codecatalyst-setup.html'
-        ),
-        troubleshoot: vscode.Uri.parse(
-            'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codecatalyst-troubleshoot.html'
-        ),
-    },
-    cloud9: {
-        // Working with Amazon CodeCatalyst
-        main: vscode.Uri.parse('https://docs.aws.amazon.com/cloud9/latest/user-guide/ide-toolkits-cloud9'),
-        // Getting Started
-        overview: vscode.Uri.parse(
-            'https://docs.aws.amazon.com/cloud9/latest/user-guide/ide-toolkits-cloud9-getstarted'
-        ),
-        // Opening Dev Environment settings in AWS Cloud9
-        settings: vscode.Uri.parse('https://docs.aws.amazon.com/cloud9/latest/user-guide/ide-toolkits-settings-cloud9'),
-        // Resuming a Dev Environment in AWS Cloud9
-        devenv: vscode.Uri.parse('https://docs.aws.amazon.com/cloud9/latest/user-guide/ide-toolkits-resume-cloud9'),
-        // Creating a Dev Environment in AWS Cloud9
-        devenvCreate: vscode.Uri.parse(
-            'https://docs.aws.amazon.com/cloud9/latest/user-guide/ide-toolkits-create-cloud9'
-        ),
-        // Stopping a Dev Environment in AWS Cloud9
-        devenvStop: vscode.Uri.parse('https://docs.aws.amazon.com/cloud9/latest/user-guide/ide-toolkits-stop-cloud9'),
-        // Deleting a Dev Environment in AWS Cloud9
-        devenvDelete: vscode.Uri.parse(
-            'https://docs.aws.amazon.com/cloud9/latest/user-guide/ide-toolkits-delete-cloud9'
-        ),
-        // Editing the repo devfile for a Dev Environment in AWS Cloud9
-        devfileEdit: vscode.Uri.parse(
-            'https://docs.aws.amazon.com/cloud9/latest/user-guide/ide-toolkits-edit-devfile-cloud9'
-        ),
-        // Cloning a repository in AWS Cloud9
-        cloneRepo: vscode.Uri.parse('https://docs.aws.amazon.com/cloud9/latest/user-guide/ide-toolkits-clone-cloud9'),
-    },
+    main: vscode.Uri.parse('https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codecatalyst-service'),
+    overview: vscode.Uri.parse(
+        'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codecatalyst-overview.html'
+    ),
+    devenv: vscode.Uri.parse(
+        'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codecatalyst-devenvironment.html'
+    ),
+    setup: vscode.Uri.parse('https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codecatalyst-setup.html'),
+    troubleshoot: vscode.Uri.parse(
+        'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/codecatalyst-troubleshoot.html'
+    ),
 } as const
 
 export function getCodeCatalystSsmEnv(region: string, ssmPath: string, devenv: DevEnvironmentId): NodeJS.ProcessEnv {
@@ -111,30 +78,12 @@ export function createCodeCatalystEnvProvider(
     }
 }
 
-type EnvProvider = () => Promise<NodeJS.ProcessEnv>
-
-/**
- * Creates a new {@link ChildProcess} class bound to a specific dev environment. All instances of this
- * derived class will have SSM session information injected as environment variables as-needed.
- */
-export function createBoundProcess(envProvider: EnvProvider): typeof ChildProcess {
-    type Run = ChildProcess['run']
-    return class SessionBoundProcess extends ChildProcess {
-        public override async run(...args: Parameters<Run>): ReturnType<Run> {
-            const options = args[0]
-            const envVars = await envProvider()
-            const spawnOptions = {
-                ...options?.spawnOptions,
-                env: { ...envVars, ...options?.spawnOptions?.env },
-            }
-
-            return super.run({ ...options, spawnOptions })
-        }
-    }
+export async function cacheBearerToken(bearerToken: string, devenvId: string): Promise<void> {
+    await fs.writeFile(bearerTokenCacheLocation(devenvId), `${bearerToken}`, { mode: 0o600, atomic: true })
 }
 
-export async function cacheBearerToken(bearerToken: string, devenvId: string): Promise<void> {
-    await writeFile(bearerTokenCacheLocation(devenvId), `${bearerToken}`, 'utf8')
+export async function deleteBearerTokenCache(devenvId: string): Promise<void> {
+    await fs.delete(bearerTokenCacheLocation(devenvId), { force: true })
 }
 
 export function bearerTokenCacheLocation(devenvId: string): string {

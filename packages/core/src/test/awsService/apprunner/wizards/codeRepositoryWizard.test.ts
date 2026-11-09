@@ -4,23 +4,21 @@
  */
 
 import assert from 'assert'
-import { AppRunner } from 'aws-sdk'
 import { createWizardTester, WizardTester } from '../../../shared/wizards/wizardTestUtils'
 import {
     AppRunnerCodeRepositoryWizard,
     createConnectionPrompter,
 } from '../../../../awsService/apprunner/wizards/codeRepositoryWizard'
-import { DefaultAppRunnerClient } from '../../../../shared/clients/apprunnerClient'
-import { ConnectionSummary } from 'aws-sdk/clients/apprunner'
+import { AppRunnerClient, CodeRepository, SourceConfiguration } from '../../../../shared/clients/apprunner'
 import { WIZARD_EXIT } from '../../../../shared/wizards/wizard'
 import { apprunnerConnectionHelpUrl } from '../../../../shared/constants'
-import { createQuickPickPrompterTester, QuickPickPrompterTester } from '../../../shared/ui/testUtils'
+import { createQuickPickPrompterTester } from '../../../shared/ui/testUtils'
 import { stub } from '../../../utilities/stubber'
 import { getOpenExternalStub } from '../../../globalSetup.test'
 
 describe('AppRunnerCodeRepositoryWizard', function () {
-    let tester: WizardTester<AppRunner.SourceConfiguration>
-    let repoTester: WizardTester<AppRunner.CodeRepository>
+    let tester: WizardTester<SourceConfiguration>
+    let repoTester: WizardTester<CodeRepository>
 
     beforeEach(async function () {
         // apprunner client and git api will never be called
@@ -70,14 +68,14 @@ describe('createConnectionPrompter', function () {
         makeConnection('connection-name-2', 'connection-arn-2'),
     ]
 
-    function makeTester(connections = defaultConnections): QuickPickPrompterTester<ConnectionSummary> {
-        const client = stub(DefaultAppRunnerClient, { regionCode: '' })
-        client.listConnections.resolves({ ConnectionSummaryList: connections })
+    function makeTester(connections = defaultConnections) {
+        const client = stub(AppRunnerClient, { regionCode: '' })
+        client.listConnections.resolves(connections)
 
         return createQuickPickPrompterTester(createConnectionPrompter(client))
     }
 
-    function makeConnection(name: string, arn: string, status: ConnectionStatus = 'AVAILABLE'): ConnectionSummary {
+    function makeConnection(name: string, arn: string, status: ConnectionStatus = 'AVAILABLE') {
         return {
             ConnectionName: name,
             ConnectionArn: arn,

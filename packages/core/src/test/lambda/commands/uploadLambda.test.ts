@@ -4,11 +4,11 @@
  */
 import * as vscode from 'vscode'
 import assert from 'assert'
-import * as fs from 'fs-extra'
 import * as path from 'path'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { findApplicationJsonFile, getFunctionNames } from '../../../lambda/commands/uploadLambda'
 import { assertEqualPaths, toFile } from '../../testUtil'
+import { fs } from '../../../shared'
 
 describe('uploadLambda', async function () {
     let tempFolder: string
@@ -34,18 +34,13 @@ describe('uploadLambda', async function () {
         folderUri = vscode.Uri.file(tempFolder)
     })
     afterEach(async function () {
-        await fs.remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
 
     it('finds application.json file from dir path - flat', async function () {
         await toFile('top secret data', path.join(tempFolder, '.application.json'))
         assertEqualPaths(
             (await findApplicationJsonFile(folderUri))?.fsPath ?? '',
-            path.join(tempFolder, '.application.json')
-        )
-        // Also test Cloud9 temporary workaround.
-        assertEqualPaths(
-            (await findApplicationJsonFile(folderUri, true))?.fsPath ?? '',
             path.join(tempFolder, '.application.json')
         )
     })
@@ -56,8 +51,6 @@ describe('uploadLambda', async function () {
         await toFile('top secret data', appjsonPath)
 
         assertEqualPaths((await findApplicationJsonFile(folderUri))?.fsPath ?? '', appjsonPath)
-        // Also test Cloud9 temporary workaround.
-        assertEqualPaths((await findApplicationJsonFile(folderUri, true))?.fsPath ?? '', appjsonPath)
     })
 
     it('finds application.json file from template file path', async function () {
@@ -67,8 +60,6 @@ describe('uploadLambda', async function () {
         await toFile('top secret data', appjsonPath)
 
         assertEqualPaths((await findApplicationJsonFile(templateUri))?.fsPath ?? '', appjsonPath)
-        // Also test Cloud9 temporary workaround.
-        assertEqualPaths((await findApplicationJsonFile(templateUri, true))?.fsPath ?? '', appjsonPath)
     })
 
     it('lists functions from .application.json', async function () {

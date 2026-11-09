@@ -1,0 +1,185 @@
+diff --git a/.github/workflows/copyPasteDetection.yml b/.github/workflows/copyPasteDetection.yml
+index 793337de5..746b3cecd 100644
+--- a/.github/workflows/copyPasteDetection.yml
++++ b/.github/workflows/copyPasteDetection.yml
+@@ -26,61 +26,47 @@ jobs:
+               with:
+                   node-version: ${{ matrix.node-version }}
+ 
++            - name: Determine if local
++              run: echo "IS_LOCAL=false" >> $GITHUB_ENV
++
+             - name: Fetch fork upstream
++              if: ${{ env.IS_LOCAL == 'false' }}
+               run: |
+                   git remote add forkUpstream https://github.com/${{ github.event.pull_request.head.repo.full_name }}  # URL of the fork
+                   git fetch forkUpstream  # Fetch fork
+ 
+             - name: Determine base and target branches for comparison.
+               run: |
+-                  echo "CURRENT_BRANCH=${{ github.head_ref }}" >> $GITHUB_ENV
+-                  echo "TARGET_BRANCH=${{ github.event.pull_request.base.ref }}" >> $GITHUB_ENV
+-            - run: git diff --name-only origin/$TARGET_BRANCH forkUpstream/$CURRENT_BRANCH > diff_output.txt
+-            - run: |
+-                  npm install -g jscpd
++                  if [[ $IS_LOCAL == 'false' ]]; then 
++                    echo "CURRENT_BRANCH=${{ github.head_ref }}" >> $GITHUB_ENV
++                    echo "TARGET_BRANCH=${{ github.event.pull_request.base.ref }}" >> $GITHUB_ENV
++                  else
++                    echo "CURRENT_BRANCH=${{ github.ref_name }}" >> $GITHUB_ENV
++                    echo "TARGET_BRANCH=master" >> $GITHUB_ENV
++                  fi
++
++            - name: Print base and target branches for comparison.
++              run: |
++                  echo "CURRENT_BRANCH=$CURRENT_BRANCH"
++                  echo "TARGET_BRANCH=$TARGET_BRANCH"
++
++            - name: Compare target and current branches.
++              run: |
++                  if [[ $IS_LOCAL == 'false' ]]; then 
++                      git diff origin/$TARGET_BRANCH forkUpstream/$CURRENT_BRANCH > diff_output.txt
++                    else
++                      git diff origin/$TARGET_BRANCH $CURRENT_BRANCH > diff_output.txt
++                    fi
++
++            - run: npm install -g jscpd
+ 
+             - run: jscpd --config "$GITHUB_WORKSPACE/.github/workflows/jscpd.json"
+ 
+-            - if: always()
++            - if: ${{ env.IS_LOCAL == 'false' }}
+               uses: actions/upload-artifact@v4
+               with:
+                   name: unfiltered-jscpd-report
+                   path: ./jscpd-report.json
+ 
+-            - name: Filter jscpd report for changed files
+-              run: |
+-                  if [ ! -f ./jscpd-report.json ]; then
+-                    echo "jscpd-report.json not found"
+-                    exit 1
+-                  fi
+-                  echo "Filtering jscpd report for changed files..."
+-                  CHANGED_FILES=$(jq -R -s -c 'split("\n")[:-1]' diff_output.txt)
+-                  echo "Changed files: $CHANGED_FILES"
+-                  jq --argjson changed_files "$CHANGED_FILES" '
+-                  .duplicates | map(select(
+-                      (.firstFile?.name as $fname | $changed_files | any(. == $fname)) or
+-                      (.secondFile?.name as $sname | $changed_files | any(. == $sname))
+-                  ))
+-                  ' ./jscpd-report.json > filtered-jscpd-report.json
+-                  cat filtered-jscpd-report.json
+-
+             - name: Check for duplicates
+-              run: |
+-                  if [ $(wc -l < ./filtered-jscpd-report.json) -gt 1 ]; then
+-                    echo "filtered_report_exists=true" >> $GITHUB_ENV
+-                  else
+-                    echo "filtered_report_exists=false" >> $GITHUB_ENV
+-                  fi
+-            - name: upload filtered report (if applicable)
+-              if: env.filtered_report_exists == 'true'
+-              uses: actions/upload-artifact@v4
+-              with:
+-                  name: filtered-jscpd-report
+-                  path: ./filtered-jscpd-report.json
+-
+-            - name: Fail and log found duplicates.
+-              if: env.filtered_report_exists == 'true'
+-              run: |
+-                  cat ./filtered-jscpd-report.json
+-                  echo "Duplications found, failing the check."
+-                  exit 1
++              run: node "$GITHUB_WORKSPACE/.github/workflows/filterDuplicates.js" diff_output.txt jscpd-report.json
+diff --git a/.github/workflows/filterDuplicates.js b/.github/workflows/filterDuplicates.js
+new file mode 100644
+index 000000000..b2f1e913e
+--- /dev/null
++++ b/.github/workflows/filterDuplicates.js
+@@ -0,0 +1,85 @@
++const fs = require('fs/promises')
++
++function parseDiffFilePath(filePathLine) {
++    return filePathLine.split(' ')[2].split('/').slice(1).join('/')
++}
++
++function parseDiffRange(rangeLine) {
++    const [_fromRange, toRange] = rangeLine.split(' ').slice(1, 3)
++    const [startLine, numLines] = toRange.slice(1).split(',').map(Number)
++    const range = [startLine, startLine + numLines]
++    return range
++}
++
++async function parseDiff(diffPath) {
++    const diff = await fs.readFile(diffPath, 'utf8')
++    const lines = diff.split('\n')
++    let currentFile = null
++    let currentFileChanges = []
++    const fileChanges = new Map()
++
++    for (const line of lines) {
++        if (line.startsWith('diff')) {
++            if (currentFile) {
++                fileChanges.set(currentFile, currentFileChanges)
++            }
++            currentFile = parseDiffFilePath(line)
++            currentFileChanges = []
++        }
++        if (line.startsWith('@@')) {
++            currentFileChanges.push(parseDiffRange(line))
++        }
++    }
++
++    return fileChanges
++}
++
++function doesOverlap(range1, range2) {
++    const [start1, end1] = range1
++    const [start2, end2] = range2
++    return (start1 >= start2 && start1 <= end2) || (end1 >= start2 && end1 <= end2)
++}
++
++function isCloneInChanges(changes, cloneInstance) {
++    const fileName = cloneInstance.name
++    const cloneStart = cloneInstance.start
++    const cloneEnd = cloneInstance.end
++    const lineChangeRanges = changes.get(fileName)
++
++    if (!lineChangeRanges) {
++        return false
++    }
++
++    return lineChangeRanges.some((range) => doesOverlap([cloneStart, cloneEnd], range))
++}
++
++function isInChanges(changes, dupe) {
++    return isCloneInChanges(changes, dupe.firstFile) || isCloneInChanges(changes, dupe.secondFile)
++}
++
++function filterDuplicates(report, changes) {
++    duplicates = []
++    for (const dupe of report.duplicates) {
++        if (isInChanges(changes, dupe)) {
++            duplicates.push(dupe)
++        }
++    }
++    return duplicates
++}
++
++async function main() {
++    const rawDiffPath = process.argv[2]
++    const jscpdReportPath = process.argv[3]
++    const changes = await parseDiff(rawDiffPath)
++    const jscpdReport = JSON.parse(await fs.readFile(jscpdReportPath, 'utf8'))
++    const filteredDuplicates = filterDuplicates(jscpdReport, changes)
++
++    console.log(filteredDuplicates)
++    console.log('%s files changes', changes.size)
++    console.log('%s duplicates found', filteredDuplicates.length)
++    if (filteredDuplicates.length > 0) {
++        process.exit(1)
++    }
++}
++
++void main()

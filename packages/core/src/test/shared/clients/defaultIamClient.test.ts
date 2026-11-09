@@ -4,10 +4,10 @@
  */
 
 import assert from 'assert'
-import { DefaultIamClient } from '../../../shared/clients/iamClient'
+import { IamClient } from '../../../shared/clients/iam'
 
 describe('getFriendlyName', function () {
-    const client = new DefaultIamClient('')
+    const client = new IamClient('')
     it('throws error on invalid arns', function () {
         const testArn1 = 'arn:aws:iam::testId:name'
         const testArn2 = 'thisIsNotAnArn'

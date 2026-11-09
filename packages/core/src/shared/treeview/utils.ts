@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { AWSTreeNodeBase } from './nodes/awsTreeNodeBase'
 import { UnknownError } from '../errors'
 import { Logging } from '../logger/commands'

@@ -4,17 +4,17 @@
  */
 
 import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
 import * as path from 'path'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import { IotCertsFolderNode } from '../explorer/iotCertFolderNode'
 import { fileExists } from '../../../shared/filesystemUtilities'
-import { Iot } from 'aws-sdk'
+import { CreateKeysAndCertificateResponse } from '@aws-sdk/client-iot'
+import { fs } from '../../../shared/fs/fs'
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
-const MODE_RW_R_R = 0o644 //File permission 0644 rw-r--r-- for PEM files.
+const MODE_RW_R_R = 0o644 // File permission 0644 rw-r--r-- for PEM files.
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const PEM_FILE_ENCODING = 'ascii'
 
@@ -34,7 +34,7 @@ export async function createCertificateCommand(
         return
     }
 
-    let certificate: Iot.CreateKeysAndCertificateResponse
+    let certificate: CreateKeysAndCertificateResponse
 
     try {
         certificate = await node.iot.createCertificateAndKeys({
@@ -60,10 +60,10 @@ export async function createCertificateCommand(
     getLogger().info(`Downloaded certificate ${certId}`)
     void vscode.window.showInformationMessage(localize('AWS.iot.createCert.success', 'Created certificate {0}', certId))
 
-    //Save resources
+    // Save resources
     const saveSuccessful = await saveFunc(folderLocation, certId!, certPem, privateKey, publicKey)
     if (!saveSuccessful) {
-        //Delete the certificate if the key pair cannot be saved
+        // Delete the certificate if the key pair cannot be saved
         try {
             await node.iot.deleteCertificate({ certificateId: certId! })
         } catch (e) {
@@ -72,7 +72,7 @@ export async function createCertificateCommand(
         }
     }
 
-    //Refresh the Certificate Folder node
+    // Refresh the Certificate Folder node
     await node.refreshNode()
 }
 
@@ -115,14 +115,14 @@ async function saveCredentials(
     const publicKeyExists = await fileExists(publicKeyPath)
 
     if (certExists) {
-        getLogger().error('Certificate path {0} already exists', certPath)
+        getLogger().error('Certificate path %s already exists', certPath)
         void vscode.window.showErrorMessage(
             localize('AWS.iot.createCert.error', 'Failed to create certificate. Path {0} already exists.', certPath)
         )
         return false
     }
     if (privateKeyExists) {
-        getLogger().error('Key path {0} already exists', privateKeyPath)
+        getLogger().error('Key path %s already exists', privateKeyPath)
         void vscode.window.showErrorMessage(
             localize(
                 'AWS.iot.createCert.error',
@@ -133,7 +133,7 @@ async function saveCredentials(
         return false
     }
     if (publicKeyExists) {
-        getLogger().error('Key path {0} already exists', publicKeyPath)
+        getLogger().error('Key path %s already exists', publicKeyPath)
         void vscode.window.showErrorMessage(
             localize(
                 'AWS.iot.createCert.error',

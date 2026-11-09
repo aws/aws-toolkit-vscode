@@ -8,7 +8,7 @@ import { describe } from 'mocha'
 import assert from 'assert'
 import * as path from 'path'
 import { platform } from 'os'
-import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import { runCmd } from './testUtils'
 
 /**
@@ -23,21 +23,26 @@ describe('git-secrets', function () {
 
     /** git-secrets patterns that will not cause a failure during the scan */
     function setAllowListPatterns(gitSecrets: string) {
-        const allowListPatterns: string[] = ['"accountId": "123456789012"']
+        const allowListPatterns: string[] = [
+            '"accountId": "123456789012"',
+            "'accountId': '123456789012'",
+            "Account: '123456789012'",
+            "accountId: '123456789012'",
+        ]
 
-        allowListPatterns.forEach((pattern) => {
+        for (const pattern of allowListPatterns) {
             // Returns non-zero exit code if pattern already exists
             runCmd([gitSecrets, '--add', '--allowed', pattern], { cwd: toolkitProjectDir, throws: false })
-        })
+        }
     }
 
     function setDenyListPatterns(gitSecrets: string) {
         const denyListPatterns: string[] = []
 
-        denyListPatterns.forEach((pattern) => {
+        for (const pattern of denyListPatterns) {
             // Returns non-zero exit code if pattern already exists
             runCmd([gitSecrets, '--add', pattern], { cwd: toolkitProjectDir, throws: false })
-        })
+        }
     }
 
     function setupTestFixturesDir(toolkitProjectDir: string) {

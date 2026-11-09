@@ -1,5 +1,9 @@
 // smithy-typescript generated code
 import {
+  getHttpAuthExtensionConfiguration,
+  resolveHttpAuthRuntimeConfig,
+} from "./auth/httpAuthExtensionConfiguration";
+import {
   getAwsRegionExtensionConfiguration,
   resolveAwsRegionExtensionConfiguration,
 } from "@aws-sdk/region-config-resolver";
@@ -40,6 +44,7 @@ export const resolveRuntimeExtensions = (
     ...asPartial(getAwsRegionExtensionConfiguration(runtimeConfig)),
     ...asPartial(getDefaultExtensionConfiguration(runtimeConfig)),
     ...asPartial(getHttpHandlerExtensionConfiguration(runtimeConfig)),
+    ...asPartial(getHttpAuthExtensionConfiguration(runtimeConfig)),
   };
 
   extensions.forEach(extension => extension.configure(extensionConfiguration));
@@ -49,5 +54,6 @@ export const resolveRuntimeExtensions = (
     ...resolveAwsRegionExtensionConfiguration(extensionConfiguration),
     ...resolveDefaultRuntimeConfig(extensionConfiguration),
     ...resolveHttpHandlerRuntimeConfig(extensionConfiguration),
+    ...resolveHttpAuthRuntimeConfig(extensionConfiguration),
   };
 }

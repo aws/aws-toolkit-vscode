@@ -7,8 +7,7 @@ import * as vscode from 'vscode'
 import { DefaultCodeWhispererClient } from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
 import { ConfigurationEntry } from '../models/model'
-import { getLogger } from '../../shared/logger'
-import { isCloud9 } from '../../shared/extensionUtilities'
+import { getLogger } from '../../shared/logger/logger'
 import { RecommendationHandler } from './recommendationHandler'
 import { CodewhispererAutomatedTriggerType } from '../../shared/telemetry/telemetry'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
@@ -57,7 +56,7 @@ export class KeyStrokeHandler {
             return
         }
         this.idleTriggerTimer = setInterval(() => {
-            const duration = (performance.now() - RecommendationHandler.instance.lastInvocationTime) / 1000
+            const duration = (Date.now() - RecommendationHandler.instance.lastInvocationTime) / 1000
             if (duration < CodeWhispererConstants.invocationTimeIntervalThreshold) {
                 return
             }
@@ -76,9 +75,6 @@ export class KeyStrokeHandler {
     }
 
     public shouldTriggerIdleTime(): boolean {
-        if (isCloud9() && RecommendationService.instance.isRunning) {
-            return false
-        }
         if (isInlineCompletionEnabled() && RecommendationService.instance.isRunning) {
             return false
         }
@@ -98,14 +94,6 @@ export class KeyStrokeHandler {
 
             // Skip when output channel gains focus and invoke
             if (editor.document.languageId === 'Log') {
-                return
-            }
-
-            // In Cloud9, do not auto trigger when
-            // 1. The input is from IntelliSense acceptance event
-            // 2. The input is from copy and paste some code
-            // event.contentChanges[0].text.length > 1 is a close estimate of 1 and 2
-            if (isCloud9() && event.contentChanges.length > 0 && event.contentChanges[0].text.length > 1) {
                 return
             }
 
@@ -164,6 +152,7 @@ export class KeyStrokeHandler {
         if (!editor) {
             return
         }
+
         // RecommendationHandler.instance.reportUserDecisionOfRecommendation(editor, -1)
         await RecommendationService.instance.generateRecommendation(
             client,
@@ -258,7 +247,7 @@ export class DefaultDocumentChangedType extends DocumentChangedType {
                 // single line && single place reformat should consist of space chars only
                 return DocumentChangedSource.Reformatting
             } else {
-                return isCloud9() ? DocumentChangedSource.RegularKey : DocumentChangedSource.Unknown
+                return DocumentChangedSource.Unknown
             }
         }
 

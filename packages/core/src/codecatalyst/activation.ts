@@ -16,7 +16,7 @@ import { DevEnvClient } from '../shared/clients/devenvClient'
 import { watchRestartingDevEnvs } from './reconnect'
 import { ToolkitPromptSettings } from '../shared/settings'
 import { dontShow } from '../shared/localizedText'
-import { getIdeProperties, isCloud9 } from '../shared/extensionUtilities'
+import { getIdeProperties } from '../shared/extensionUtilities'
 import { Commands } from '../shared/vscode/commands2'
 import { getCodeCatalystConfig } from '../shared/clients/codecatalystClient'
 import { isDevenvVscode } from './utils'
@@ -25,8 +25,9 @@ import { getLogger } from '../shared/logger/logger'
 import { DevEnvActivityStarter } from './devEnv'
 import { learnMoreCommand, onboardCommand, reauth } from './explorer'
 import { isInDevEnv } from '../shared/vscode/env'
-import { hasScopes, scopesCodeWhispererCore } from '../auth/connection'
-import { SessionSeparationPrompt } from '../auth/auth'
+import { hasScopes, scopesCodeWhispererCore, getTelemetryMetadataForConn } from '../auth/connection'
+import { telemetry } from '../shared/telemetry/telemetry'
+import { asStringifiedStack } from '../shared/telemetry/spans'
 
 const localize = nls.loadMessageBundle()
 
@@ -50,8 +51,22 @@ export async function activate(ctx: ExtContext): Promise<void> {
     // Note: credentials on disk in the dev env cannot have Q scopes, so it will never be forgotten.
     // TODO: Remove after some time?
     if (authProvider.isConnected() && hasScopes(authProvider.activeConnection!, scopesCodeWhispererCore)) {
-        await authProvider.secondaryAuth.forgetConnection()
-        await SessionSeparationPrompt.instance.showForCommand('aws.codecatalyst.manageConnections')
+        await telemetry.function_call.run(
+            async () => {
+                await telemetry.auth_modifyConnection.run(async () => {
+                    const conn = authProvider.activeConnection
+                    telemetry.record({
+                        action: 'forget',
+                        source: asStringifiedStack(telemetry.getFunctionStack()),
+                        connectionState: conn ? authProvider.auth.getConnectionState(conn) : undefined,
+                        ...(await getTelemetryMetadataForConn(conn)),
+                    })
+
+                    await authProvider.secondaryAuth.forgetConnection()
+                })
+            },
+            { emit: false, functionId: { name: 'activate', class: 'CodeCatalyst' } }
+        )
     }
 
     ctx.extensionContext.subscriptions.push(
@@ -63,23 +78,21 @@ export async function activate(ctx: ExtContext): Promise<void> {
         })
     )
 
-    if (!isCloud9()) {
-        await GitExtension.instance.registerRemoteSourceProvider(remoteSourceProvider).then((disposable) => {
-            ctx.extensionContext.subscriptions.push(disposable)
+    await GitExtension.instance.registerRemoteSourceProvider(remoteSourceProvider).then((disposable) => {
+        ctx.extensionContext.subscriptions.push(disposable)
+    })
+
+    await GitExtension.instance
+        .registerCredentialsProvider({
+            getCredentials(uri: vscode.Uri) {
+                if (uri.authority.endsWith(getCodeCatalystConfig().gitHostname)) {
+                    return commands.withClient((client) => authProvider.getCredentialsForGit(client))
+                }
+            },
         })
+        .then((disposable) => ctx.extensionContext.subscriptions.push(disposable))
 
-        await GitExtension.instance
-            .registerCredentialsProvider({
-                getCredentials(uri: vscode.Uri) {
-                    if (uri.authority.endsWith(getCodeCatalystConfig().gitHostname)) {
-                        return commands.withClient((client) => authProvider.getCredentialsForGit(client))
-                    }
-                },
-            })
-            .then((disposable) => ctx.extensionContext.subscriptions.push(disposable))
-
-        watchRestartingDevEnvs(ctx, authProvider)
-    }
+    watchRestartingDevEnvs(ctx, authProvider)
 
     const thisDevenv = (await getThisDevEnv(authProvider))?.unwrapOrElse((err) => {
         getLogger().error('codecatalyst: failed to get current Dev Enviroment: %s', err)
@@ -101,9 +114,10 @@ export async function activate(ctx: ExtContext): Promise<void> {
         const timeoutMin = thisDevenv.summary.inactivityTimeoutMinutes
         const timeout = timeoutMin === 0 ? 'never' : `${timeoutMin} min`
         getLogger().info('codecatalyst: Dev Environment timeout=%s, ides=%O', timeout, thisDevenv.summary.ides)
-        if (!isCloud9() && thisDevenv && !isDevenvVscode(thisDevenv.summary.ides)) {
+        if (thisDevenv && !isDevenvVscode(thisDevenv.summary.ides)) {
             // Prevent Toolkit from reconnecting to a "non-vscode" devenv by actively closing it.
             // Can happen if devenv is switched to ides="cloud9", etc.
+            // TODO: Is this needed without cloud9 check?
             void vscode.commands.executeCommand('workbench.action.remote.close')
             return
         }
@@ -111,7 +125,7 @@ export async function activate(ctx: ExtContext): Promise<void> {
         await showReadmeFileOnFirstLoad(ctx.extensionContext.workspaceState)
 
         const settings = ToolkitPromptSettings.instance
-        if (await settings.isPromptEnabled('remoteConnected')) {
+        if (settings.isPromptEnabled('remoteConnected')) {
             const message = localize(
                 'AWS.codecatalyst.connectedMessage',
                 'Welcome to your Amazon CodeCatalyst Dev Environment. For more options and information, view Dev Environment settings ({0} Extension > CodeCatalyst).',
@@ -133,10 +147,6 @@ export async function activate(ctx: ExtContext): Promise<void> {
 }
 
 async function showReadmeFileOnFirstLoad(workspaceState: vscode.ExtensionContext['workspaceState']): Promise<void> {
-    if (isCloud9()) {
-        return
-    }
-
     getLogger().debug('codecatalyst: showReadmeFileOnFirstLoad()')
     // Check dev env state to see if this is the first time the user has connected to a dev env
     const isFirstLoad = workspaceState.get('aws.codecatalyst.devEnv.isFirstLoad', true)

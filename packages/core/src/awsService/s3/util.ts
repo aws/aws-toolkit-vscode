@@ -14,8 +14,8 @@ import { localize } from '../../shared/utilities/vsCodeUtils'
  * @param path to the object, or an empty string if this is the root of the bucket.
  * @returns the readable path to the s3 bucket or object (e.g. s3://...).
  */
-export function readablePath({ bucket, path }: { bucket: { name: string }; path: string }): string {
-    return path ? `s3://${bucket.name}/${path}` : `s3://${bucket.name}`
+export function readablePath({ bucket, path }: { bucket: { Name: string }; path: string }): string {
+    return path ? `s3://${bucket.Name}/${path}` : `s3://${bucket.Name}`
 }
 
 /**

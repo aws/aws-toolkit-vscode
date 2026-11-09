@@ -8,18 +8,14 @@ import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { AppRunnerServiceNode } from './apprunnerServiceNode'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import * as nls from 'vscode-nls'
-import { AppRunnerClient } from '../../../shared/clients/apprunnerClient'
-import { getPaginatedAwsCallIter } from '../../../shared/utilities/collectionUtils'
-import { AppRunner } from 'aws-sdk'
-import globals from '../../../shared/extensionGlobals'
+import { AppRunnerClient, CreateServiceRequest, ServiceSummary } from '../../../shared/clients/apprunner'
+import { PollingSet } from '../../../shared/utilities/pollingSet'
 
 const localize = nls.loadMessageBundle()
 
-const pollingInterval = 20000
 export class AppRunnerNode extends AWSTreeNodeBase {
-    private readonly serviceNodes: Map<AppRunner.ServiceId, AppRunnerServiceNode> = new Map()
-    private readonly pollingNodes: Set<string> = new Set()
-    private pollTimer?: NodeJS.Timeout
+    private readonly serviceNodes: Map<string, AppRunnerServiceNode> = new Map()
+    private readonly pollingSet: PollingSet<string> = new PollingSet(20000, this.refresh.bind(this))
 
     public constructor(
         public override readonly regionCode: string,
@@ -45,29 +41,10 @@ export class AppRunnerNode extends AWSTreeNodeBase {
         })
     }
 
-    private async getServiceSummaries(request: AppRunner.ListServicesRequest = {}): Promise<AppRunner.Service[]> {
-        const iterator = getPaginatedAwsCallIter({
-            awsCall: async (request) => await this.client.listServices(request),
-            nextTokenNames: {
-                request: 'NextToken',
-                response: 'NextToken',
-            },
-            request,
-        })
-
-        const services: AppRunner.Service[] = []
-
-        while (true) {
-            const next = await iterator.next()
-
-            next.value.ServiceSummaryList.forEach((summary: AppRunner.Service) => services.push(summary))
-
-            if (next.done) {
-                break
-            }
-        }
-
-        return services
+    private async getServiceSummaries(): Promise<ServiceSummary[]> {
+        // TODO: avoid resolving all services at once.
+        const serviceCollection = this.client.paginateServices({})
+        return await serviceCollection.flatten().promise()
     }
 
     public async updateChildren(): Promise<void> {
@@ -79,8 +56,8 @@ export class AppRunnerNode extends AWSTreeNodeBase {
                 if (this.serviceNodes.has(summary.ServiceArn)) {
                     this.serviceNodes.get(summary.ServiceArn)!.update(summary)
                     if (summary.Status !== 'OPERATION_IN_PROGRESS') {
-                        this.pollingNodes.delete(summary.ServiceArn)
-                        this.clearPollTimer()
+                        this.pollingSet.delete(summary.ServiceArn)
+                        this.pollingSet.clearTimer()
                     }
                 } else {
                     this.serviceNodes.set(summary.ServiceArn, new AppRunnerServiceNode(this, this.client, summary))
@@ -89,33 +66,26 @@ export class AppRunnerNode extends AWSTreeNodeBase {
             })
         )
 
+        // eslint-disable-next-line unicorn/no-array-for-each
         deletedNodeArns.forEach(this.deleteNode.bind(this))
     }
 
-    private clearPollTimer(): void {
-        if (this.pollingNodes.size === 0 && this.pollTimer) {
-            globals.clock.clearInterval(this.pollTimer)
-            this.pollTimer = undefined
-        }
+    public startPollingNode(id: string): void {
+        this.pollingSet.add(id)
     }
 
-    public startPolling(id: string): void {
-        this.pollingNodes.add(id)
-        this.pollTimer = this.pollTimer ?? globals.clock.setInterval(this.refresh.bind(this), pollingInterval)
-    }
-
-    public stopPolling(id: string): void {
-        this.pollingNodes.delete(id)
+    public stopPollingNode(id: string): void {
+        this.pollingSet.delete(id)
         this.serviceNodes.get(id)?.refresh()
-        this.clearPollTimer()
+        this.pollingSet.clearTimer()
     }
 
     public deleteNode(id: string): void {
         this.serviceNodes.delete(id)
-        this.pollingNodes.delete(id)
+        this.pollingSet.delete(id)
     }
 
-    public async createService(request: AppRunner.CreateServiceRequest): Promise<void> {
+    public async createService(request: CreateServiceRequest): Promise<void> {
         await this.client.createService(request)
         this.refresh()
     }

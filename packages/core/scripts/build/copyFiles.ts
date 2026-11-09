@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs-extra'
+/* eslint-disable no-restricted-imports */
+import fs from 'fs'
 import * as path from 'path'
 
 // Moves all dependencies into `dist`
@@ -30,6 +31,11 @@ const tasks: CopyTask[] = [
     { target: path.join('src', 'testFixtures') },
     { target: 'src/auth/sso/vue' },
 
+    // Vue.js for webviews
+    {
+        target: path.join('../../node_modules', 'vue', 'dist', 'vue.global.prod.js'),
+        destination: path.join('libs', 'vue.min.js'),
+    },
     // SSM
     {
         target: path.join('../../node_modules', 'aws-ssm-document-language-service', 'dist', 'server.js'),
@@ -45,27 +51,28 @@ const tasks: CopyTask[] = [
     },
 ]
 
-async function copy(task: CopyTask): Promise<void> {
+function copy(task: CopyTask): void {
     const src = path.resolve(projectRoot, task.target)
     const dst = path.resolve(outRoot, task.destination ?? task.target)
 
     try {
-        await fs.copy(src, dst, {
+        fs.cpSync(src, dst, {
             recursive: true,
-            overwrite: true,
+            force: true,
             errorOnExist: false,
         })
     } catch (error) {
         throw new Error(`Copy "${src}" to "${dst}" failed: ${error instanceof Error ? error.message : error}`)
     }
 }
-
-void (async () => {
+function main() {
     try {
-        await Promise.all(tasks.map(copy))
+        tasks.map(copy)
     } catch (error) {
         console.error('`copyFiles.ts` failed')
         console.error(error)
         process.exit(1)
     }
-})()
+}
+
+void main()

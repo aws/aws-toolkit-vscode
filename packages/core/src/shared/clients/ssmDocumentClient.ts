@@ -3,7 +3,36 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SSM } from 'aws-sdk'
+import {
+    CreateDocumentCommand,
+    CreateDocumentRequest,
+    CreateDocumentResult,
+    DeleteDocumentCommand,
+    DeleteDocumentRequest,
+    DeleteDocumentResult,
+    DescribeDocumentCommand,
+    DescribeDocumentRequest,
+    DescribeDocumentResult,
+    DocumentFormat,
+    DocumentIdentifier,
+    DocumentVersionInfo,
+    GetDocumentCommand,
+    GetDocumentRequest,
+    GetDocumentResult,
+    ListDocumentsCommand,
+    ListDocumentsRequest,
+    ListDocumentsResult,
+    ListDocumentVersionsCommand,
+    ListDocumentVersionsRequest,
+    ListDocumentVersionsResult,
+    SSMClient,
+    UpdateDocumentCommand,
+    UpdateDocumentDefaultVersionCommand,
+    UpdateDocumentDefaultVersionRequest,
+    UpdateDocumentDefaultVersionResult,
+    UpdateDocumentRequest,
+    UpdateDocumentResult,
+} from '@aws-sdk/client-ssm'
 import globals from '../extensionGlobals'
 
 import { ClassToInterfaceType } from '../utilities/tsUtils'
@@ -12,23 +41,21 @@ export type SsmDocumentClient = ClassToInterfaceType<DefaultSsmDocumentClient>
 export class DefaultSsmDocumentClient {
     public constructor(public readonly regionCode: string) {}
 
-    public async deleteDocument(documentName: string): Promise<SSM.Types.DeleteDocumentResult> {
-        const client = await this.createSdkClient()
+    public async deleteDocument(documentName: string): Promise<DeleteDocumentResult> {
+        const client = this.createSdkClient()
 
-        const request: SSM.Types.DeleteDocumentRequest = {
+        const request: DeleteDocumentRequest = {
             Name: documentName,
         }
 
-        return await client.deleteDocument(request).promise()
+        return await client.send(new DeleteDocumentCommand(request))
     }
 
-    public async *listDocuments(
-        request: SSM.Types.ListDocumentsRequest = {}
-    ): AsyncIterableIterator<SSM.DocumentIdentifier> {
-        const client = await this.createSdkClient()
+    public async *listDocuments(request: ListDocumentsRequest = {}): AsyncIterableIterator<DocumentIdentifier> {
+        const client = this.createSdkClient()
 
         do {
-            const response: SSM.Types.ListDocumentsResult = await client.listDocuments(request).promise()
+            const response: ListDocumentsResult = await client.send(new ListDocumentsCommand(request))
 
             if (response.DocumentIdentifiers) {
                 yield* response.DocumentIdentifiers
@@ -38,15 +65,15 @@ export class DefaultSsmDocumentClient {
         } while (request.NextToken)
     }
 
-    public async *listDocumentVersions(documentName: string): AsyncIterableIterator<SSM.Types.DocumentVersionInfo> {
-        const client = await this.createSdkClient()
+    public async *listDocumentVersions(documentName: string): AsyncIterableIterator<DocumentVersionInfo> {
+        const client = this.createSdkClient()
 
-        const request: SSM.Types.ListDocumentVersionsRequest = {
+        const request: ListDocumentVersionsRequest = {
             Name: documentName,
         }
 
         do {
-            const response: SSM.Types.ListDocumentVersionsResult = await client.listDocumentVersions(request).promise()
+            const response: ListDocumentVersionsResult = await client.send(new ListDocumentVersionsCommand(request))
 
             if (response.DocumentVersions) {
                 yield* response.DocumentVersions
@@ -56,60 +83,63 @@ export class DefaultSsmDocumentClient {
         } while (request.NextToken)
     }
 
-    public async describeDocument(documentName: string, documentVersion?: string): Promise<SSM.DescribeDocumentResult> {
-        const client = await this.createSdkClient()
+    public async describeDocument(documentName: string, documentVersion?: string): Promise<DescribeDocumentResult> {
+        const client = this.createSdkClient()
 
-        const request: SSM.Types.DescribeDocumentRequest = {
+        const request: DescribeDocumentRequest = {
             Name: documentName,
             DocumentVersion: documentVersion,
         }
 
-        return await client.describeDocument(request).promise()
+        return await client.send(new DescribeDocumentCommand(request))
     }
 
     public async getDocument(
         documentName: string,
         documentVersion?: string,
-        documentFormat?: string
-    ): Promise<SSM.Types.GetDocumentResult> {
-        const client = await this.createSdkClient()
+        documentFormat?: DocumentFormat
+    ): Promise<GetDocumentResult> {
+        const client = this.createSdkClient()
 
-        const request: SSM.Types.GetDocumentRequest = {
+        const request: GetDocumentRequest = {
             Name: documentName,
             DocumentVersion: documentVersion,
             DocumentFormat: documentFormat,
         }
 
-        return await client.getDocument(request).promise()
+        return await client.send(new GetDocumentCommand(request))
     }
 
-    public async createDocument(request: SSM.Types.CreateDocumentRequest): Promise<SSM.Types.CreateDocumentResult> {
-        const client = await this.createSdkClient()
+    public async createDocument(request: CreateDocumentRequest): Promise<CreateDocumentResult> {
+        const client = this.createSdkClient()
 
-        return await client.createDocument(request).promise()
+        return await client.send(new CreateDocumentCommand(request))
     }
 
-    public async updateDocument(request: SSM.Types.UpdateDocumentRequest): Promise<SSM.Types.UpdateDocumentResult> {
-        const client = await this.createSdkClient()
+    public async updateDocument(request: UpdateDocumentRequest): Promise<UpdateDocumentResult> {
+        const client = this.createSdkClient()
 
-        return await client.updateDocument(request).promise()
+        return await client.send(new UpdateDocumentCommand(request))
     }
 
     public async updateDocumentVersion(
         documentName: string,
         documentVersion: string
-    ): Promise<SSM.Types.UpdateDocumentDefaultVersionResult> {
-        const client = await this.createSdkClient()
+    ): Promise<UpdateDocumentDefaultVersionResult> {
+        const client = this.createSdkClient()
 
-        const request: SSM.Types.UpdateDocumentDefaultVersionRequest = {
+        const request: UpdateDocumentDefaultVersionRequest = {
             Name: documentName,
             DocumentVersion: documentVersion,
         }
 
-        return await client.updateDocumentDefaultVersion(request).promise()
+        return await client.send(new UpdateDocumentDefaultVersionCommand(request))
     }
 
-    private async createSdkClient(): Promise<SSM> {
-        return await globals.sdkClientBuilder.createAwsService(SSM, undefined, this.regionCode)
+    private createSdkClient(): SSMClient {
+        return globals.sdkClientBuilderV3.createAwsService({
+            serviceClient: SSMClient,
+            clientOptions: { region: this.regionCode },
+        })
     }
 }

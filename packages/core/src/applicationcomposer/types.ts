@@ -147,6 +147,7 @@ export interface ReferenceDetails {
 }
 
 export interface GenerateResourceRequestMessage extends Message {
+    cfnType: string
     prompt: string
     traceId: string
 }

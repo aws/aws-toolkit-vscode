@@ -164,7 +164,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
     private findCandidateHandlersInExportDecls(): RootlessLambdaHandlerCandidate[] {
         const handlers: RootlessLambdaHandlerCandidate[] = []
 
-        this._candidateExportDeclarations.forEach((exportDeclaration) => {
+        for (const exportDeclaration of this._candidateExportDeclarations) {
             if (exportDeclaration.exportClause) {
                 exportDeclaration.exportClause.forEachChild((clause) => {
                     if (ts.isExportSpecifier(clause)) {
@@ -180,7 +180,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                     }
                 })
             }
-        })
+        }
 
         return handlers
     }
@@ -191,7 +191,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
     private findCandidateHandlersInExportedFunctions(): RootlessLambdaHandlerCandidate[] {
         const handlers: RootlessLambdaHandlerCandidate[] = []
 
-        this._candidateExportNodes.forEach((exportNode) => {
+        for (const exportNode of this._candidateExportNodes) {
             if (
                 ts.isFunctionLike(exportNode) &&
                 TypescriptLambdaHandlerSearch.isFunctionLambdaHandlerCandidate(exportNode) &&
@@ -218,7 +218,7 @@ export class TypescriptLambdaHandlerSearch implements LambdaHandlerSearch {
                     }
                 })
             }
-        })
+        }
 
         return handlers
     }

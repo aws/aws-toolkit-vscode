@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import * as fs from 'fs-extra'
+/* eslint-disable no-restricted-imports */
+import fs from 'fs'
 import * as path from 'path'
 
 // Copies various dependencies into "dist/".
@@ -28,9 +29,11 @@ const tasks: CopyTask[] = [
     ...['LICENSE', 'NOTICE'].map((f) => {
         return { target: path.join('../../', f), destination: path.join(projectRoot, f) }
     }),
-
     { target: path.join('../core', 'resources'), destination: path.join('..', 'resources') },
-    { target: path.join('../core', 'package.nls.json'), destination: path.join('..', 'package.nls.json') },
+    {
+        target: path.join('../core/', 'package.nls.json'),
+        destination: path.join('..', 'package.nls.json'),
+    },
     { target: path.join('../core', 'src', 'templates'), destination: path.join('src', 'templates') },
     {
         target: '../core/src/auth/sso/vue',
@@ -65,6 +68,34 @@ const tasks: CopyTask[] = [
         destination: path.join('src', 'stepFunctions', 'asl', 'aslServer.js'),
     },
 
+    // Sagemaker local server
+    {
+        target: path.join(
+            '../../node_modules',
+            'aws-core-vscode',
+            'dist',
+            'src',
+            'awsService',
+            'sagemaker',
+            'detached-server',
+            'server.js'
+        ),
+        destination: path.join('src', 'awsService', 'sagemaker', 'detached-server', 'server.js'),
+    },
+
+    // Serverless Land
+    {
+        target: path.join(
+            '../../node_modules/aws-core-vscode',
+            'src',
+            'awsService',
+            'appBuilder',
+            'serverlessLand',
+            'metadata.json'
+        ),
+        destination: path.join('src', 'serverlessLand', 'metadata.json'),
+    },
+
     // Vue
     {
         target: path.join('../core', 'resources', 'js', 'vscode.js'),
@@ -78,32 +109,20 @@ const tasks: CopyTask[] = [
         target: path.join('../../node_modules/aws-core-vscode/dist', 'vue'),
         destination: 'vue/',
     },
-
-    // Mynah
-    {
-        target: path.join(
-            '../../node_modules',
-            '@aws',
-            'fully-qualified-names',
-            'node',
-            'aws_fully_qualified_names_bg.wasm'
-        ),
-        destination: path.join('src', 'aws_fully_qualified_names_bg.wasm'),
-    },
     {
         target: path.join('../../node_modules', 'web-tree-sitter', 'tree-sitter.wasm'),
         destination: path.join('src', 'tree-sitter.wasm'),
     },
 ]
 
-async function copy(task: CopyTask): Promise<void> {
+function copy(task: CopyTask): void {
     const src = path.resolve(projectRoot, task.target)
     const dst = path.resolve(outRoot, task.destination ?? task.target)
 
     try {
-        await fs.copy(src, dst, {
+        fs.cpSync(src, dst, {
             recursive: true,
-            overwrite: true,
+            force: true,
             errorOnExist: false,
         })
     } catch (error) {
@@ -111,12 +130,46 @@ async function copy(task: CopyTask): Promise<void> {
     }
 }
 
-void (async () => {
+function moveSageMakerSshKiroExtension(): void {
+    const searchDir = path.resolve(projectRoot, '../../')
+    const destinationDir = path.resolve(outRoot, '../resources')
+
+    fs.mkdirSync(destinationDir, { recursive: true })
+
+    const isSageMakerSshKiroVsix = (file: string) => file.startsWith('sagemaker-ssh-kiro') && file.endsWith('.vsix')
+
+    // Remove all existing sagemaker-ssh-kiro files in the destination directory. This prevents multiple
+    // sagemaker-ssh-kiro VSIX files being present in the destination if the version number has changed.
+    const existingFilesInDestination = fs.readdirSync(destinationDir).filter(isSageMakerSshKiroVsix)
+
+    for (const file of existingFilesInDestination) {
+        const filePath = path.join(destinationDir, file)
+        fs.unlinkSync(filePath)
+    }
+
+    const sourceFiles = fs.readdirSync(searchDir).filter(isSageMakerSshKiroVsix)
+
+    if (sourceFiles.length !== 1) {
+        throw new Error(`Expected 1 sagemaker-ssh-kiro VSIX file but found ${sourceFiles.length}`)
+    }
+
+    const sourceFile = path.join(searchDir, sourceFiles[0])
+    const destinationFile = path.join(destinationDir, sourceFiles[0])
+
+    // Move (rather than copy) the sagemaker-ssh-kiro VSIX file to the toolkit resources directory so it's
+    // no longer at the top level, since we don't want to release it standalone (it should be embedded only).
+    fs.renameSync(sourceFile, destinationFile)
+}
+
+function main() {
     try {
-        await Promise.all(tasks.map(copy))
+        tasks.map(copy)
+        moveSageMakerSshKiroExtension()
     } catch (error) {
         console.error('`copyFiles.ts` failed')
         console.error(error)
         process.exit(1)
     }
-})()
+}
+
+void main()

@@ -32,11 +32,11 @@ import {
     promptAndUseConnection,
 } from './auth/utils'
 import { showCodeWhispererConnectionPrompt } from './codewhisperer/util/showSsoPrompt'
-import { CommonAuthWebview } from './login/webview'
+import { CommonAuthWebview } from './login/webview/vue/backend'
 import { AuthSource, AuthSources } from './login/webview/util'
 import { ServiceItemId, isServiceItemId } from './login/webview/vue/types'
 import { authHelpUrl } from './shared/constants'
-import { isCloud9, getIdeProperties } from './shared/extensionUtilities'
+import { getIdeProperties } from './shared/extensionUtilities'
 import { telemetry } from './shared/telemetry/telemetry'
 import { createCommonButtons } from './shared/ui/buttons'
 import { showQuickPick } from './shared/ui/pickerPrompter'
@@ -46,7 +46,7 @@ import { Commands, VsCodeCommandArg, placeholder, vscodeComponent } from './shar
 import { isValidResponse } from './shared/wizards/wizard'
 import { CancellationError } from './shared/utilities/timeoutUtils'
 import { ToolkitError } from './shared/errors'
-import { setContext } from './shared'
+import { getContext, setContext } from './shared/vscode/setContext'
 
 function switchConnections(auth: Auth | TreeNode | unknown) {
     if (!(auth instanceof Auth)) {
@@ -66,12 +66,7 @@ export function registerCommands(context: vscode.ExtensionContext) {
     const addConnection = Commands.register(
         { id: 'aws.toolkit.auth.addConnection', telemetryThrottleMs: false },
         async () => {
-            const c9IamItem = createIamItem()
-            c9IamItem.detail =
-                'Activates working with resources in the Explorer. Requires an access key ID and secret access key.'
-            const items = isCloud9()
-                ? [createSsoItem(), c9IamItem]
-                : [createBuilderIdItem(), createSsoItem(), createIamItem()]
+            const items = [createBuilderIdItem(), createSsoItem(), createIamItem()]
 
             const resp = await showQuickPick(items, {
                 title: localize('aws.auth.addConnection.title', 'Add a Connection to {0}', getIdeProperties().company),
@@ -108,14 +103,12 @@ export function registerCommands(context: vscode.ExtensionContext) {
 
     const manageConnections = Commands.register(
         { id: 'aws.toolkit.auth.manageConnections', compositeKey: { 1: 'source' } },
-        async (_: VsCodeCommandArg, source: AuthSource, serviceToShow?: ServiceItemId) => {
+        async (_: VsCodeCommandArg, source: AuthSource, serviceToShow?: ServiceItemId, blocking?: boolean) => {
             if (_ !== placeholder) {
                 source = AuthSources.vscodeComponent
             }
 
-            // The auth webview page does not make sense to use in C9,
-            // so show the auth quick pick instead.
-            if (isCloud9('any') || isWeb()) {
+            if (isWeb()) {
                 // TODO: CW no longer exists in toolkit. This should be moved to Amazon Q
                 if (source.toLowerCase().includes('codewhisperer')) {
                     // Show CW specific quick pick for CW connections
@@ -131,9 +124,35 @@ export function registerCommands(context: vscode.ExtensionContext) {
             CommonAuthWebview.authSource = source
             await vscode.commands.executeCommand('aws.explorer.setLoginService', serviceToShow)
             await setContext('aws.explorer.showAuthView', true)
+
+            // While the auth view is open, we want to be blocking (if the command has been specified to be blocking)
+            const authWindowPromise = new Promise<void>((resolve) => {
+                if (!blocking) {
+                    resolve()
+                }
+
+                const check = globals.clock.setInterval(() => {
+                    if (getContext('aws.explorer.showAuthView') === false) {
+                        clearInterval(check)
+                        resolve()
+                    }
+                }, 500)
+            })
+
             await vscode.commands.executeCommand('aws.toolkit.AmazonCommonAuth.focus')
+            await authWindowPromise
         }
     )
+
+    if (!isWeb()) {
+        context.subscriptions.push(
+            Commands.register('aws.toolkit.auth.consoleLogin', async (profileName?: string, region?: string) => {
+                // Dynamically import prevent the Node.js modules from being included in the web extension bundle
+                const { authenticateWithConsoleLogin } = await import('./auth/consoleSessionUtils.js')
+                return await authenticateWithConsoleLogin(profileName, region)
+            })
+        )
+    }
 
     context.subscriptions.push(
         addConnection,

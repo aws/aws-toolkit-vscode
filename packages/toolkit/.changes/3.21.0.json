@@ -1,0 +1,10 @@
+{
+	"date": "2024-08-22",
+	"version": "3.21.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Various backend fixes"
+		}
+	]
+}

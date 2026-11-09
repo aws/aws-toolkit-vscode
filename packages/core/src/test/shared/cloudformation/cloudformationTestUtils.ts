@@ -3,8 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { writeFile } from 'fs-extra'
-
+import { fs } from '../../../shared'
 import * as CloudFormation from '../../../shared/cloudformation/cloudformation'
 
 export function createBaseTemplate(): CloudFormation.Template {
@@ -67,7 +66,7 @@ export function createBaseImageResource(): CloudFormation.Resource {
 }
 
 export async function strToYamlFile(str: string, file: string): Promise<void> {
-    await writeFile(file, str, 'utf8')
+    await fs.writeFile(file, str)
 }
 
 export function makeSampleSamTemplateYaml(

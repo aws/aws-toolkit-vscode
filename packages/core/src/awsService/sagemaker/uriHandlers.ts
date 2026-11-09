@@ -1,0 +1,100 @@
+/*!
+ * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+import * as vscode from 'vscode'
+import { SearchParams } from '../../shared/vscode/uriHandler'
+import { deeplinkConnect } from './commands'
+import { ExtContext } from '../../shared/extensions'
+import { telemetry } from '../../shared/telemetry/telemetry'
+
+const amzHeaders = [
+    'X-Amz-Security-Token',
+    'X-Amz-Algorithm',
+    'X-Amz-Date',
+    'X-Amz-SignedHeaders',
+    'X-Amz-Credential',
+    'X-Amz-Expires',
+    'X-Amz-Signature',
+] as const
+
+export function register(ctx: ExtContext) {
+    async function connectHandler(params: ReturnType<typeof parseConnectParams>) {
+        await telemetry.sagemaker_deeplinkConnect.run(async (span) => {
+            // Extract account metadata from space ARN
+            // ARN format: arn:aws:sagemaker:region:account-id:space/domain-id/space-name
+            const arnParts = params.connection_identifier.split(':')
+            span.record({
+                awsAccount: arnParts[4] || undefined,
+                awsRegion: arnParts[3] || undefined,
+            })
+
+            let wsUrl = `${params.ws_url}&cell-number=${encodeURIComponent(params['cell-number'])}`
+
+            for (const header of amzHeaders) {
+                const value = params[header]
+                if (value) {
+                    wsUrl += `&${header}=${encodeURIComponent(value)}`
+                }
+            }
+
+            await deeplinkConnect(
+                ctx,
+                params.connection_identifier,
+                params.session,
+                wsUrl,
+                params.token,
+                params.domain,
+                params.app_type
+            )
+        })
+    }
+
+    async function hyperPodConnectHandler(params: ReturnType<typeof parseHyperpodConnectParams>) {
+        await telemetry.hyperpod_deeplinkConnect.run(async () => {
+            const wsUrl = `${params.streamUrl}&cell-number=${encodeURIComponent(params['cell-number'])}`
+            await deeplinkConnect(
+                ctx,
+                '',
+                params.sessionId,
+                wsUrl,
+                params.sessionToken,
+                '',
+                undefined,
+                params.workspaceName,
+                params.namespace,
+                params.eksClusterArn,
+                false,
+                params.refreshUrl
+            )
+        })
+    }
+
+    return vscode.Disposable.from(
+        ctx.uriHandler.onPath('/connect/sagemaker', connectHandler, parseConnectParams),
+        ctx.uriHandler.onPath('/connect/workspace', hyperPodConnectHandler, parseHyperpodConnectParams)
+    )
+}
+
+export function parseHyperpodConnectParams(query: SearchParams) {
+    const requiredParams = query.getFromKeysOrThrow('sessionId', 'streamUrl', 'sessionToken', 'cell-number')
+    const optionalParams = query.getFromKeys('workspaceName', 'namespace', 'eksClusterArn', 'refreshUrl')
+    return { ...requiredParams, ...optionalParams }
+}
+
+export function parseConnectParams(query: SearchParams) {
+    const requiredParams = query.getFromKeysOrThrow(
+        'connection_identifier',
+        'domain',
+        'user_profile',
+        'session',
+        'ws_url',
+        'cell-number',
+        'token'
+    )
+    const optionalParams = query.getFromKeys('app_type')
+
+    const amzHeaderParams = query.getFromKeys(...amzHeaders)
+    return { ...requiredParams, ...optionalParams, ...amzHeaderParams }
+}

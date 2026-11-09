@@ -1,0 +1,14 @@
+{
+	"date": "2025-02-20",
+	"version": "3.47.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "appBuilder: pass '--no-use-container' when '--use-container' is not selected in quickpick"
+		},
+		{
+			"type": "Feature",
+			"description": "App Builder: Autoload debug configuration for local invoke webview"
+		}
+	]
+}

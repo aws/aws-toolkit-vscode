@@ -12,14 +12,18 @@ import { assertTelemetry, assertTelemetryCurried, tryRegister } from '../../test
 import {
     toggleCodeSuggestions,
     showSecurityScan,
+    showFileScan,
     applySecurityFix,
     showReferenceLog,
     selectCustomizationPrompt,
     reconnect,
     signoutCodeWhisperer,
     toggleCodeScans,
+    rejectFix,
+    ignoreIssue,
+    ignoreAllIssues,
 } from '../../../codewhisperer/commands/basicCommands'
-import { FakeMemento, FakeExtensionContext } from '../../fakeExtensionContext'
+import { FakeExtensionContext } from '../../fakeExtensionContext'
 import { testCommand } from '../../shared/vscode/testUtils'
 import { Command, placeholder } from '../../../shared/vscode/commands2'
 import { SecurityPanelViewProvider } from '../../../codewhisperer/views/securityPanelViewProvider'
@@ -28,8 +32,6 @@ import { stub } from '../../utilities/stubber'
 import { AuthUtil } from '../../../codewhisperer/util/authUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { ExtContext } from '../../../shared/extensions'
-import { get, set } from '../../../codewhisperer/util/commonUtil'
-import { getLogger } from '../../../shared/logger/logger'
 import {
     createAutoScans,
     createAutoSuggestions,
@@ -38,9 +40,9 @@ import {
     createGettingStarted,
     createGitHubNode,
     createLearnMore,
+    createManageSubscription,
     createOpenReferenceLog,
     createReconnect,
-    createSecurityScan,
     createSelectCustomization,
     createSeparator,
     createSettingsNode,
@@ -52,12 +54,18 @@ import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 import { listCodeWhispererCommands } from '../../../codewhisperer/ui/statusBarMenu'
 import { CodeScanIssue, CodeScansState, CodeSuggestionsState, codeScanState } from '../../../codewhisperer/models/model'
 import { cwQuickPickSource } from '../../../codewhisperer/commands/types'
-import { refreshStatusBar } from '../../../codewhisperer/service/inlineCompletionService'
+import { refreshStatusBar } from '../../../codewhisperer/service/statusBar'
 import { focusAmazonQPanel } from '../../../codewhispererChat/commands/registerCommands'
 import * as diagnosticsProvider from '../../../codewhisperer/service/diagnosticsProvider'
-import { SecurityIssueHoverProvider } from '../../../codewhisperer/service/securityIssueHoverProvider'
-import { SecurityIssueCodeActionProvider } from '../../../codewhisperer/service/securityIssueCodeActionProvider'
-import { randomUUID } from '../../../common/crypto'
+import { randomUUID } from '../../../shared/crypto'
+import { assertLogsContain } from '../../globalSetup.test'
+import * as securityIssueWebview from '../../../codewhisperer/views/securityIssue/securityIssueWebview'
+import { IssueItem, SecurityIssueTreeViewProvider } from '../../../codewhisperer/service/securityIssueTreeViewProvider'
+import { SecurityIssueProvider } from '../../../codewhisperer/service/securityIssueProvider'
+import { CodeWhispererSettings } from '../../../codewhisperer/util/codewhispererSettings'
+import { confirm } from '../../../shared'
+import * as commentUtils from '../../../shared/utilities/commentUtils'
+import * as extUtils from '../../../shared/extensionUtilities'
 
 describe('CodeWhisperer-basicCommands', function () {
     let targetCommand: Command<any> & vscode.Disposable
@@ -75,35 +83,16 @@ describe('CodeWhisperer-basicCommands', function () {
         sinon.restore()
     })
 
-    it('test get()', async function () {
-        const fakeMemeto = new FakeMemento()
-        await fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, true)
-
-        let res = get(CodeWhispererConstants.autoTriggerEnabledKey, fakeMemeto)
-        assert.strictEqual(res, true)
-
-        await fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, undefined)
-        res = get(CodeWhispererConstants.autoTriggerEnabledKey, fakeMemeto)
-        assert.strictEqual(res, undefined)
-
-        await fakeMemeto.update(CodeWhispererConstants.autoTriggerEnabledKey, false)
-        res = get(CodeWhispererConstants.autoTriggerEnabledKey, fakeMemeto)
-        assert.strictEqual(res, false)
-    })
-
-    it('test set()', async function () {
-        const fakeMemeto = new FakeMemento()
-        await set(CodeWhispererConstants.autoTriggerEnabledKey, true, fakeMemeto)
-        assert.strictEqual(fakeMemeto.get(CodeWhispererConstants.autoTriggerEnabledKey), true)
-
-        await set(CodeWhispererConstants.autoTriggerEnabledKey, false, fakeMemeto)
-        assert.strictEqual(fakeMemeto.get(CodeWhispererConstants.autoTriggerEnabledKey), false)
+    after(async function () {
+        // disable auto scan after testrun
+        await CodeScansState.instance.setScansEnabled(false)
+        assert.strictEqual(CodeScansState.instance.isScansEnabled(), false)
     })
 
     describe('toggleCodeSuggestion', function () {
         class TestCodeSuggestionsState extends CodeSuggestionsState {
             public constructor(initialState?: boolean) {
-                super(new FakeMemento(), initialState)
+                super(initialState)
             }
         }
 
@@ -114,15 +103,13 @@ describe('CodeWhisperer-basicCommands', function () {
             codeSuggestionsState = new TestCodeSuggestionsState()
         })
 
-        it('has suggestions disabled by default', async function () {
+        it('has suggestions enabled by default', async function () {
             targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
-            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
         })
 
         it('toggles states as expected', async function () {
             targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
-            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
-            await targetCommand.execute(placeholder, cwQuickPickSource)
             assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
             await targetCommand.execute(placeholder, cwQuickPickSource)
             assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
@@ -131,10 +118,7 @@ describe('CodeWhisperer-basicCommands', function () {
         })
 
         it('setSuggestionsEnabled() works as expected', async function () {
-            // initially false
-            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
-
-            await codeSuggestionsState.setSuggestionsEnabled(true)
+            // initially true
             assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
 
             // set new state to current state
@@ -160,21 +144,10 @@ describe('CodeWhisperer-basicCommands', function () {
             assert.strictEqual(eventListener.callCount, 1)
         })
 
-        it('emits aws_modifySetting event on user toggling autoSuggestion - deactivate', async function () {
-            codeSuggestionsState = new TestCodeSuggestionsState(true)
-            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), true)
-
-            targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
-            await targetCommand.execute(placeholder, cwQuickPickSource)
-
+        it('emits aws_modifySetting event on user toggling autoSuggestion - activate', async function () {
+            codeSuggestionsState = new TestCodeSuggestionsState(false)
             assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
-            assertTelemetryCurried('aws_modifySetting')({
-                settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
-                settingState: CodeWhispererConstants.autoSuggestionConfig.deactivated,
-            })
-        })
 
-        it('emits aws_modifySetting event on user toggling autoSuggestion -- activate', async function () {
             targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
             await targetCommand.execute(placeholder, cwQuickPickSource)
 
@@ -182,6 +155,17 @@ describe('CodeWhisperer-basicCommands', function () {
             assertTelemetryCurried('aws_modifySetting')({
                 settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
                 settingState: CodeWhispererConstants.autoSuggestionConfig.activated,
+            })
+        })
+
+        it('emits aws_modifySetting event on user toggling autoSuggestion -- deactivate', async function () {
+            targetCommand = testCommand(toggleCodeSuggestions, codeSuggestionsState)
+            await targetCommand.execute(placeholder, cwQuickPickSource)
+
+            assert.strictEqual(codeSuggestionsState.isSuggestionsEnabled(), false)
+            assertTelemetryCurried('aws_modifySetting')({
+                settingId: CodeWhispererConstants.autoSuggestionConfig.settingId,
+                settingState: CodeWhispererConstants.autoSuggestionConfig.deactivated,
             })
         })
 
@@ -195,7 +179,7 @@ describe('CodeWhisperer-basicCommands', function () {
     describe('toggleCodeScans', function () {
         class TestCodeScansState extends CodeScansState {
             public constructor(initialState?: boolean) {
-                super(new FakeMemento(), initialState)
+                super(initialState)
             }
         }
 
@@ -206,36 +190,36 @@ describe('CodeWhisperer-basicCommands', function () {
             codeScansState = new TestCodeScansState()
         })
 
-        it('has auto scans enabled by default', async function () {
+        it('has auto scans disabled by default', async function () {
             targetCommand = testCommand(toggleCodeScans, codeScansState)
-            assert.strictEqual(codeScansState.isScansEnabled(), true)
+            assert.strictEqual(codeScansState.isScansEnabled(), false)
         })
 
         it('toggles states as expected', async function () {
             targetCommand = testCommand(toggleCodeScans, codeScansState)
-            assert.strictEqual(codeScansState.isScansEnabled(), true)
-            await targetCommand.execute(placeholder, cwQuickPickSource)
             assert.strictEqual(codeScansState.isScansEnabled(), false)
             await targetCommand.execute(placeholder, cwQuickPickSource)
             assert.strictEqual(codeScansState.isScansEnabled(), true)
             await targetCommand.execute(placeholder, cwQuickPickSource)
             assert.strictEqual(codeScansState.isScansEnabled(), false)
+            await targetCommand.execute(placeholder, cwQuickPickSource)
+            assert.strictEqual(codeScansState.isScansEnabled(), true)
         })
 
         it('setScansEnabled() works as expected', async function () {
-            // initially true
-            assert.strictEqual(codeScansState.isScansEnabled(), true)
-
-            await codeScansState.setScansEnabled(false)
+            // initially false
             assert.strictEqual(codeScansState.isScansEnabled(), false)
 
-            // set new state to current state
-            await codeScansState.setScansEnabled(false)
-            assert.strictEqual(codeScansState.isScansEnabled(), false)
-
-            // set to opposite state
             await codeScansState.setScansEnabled(true)
             assert.strictEqual(codeScansState.isScansEnabled(), true)
+
+            // set new state to current state
+            await codeScansState.setScansEnabled(true)
+            assert.strictEqual(codeScansState.isScansEnabled(), true)
+
+            // set to opposite state
+            await codeScansState.setScansEnabled(false)
+            assert.strictEqual(codeScansState.isScansEnabled(), false)
         })
 
         it('triggers event listener when toggled', async function () {
@@ -252,21 +236,7 @@ describe('CodeWhisperer-basicCommands', function () {
             assert.strictEqual(eventListener.callCount, 1)
         })
 
-        it('emits aws_modifySetting event on user toggling autoScans - deactivate', async function () {
-            targetCommand = testCommand(toggleCodeScans, codeScansState)
-            await targetCommand.execute(placeholder, cwQuickPickSource)
-
-            assert.strictEqual(codeScansState.isScansEnabled(), false)
-            assertTelemetryCurried('aws_modifySetting')({
-                settingId: CodeWhispererConstants.autoScansConfig.settingId,
-                settingState: CodeWhispererConstants.autoScansConfig.deactivated,
-            })
-        })
-
-        it('emits aws_modifySetting event on user toggling autoScans -- activate', async function () {
-            codeScansState = new TestCodeScansState(false)
-            assert.strictEqual(codeScansState.isScansEnabled(), false)
-
+        it('emits aws_modifySetting event on user toggling autoScans - activate', async function () {
             targetCommand = testCommand(toggleCodeScans, codeScansState)
             await targetCommand.execute(placeholder, cwQuickPickSource)
 
@@ -274,6 +244,20 @@ describe('CodeWhisperer-basicCommands', function () {
             assertTelemetryCurried('aws_modifySetting')({
                 settingId: CodeWhispererConstants.autoScansConfig.settingId,
                 settingState: CodeWhispererConstants.autoScansConfig.activated,
+            })
+        })
+
+        it('emits aws_modifySetting event on user toggling autoScans -- deactivate', async function () {
+            codeScansState = new TestCodeScansState(true)
+            assert.strictEqual(codeScansState.isScansEnabled(), true)
+
+            targetCommand = testCommand(toggleCodeScans, codeScansState)
+            await targetCommand.execute(placeholder, cwQuickPickSource)
+
+            assert.strictEqual(codeScansState.isScansEnabled(), false)
+            assertTelemetryCurried('aws_modifySetting')({
+                settingId: CodeWhispererConstants.autoScansConfig.settingId,
+                settingState: CodeWhispererConstants.autoScansConfig.deactivated,
             })
         })
 
@@ -316,6 +300,43 @@ describe('CodeWhisperer-basicCommands', function () {
 
         it('includes the "source" in the command execution metric', async function () {
             targetCommand = testCommand(showSecurityScan, mockExtContext, mockSecurityPanelViewProvider, mockClient)
+            await targetCommand.execute(placeholder, cwQuickPickSource)
+            assertTelemetry('vscode_executeCommand', { source: cwQuickPickSource, command: targetCommand.id })
+        })
+    })
+
+    describe('showFileScan', function () {
+        let mockExtensionContext: vscode.ExtensionContext
+        let mockSecurityPanelViewProvider: SecurityPanelViewProvider
+        let mockClient: DefaultCodeWhispererClient
+        let mockExtContext: ExtContext
+
+        beforeEach(async function () {
+            await resetCodeWhispererGlobalVariables()
+            mockExtensionContext = await FakeExtensionContext.create()
+            mockSecurityPanelViewProvider = new SecurityPanelViewProvider(mockExtensionContext)
+            mockClient = stub(DefaultCodeWhispererClient)
+            mockExtContext = await FakeExtensionContext.getFakeExtContext()
+        })
+
+        afterEach(function () {
+            targetCommand?.dispose()
+            sinon.restore()
+            codeScanState.setToNotStarted()
+        })
+
+        it('prompts user to reauthenticate if connection is expired', async function () {
+            targetCommand = testCommand(showFileScan, mockExtContext, mockSecurityPanelViewProvider, mockClient)
+
+            sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(true)
+            const spy = sinon.stub(AuthUtil.instance, 'showReauthenticatePrompt')
+
+            await targetCommand.execute(placeholder, cwQuickPickSource)
+            assert.ok(spy.called)
+        })
+
+        it('includes the "source" in the command execution metric', async function () {
+            targetCommand = testCommand(showFileScan, mockExtContext, mockSecurityPanelViewProvider, mockClient)
             await targetCommand.execute(placeholder, cwQuickPickSource)
             assertTelemetry('vscode_executeCommand', { source: cwQuickPickSource, command: targetCommand.id })
         })
@@ -431,14 +452,13 @@ describe('CodeWhisperer-basicCommands', function () {
         it('shows expected quick pick items when connected', async function () {
             sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
-            sinon.stub(CodeScansState.instance, 'isScansEnabled').returns(false)
+            await CodeScansState.instance.setScansEnabled(false)
             getTestWindow().onDidShowQuickPick((e) => {
                 e.assertContainsItems(
-                    createAutoSuggestions(false),
+                    createAutoSuggestions(true),
                     createOpenReferenceLog(),
                     createGettingStarted(),
                     createAutoScans(false),
-                    createSecurityScan(),
                     switchToAmazonQNode(),
                     ...genericItems(),
                     createSettingsNode(),
@@ -454,15 +474,14 @@ describe('CodeWhisperer-basicCommands', function () {
             sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
             sinon.stub(AuthUtil.instance, 'isValidEnterpriseSsoInUse').returns(true)
             sinon.stub(AuthUtil.instance, 'isCustomizationFeatureEnabled').value(true)
-            sinon.stub(CodeScansState.instance, 'isScansEnabled').returns(false)
+            await CodeScansState.instance.setScansEnabled(false)
 
             getTestWindow().onDidShowQuickPick(async (e) => {
                 e.assertContainsItems(
-                    createAutoSuggestions(false),
+                    createAutoSuggestions(true),
                     createOpenReferenceLog(),
                     createGettingStarted(),
                     createAutoScans(false),
-                    createSecurityScan(),
                     createSelectCustomization(),
                     switchToAmazonQNode(),
                     ...genericItems(),
@@ -482,21 +501,58 @@ describe('CodeWhisperer-basicCommands', function () {
             getTestWindow().onDidShowQuickPick(async (e) => {
                 e.assertItems([
                     createSeparator('Inline Suggestions'),
-                    createAutoSuggestions(false),
+                    createAutoSuggestions(true),
                     createOpenReferenceLog(),
                     createGettingStarted(),
-                    createSeparator('Security Scans'),
-                    createSecurityScan(),
+                    createSeparator('Code Reviews'),
                     createSeparator('Other Features'),
                     switchToAmazonQNode(),
                     createSeparator('Connect / Help'),
                     ...genericItems(),
                     createSeparator(),
                     createSettingsNode(),
+                    createManageSubscription(),
                     createSignout(),
                 ])
                 e.dispose() // skip needing to select an item to continue
             })
+            await listCodeWhispererCommands.execute()
+        })
+
+        it('includes sign out when connected and not in SageMaker', async function () {
+            sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
+            sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(false)
+            sinon.stub(extUtils, 'isSageMaker').value(false)
+            await CodeScansState.instance.setScansEnabled(false)
+
+            getTestWindow().onDidShowQuickPick((e) => {
+                e.assertContainsItems(
+                    createAutoSuggestions(true),
+                    createOpenReferenceLog(),
+                    createGettingStarted(),
+                    createAutoScans(false),
+                    switchToAmazonQNode(),
+                    ...genericItems(),
+                    createSettingsNode(),
+                    createManageSubscription(),
+                    createSignout()
+                )
+                e.dispose()
+            })
+
+            await listCodeWhispererCommands.execute()
+        })
+
+        it('shows expected items when connection is expired and in SageMaker', async function () {
+            sinon.stub(AuthUtil.instance, 'isConnected').returns(true)
+            sinon.stub(AuthUtil.instance, 'isConnectionExpired').returns(true)
+            sinon.stub(extUtils, 'isSageMaker').value(true)
+
+            getTestWindow().onDidShowQuickPick((e) => {
+                e.assertContainsItems(createReconnect(), createLearnMore(), ...genericItems())
+                e.dispose()
+            })
+
             await listCodeWhispererCommands.execute()
         })
     })
@@ -509,6 +565,7 @@ describe('CodeWhisperer-basicCommands', function () {
         let removeDiagnosticMock: sinon.SinonStub
         let removeIssueMock: sinon.SinonStub
         let codeScanIssue: CodeScanIssue
+        let showTextDocumentMock: sinon.SinonStub
 
         beforeEach(function () {
             sandbox = sinon.createSandbox()
@@ -520,6 +577,7 @@ describe('CodeWhisperer-basicCommands', function () {
             codeScanIssue = createCodeScanIssue({
                 findingId: randomUUID(),
             })
+            showTextDocumentMock = sinon.stub()
         })
 
         afterEach(function () {
@@ -537,8 +595,8 @@ describe('CodeWhisperer-basicCommands', function () {
             applyEditMock.resolves(true)
             sandbox.stub(vscode.workspace, 'applyEdit').value(applyEditMock)
             sandbox.stub(diagnosticsProvider, 'removeDiagnostic').value(removeDiagnosticMock)
-            sandbox.stub(SecurityIssueHoverProvider.instance, 'removeIssue').value(removeIssueMock)
-            sandbox.stub(SecurityIssueCodeActionProvider.instance, 'removeIssue').value(removeIssueMock)
+            sandbox.stub(SecurityIssueProvider.instance, 'removeIssue').value(removeIssueMock)
+            sandbox.stub(vscode.window, 'showTextDocument').value(showTextDocumentMock)
 
             targetCommand = testCommand(applySecurityFix)
             codeScanIssue.suggestedFixes = [
@@ -557,49 +615,7 @@ describe('CodeWhisperer-basicCommands', function () {
             )
             assert.ok(applyEditMock.calledOnce)
             assert.ok(removeDiagnosticMock.calledOnceWith(textDocumentMock.uri, codeScanIssue))
-            assert.ok(removeIssueMock.calledTwice)
-
-            assertTelemetry('codewhisperer_codeScanIssueApplyFix', {
-                detectorId: codeScanIssue.detectorId,
-                findingId: codeScanIssue.findingId,
-                component: 'hover',
-                result: 'Succeeded',
-            })
-        })
-
-        it('should call applySecurityFix command successfully but not remove issues if auto-scans is disabled', async function () {
-            const fileName = 'sample.py'
-            const textDocumentMock = createMockDocument('first line\n second line\n fourth line', fileName)
-
-            openTextDocumentMock.resolves(textDocumentMock)
-            sandbox.stub(vscode.workspace, 'openTextDocument').value(openTextDocumentMock)
-
-            sandbox.stub(vscode.WorkspaceEdit.prototype, 'replace').value(replaceMock)
-            applyEditMock.resolves(true)
-            sandbox.stub(vscode.workspace, 'applyEdit').value(applyEditMock)
-            sandbox.stub(diagnosticsProvider, 'removeDiagnostic').value(removeDiagnosticMock)
-            sandbox.stub(SecurityIssueHoverProvider.instance, 'removeIssue').value(removeIssueMock)
-            sandbox.stub(SecurityIssueCodeActionProvider.instance, 'removeIssue').value(removeIssueMock)
-            await CodeScansState.instance.setScansEnabled(false)
-
-            targetCommand = testCommand(applySecurityFix)
-            codeScanIssue.suggestedFixes = [
-                {
-                    description: 'fix',
-                    code: '@@ -1,3 +1,3 @@\n first line\n- second line\n+ third line\n  fourth line',
-                },
-            ]
-            await targetCommand.execute(codeScanIssue, fileName, 'hover')
-            assert.ok(
-                replaceMock.calledOnceWith(
-                    textDocumentMock.uri,
-                    new vscode.Range(0, 0, 2, 12),
-                    'first line\n third line\n fourth line'
-                )
-            )
-            assert.ok(applyEditMock.calledOnce)
-            assert.ok(removeDiagnosticMock.notCalled)
-            assert.ok(removeIssueMock.notCalled)
+            assert.ok(removeIssueMock.calledOnce)
 
             assertTelemetry('codewhisperer_codeScanIssueApplyFix', {
                 detectorId: codeScanIssue.detectorId,
@@ -644,8 +660,8 @@ describe('CodeWhisperer-basicCommands', function () {
             applyEditMock.resolves(true)
             sandbox.stub(vscode.workspace, 'applyEdit').value(applyEditMock)
             sandbox.stub(diagnosticsProvider, 'removeDiagnostic').value(removeDiagnosticMock)
-            sandbox.stub(SecurityIssueHoverProvider.instance, 'removeIssue').value(removeIssueMock)
-            sandbox.stub(SecurityIssueCodeActionProvider.instance, 'removeIssue').value(removeIssueMock)
+            sandbox.stub(SecurityIssueProvider.instance, 'removeIssue').value(removeIssueMock)
+            sandbox.stub(vscode.window, 'showTextDocument').value(showTextDocumentMock)
 
             targetCommand = testCommand(applySecurityFix)
             codeScanIssue.suggestedFixes = [
@@ -667,7 +683,6 @@ describe('CodeWhisperer-basicCommands', function () {
             openTextDocumentMock.resolves(textDocumentMock)
 
             sandbox.stub(vscode.workspace, 'openTextDocument').value(openTextDocumentMock)
-            const loggerStub = sinon.stub(getLogger(), 'error')
 
             sinon.stub(vscode.WorkspaceEdit.prototype, 'replace').value(replaceMock)
             applyEditMock.resolves(false)
@@ -683,9 +698,7 @@ describe('CodeWhisperer-basicCommands', function () {
             await targetCommand.execute(codeScanIssue, fileName, 'quickfix')
 
             assert.ok(replaceMock.calledOnce)
-            assert.ok(loggerStub.calledOnce)
-            const actual = loggerStub.getCall(0).args[0]
-            assert.strictEqual(actual, 'Apply fix command failed. Error: Failed to apply edit to the workspace.')
+            assertLogsContain('Apply fix command failed. Error: Failed to apply edit to the workspace.', true, 'error')
             assertTelemetry('codewhisperer_codeScanIssueApplyFix', {
                 detectorId: codeScanIssue.detectorId,
                 findingId: codeScanIssue.findingId,
@@ -693,6 +706,276 @@ describe('CodeWhisperer-basicCommands', function () {
                 result: 'Failed',
                 reason: 'Error',
                 reasonDesc: 'Failed to apply edit to the workspace.',
+            })
+        })
+
+        it('should apply the edit at the correct range', async function () {
+            const fileName = 'sample.py'
+            const textDocumentMock = createMockDocument(
+                `from flask import app
+
+
+@app.route('/')
+def execute_input_noncompliant():
+    from flask import request
+    module_version = request.args.get("module_version")
+    # Noncompliant: executes unsanitized inputs.
+    exec("import urllib%s as urllib" % module_version)
+# {/fact}
+
+
+# {fact rule=code-injection@v1.0 defects=0}
+from flask import app
+
+
+@app.route('/')
+def execute_input_compliant():
+    from flask import request
+    module_version = request.args.get("module_version")
+    # Compliant: executes sanitized inputs.
+    exec("import urllib%d as urllib" % int(module_version))
+# {/fact}`,
+                fileName
+            )
+            openTextDocumentMock.resolves(textDocumentMock)
+            sandbox.stub(vscode.workspace, 'openTextDocument').value(openTextDocumentMock)
+
+            sandbox.stub(vscode.WorkspaceEdit.prototype, 'replace').value(replaceMock)
+            applyEditMock.resolves(true)
+            sandbox.stub(vscode.workspace, 'applyEdit').value(applyEditMock)
+            sandbox.stub(diagnosticsProvider, 'removeDiagnostic').value(removeDiagnosticMock)
+            sandbox.stub(SecurityIssueProvider.instance, 'removeIssue').value(removeIssueMock)
+            sandbox.stub(vscode.window, 'showTextDocument').value(showTextDocumentMock)
+
+            targetCommand = testCommand(applySecurityFix)
+            codeScanIssue.suggestedFixes = [
+                {
+                    code: `@@ -6,4 +6,5 @@
+     from flask import request
+     module_version = request.args.get("module_version")
+     # Noncompliant: executes unsanitized inputs.
+-    exec("import urllib%d as urllib" % int(module_version))
++    __import__("urllib" + module_version)
++#import importlib`,
+                    description: 'dummy',
+                },
+            ]
+            await targetCommand.execute(codeScanIssue, fileName, 'webview')
+            assert.ok(
+                replaceMock.calledOnceWith(
+                    textDocumentMock.uri,
+                    new vscode.Range(5, 0, 8, 54),
+                    `    from flask import request
+    module_version = request.args.get("module_version")
+    # Noncompliant: executes unsanitized inputs.
+    __import__("urllib" + module_version)
+#import importlib`
+                )
+            )
+            assert.ok(applyEditMock.calledOnce)
+            assert.ok(removeDiagnosticMock.calledOnceWith(textDocumentMock.uri, codeScanIssue))
+            assert.ok(removeIssueMock.calledOnce)
+
+            assertTelemetry('codewhisperer_codeScanIssueApplyFix', {
+                detectorId: codeScanIssue.detectorId,
+                findingId: codeScanIssue.findingId,
+                component: 'webview',
+                result: 'Succeeded',
+            })
+        })
+    })
+
+    // TODO: Add integ test for generateTest
+
+    describe('rejectFix', function () {
+        let mockExtensionContext: vscode.ExtensionContext
+        let sandbox: sinon.SinonSandbox
+        let filePath: string
+        let codeScanIssue: CodeScanIssue
+        let issueItem: IssueItem
+        let updateSecurityIssueWebviewMock: sinon.SinonStub
+        let updateIssueMock: sinon.SinonStub
+        let refreshTreeViewMock: sinon.SinonStub
+
+        beforeEach(async function () {
+            sandbox = sinon.createSandbox()
+            filePath = 'dummy/file.py'
+            codeScanIssue = createCodeScanIssue({
+                findingId: randomUUID(),
+                suggestedFixes: [{ code: 'diff', description: 'description' }],
+            })
+            issueItem = new IssueItem(filePath, codeScanIssue)
+            updateSecurityIssueWebviewMock = sinon.stub()
+            updateIssueMock = sinon.stub()
+            refreshTreeViewMock = sinon.stub()
+            mockExtensionContext = await FakeExtensionContext.create()
+        })
+
+        afterEach(function () {
+            sandbox.restore()
+        })
+
+        it('should call rejectFix command successfully', async function () {
+            sinon.stub(securityIssueWebview, 'updateSecurityIssueWebview').value(updateSecurityIssueWebviewMock)
+            sinon.stub(SecurityIssueProvider.instance, 'updateIssue').value(updateIssueMock)
+            sinon.stub(SecurityIssueTreeViewProvider.instance, 'refresh').value(refreshTreeViewMock)
+            targetCommand = testCommand(rejectFix, mockExtensionContext)
+            await targetCommand.execute(codeScanIssue, filePath)
+
+            const expectedUpdatedIssue = { ...codeScanIssue, suggestedFixes: [] }
+            assert.ok(updateIssueMock.calledWith(expectedUpdatedIssue, filePath))
+            assert.ok(refreshTreeViewMock.calledOnce)
+        })
+
+        it('should call rejectFix from tree view item', async function () {
+            sinon.stub(securityIssueWebview, 'updateSecurityIssueWebview').value(updateSecurityIssueWebviewMock)
+            sinon.stub(SecurityIssueProvider.instance, 'updateIssue').value(updateIssueMock)
+            sinon.stub(SecurityIssueTreeViewProvider.instance, 'refresh').value(refreshTreeViewMock)
+            targetCommand = testCommand(rejectFix, mockExtensionContext)
+            await targetCommand.execute(issueItem, filePath)
+
+            const expectedUpdatedIssue = { ...codeScanIssue, suggestedFixes: [] }
+            assert.ok(updateIssueMock.calledWith(expectedUpdatedIssue, filePath))
+            assert.ok(refreshTreeViewMock.calledOnce)
+        })
+    })
+
+    describe('ignoreAllIssues', function () {
+        let sandbox: sinon.SinonSandbox
+        let codeScanIssue: CodeScanIssue
+        let issueItem: IssueItem
+        let addToIgnoredSecurityIssuesListMock: sinon.SinonStub
+        let closeSecurityIssueWebviewMock: sinon.SinonStub
+
+        beforeEach(function () {
+            sandbox = sinon.createSandbox()
+            codeScanIssue = createCodeScanIssue()
+            issueItem = new IssueItem('dummy/file.py', codeScanIssue)
+            addToIgnoredSecurityIssuesListMock = sinon.stub()
+            closeSecurityIssueWebviewMock = sinon.stub()
+        })
+
+        afterEach(function () {
+            sandbox.restore()
+        })
+
+        it('should call ignoreAllIssues command successfully', async function () {
+            sinon
+                .stub(CodeWhispererSettings.instance, 'addToIgnoredSecurityIssuesList')
+                .value(addToIgnoredSecurityIssuesListMock)
+            sinon.stub(securityIssueWebview, 'closeSecurityIssueWebview').value(closeSecurityIssueWebviewMock)
+            targetCommand = testCommand(ignoreAllIssues)
+            getTestWindow().onDidShowMessage((m) => {
+                if (m.message === CodeWhispererConstants.ignoreAllIssuesMessage(codeScanIssue.title)) {
+                    m.selectItem(confirm)
+                }
+            })
+            await targetCommand.execute(codeScanIssue, 'webview')
+
+            assert.ok(addToIgnoredSecurityIssuesListMock.calledWith(codeScanIssue.title))
+            assert.ok(closeSecurityIssueWebviewMock.calledOnce)
+
+            assertTelemetry('codewhisperer_codeScanIssueIgnore', {
+                component: 'webview',
+                detectorId: codeScanIssue.detectorId,
+                findingId: codeScanIssue.findingId,
+                ruleId: codeScanIssue.ruleId,
+                variant: 'all',
+                result: 'Succeeded',
+            })
+        })
+
+        it('should call ignoreAllIssues from tree view item', async function () {
+            sinon
+                .stub(CodeWhispererSettings.instance, 'addToIgnoredSecurityIssuesList')
+                .value(addToIgnoredSecurityIssuesListMock)
+            targetCommand = testCommand(ignoreAllIssues)
+            getTestWindow().onDidShowMessage((m) => {
+                if (m.message === CodeWhispererConstants.ignoreAllIssuesMessage(codeScanIssue.title)) {
+                    m.selectItem(confirm)
+                }
+            })
+            await targetCommand.execute(issueItem)
+
+            assert.ok(addToIgnoredSecurityIssuesListMock.calledWith(codeScanIssue.title))
+
+            assertTelemetry('codewhisperer_codeScanIssueIgnore', {
+                component: 'tree',
+                detectorId: codeScanIssue.detectorId,
+                findingId: codeScanIssue.findingId,
+                ruleId: codeScanIssue.ruleId,
+                variant: 'all',
+                result: 'Succeeded',
+            })
+        })
+    })
+
+    describe('ignoreIssue', function () {
+        let sandbox: sinon.SinonSandbox
+        let codeScanIssue: CodeScanIssue
+        let issueItem: IssueItem
+        let mockDocument: vscode.TextDocument
+        let insertCommentMock: sinon.SinonStub
+        let showTextDocumentMock: sinon.SinonStub
+
+        beforeEach(function () {
+            sandbox = sinon.createSandbox()
+            codeScanIssue = createCodeScanIssue()
+            issueItem = new IssueItem('dummy/file.py', codeScanIssue)
+            mockDocument = createMockDocument()
+            insertCommentMock = sinon.stub()
+            showTextDocumentMock = sinon.stub()
+        })
+
+        afterEach(function () {
+            sandbox.restore()
+        })
+
+        it('should call ignoreIssue command successfully', async function () {
+            sinon.stub(vscode.workspace, 'openTextDocument').resolves(mockDocument)
+            sinon.stub(commentUtils, 'insertCommentAboveLine').value(insertCommentMock)
+            sinon.stub(vscode.window, 'showTextDocument').value(showTextDocumentMock)
+            targetCommand = testCommand(ignoreIssue)
+            await targetCommand.execute(codeScanIssue, 'filepath', 'webview')
+
+            assert.ok(
+                insertCommentMock.calledOnceWith(
+                    mockDocument,
+                    codeScanIssue.startLine,
+                    CodeWhispererConstants.amazonqIgnoreNextLine
+                )
+            )
+
+            assertTelemetry('codewhisperer_codeScanIssueIgnore', {
+                component: 'webview',
+                detectorId: codeScanIssue.detectorId,
+                findingId: codeScanIssue.findingId,
+                ruleId: codeScanIssue.ruleId,
+                result: 'Succeeded',
+            })
+        })
+
+        it('should call ignoreIssue from tree view item', async function () {
+            sinon.stub(vscode.workspace, 'openTextDocument').resolves(mockDocument)
+            sinon.stub(commentUtils, 'insertCommentAboveLine').value(insertCommentMock)
+            sinon.stub(vscode.window, 'showTextDocument').value(showTextDocumentMock)
+            targetCommand = testCommand(ignoreIssue)
+            await targetCommand.execute(issueItem)
+
+            assert.ok(
+                insertCommentMock.calledOnceWith(
+                    mockDocument,
+                    codeScanIssue.startLine,
+                    CodeWhispererConstants.amazonqIgnoreNextLine
+                )
+            )
+
+            assertTelemetry('codewhisperer_codeScanIssueIgnore', {
+                component: 'tree',
+                detectorId: codeScanIssue.detectorId,
+                findingId: codeScanIssue.findingId,
+                ruleId: codeScanIssue.ruleId,
+                result: 'Succeeded',
             })
         })
     })

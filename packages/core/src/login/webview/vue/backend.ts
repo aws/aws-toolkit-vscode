@@ -16,26 +16,27 @@ import {
     AwsConnection,
     Connection,
     hasScopes,
-    isBuilderIdConnection,
-    isIamConnection,
-    isIdcSsoConnection,
-    isSsoConnection,
     scopesCodeCatalyst,
     scopesCodeWhispererChat,
     scopesSsoAccountAccess,
     SsoConnection,
+    TelemetryMetadata,
 } from '../../../auth/connection'
 import { Auth } from '../../../auth/auth'
 import { StaticProfile, StaticProfileKeyErrorMessage } from '../../../auth/credentials/types'
-import { telemetry } from '../../../shared/telemetry'
+import { telemetry } from '../../../shared/telemetry/telemetry'
+import { AuthAddConnection } from '../../../shared/telemetry/telemetry'
 import { AuthSources } from '../util'
-import { AuthEnabledFeatures, AuthError, AuthFlowState, AuthUiClick, TelemetryMetadata, userCancelled } from './types'
-import { AuthUtil } from '../../../codewhisperer/util/authUtil'
+import { AuthEnabledFeatures, AuthError, AuthFlowState, AuthUiClick, userCancelled } from './types'
 import { DevSettings } from '../../../shared/settings'
 import { AuthSSOServer } from '../../../auth/sso/server'
 import { getLogger } from '../../../shared/logger/logger'
+import { isValidUrl } from '../../../shared/utilities/uriUtils'
+import { RegionProfile } from '../../../codewhisperer/models/model'
+import { ProfileSwitchIntent } from '../../../codewhisperer/region/regionProfileManager'
 
 export abstract class CommonAuthWebview extends VueWebview {
+    private readonly className = 'CommonAuthWebview'
     private metricMetadata: TelemetryMetadata = {}
 
     // authSource should be set by whatever triggers the auth page flow.
@@ -60,6 +61,20 @@ export abstract class CommonAuthWebview extends VueWebview {
 
     public getRegions(): Region[] {
         return globals.regionProvider.getRegions().reverse()
+    }
+
+    /**
+     * Called when the UI load process is completed, regardless of success or failure
+     *
+     * @param errorMessage IF an error is caught on the frontend, this is the message. It will result in a failure metric.
+     *                     Otherwise we assume success.
+     */
+    public setUiReady(state: 'login' | 'reauth' | 'selectProfile', errorMessage?: string) {
+        if (errorMessage) {
+            this.setLoadFailure(state, errorMessage)
+        } else {
+            this.setDidLoad(state)
+        }
     }
 
     /**
@@ -128,7 +143,13 @@ export abstract class CommonAuthWebview extends VueWebview {
             }
         }
 
-        const result = await runSetup()
+        // Add context to our telemetry by adding the methodName argument to the function stack
+        const result = await telemetry.function_call.run(
+            async () => {
+                return runSetup()
+            },
+            { emit: false, functionId: { name: methodName, class: this.className } }
+        )
 
         if (postMetrics) {
             this.storeMetricMetadata(this.getResultForMetrics(result))
@@ -149,6 +170,8 @@ export abstract class CommonAuthWebview extends VueWebview {
     async getAuthenticatedCredentialsError(data: StaticProfile): Promise<StaticProfileKeyErrorMessage | undefined> {
         return Auth.instance.authenticateData(data)
     }
+
+    abstract startConsoleCredentialSetup(profileName: string, region: string): Promise<AuthError | undefined>
 
     abstract startIamCredentialSetup(
         profileName: string,
@@ -184,9 +207,12 @@ export abstract class CommonAuthWebview extends VueWebview {
 
     abstract signout(): Promise<void>
 
-    async listSsoConnections(): Promise<SsoConnection[]> {
-        return (await Auth.instance.listConnections()).filter((conn) => isSsoConnection(conn)) as SsoConnection[]
-    }
+    /** List current connections known by the extension for the purpose of preventing duplicates. */
+    abstract listSsoConnections(): Promise<SsoConnection[]>
+
+    abstract listRegionProfiles(): Promise<RegionProfile[] | string>
+
+    abstract selectRegionProfile(profile: RegionProfile, source: ProfileSwitchIntent): Promise<void>
 
     /**
      * Emit stored metric metadata. Does not reset the stored metric metadata, because it
@@ -201,7 +227,7 @@ export abstract class CommonAuthWebview extends VueWebview {
         telemetry.auth_addConnection.emit({
             ...this.metricMetadata,
             source: this.authSource,
-        })
+        } as AuthAddConnection)
     }
 
     /**
@@ -240,33 +266,6 @@ export abstract class CommonAuthWebview extends VueWebview {
     }
 
     /**
-     * Get metadata about the current auth for reauthentication telemetry.
-     */
-    getMetadataForExistingConn(conn = AuthUtil.instance.conn): TelemetryMetadata {
-        if (conn === undefined) {
-            return {}
-        }
-
-        if (isIdcSsoConnection(conn)) {
-            return {
-                credentialSourceId: 'iamIdentityCenter',
-                credentialStartUrl: conn?.startUrl,
-                awsRegion: conn?.ssoRegion,
-            }
-        } else if (isBuilderIdConnection(conn)) {
-            return {
-                credentialSourceId: 'awsId',
-            }
-        } else if (isIamConnection(conn)) {
-            return {
-                credentialSourceId: 'sharedCredentials',
-            }
-        }
-
-        throw new Error('getMetadataForExistingConn() called with unknown connection type')
-    }
-
-    /**
      * The metric when certain elements in the webview are clicked.
      */
     emitUiClick(id: AuthUiClick) {
@@ -293,11 +292,20 @@ export abstract class CommonAuthWebview extends VueWebview {
         return authEnabledFeatures.join(',')
     }
 
-    getDefaultStartUrl() {
-        return DevSettings.instance.get('autofillStartUrl', '')
+    getDefaultSsoProfile(): { startUrl: string; region: string } {
+        const devSettings = DevSettings.instance.get('autofillStartUrl', '')
+        if (devSettings) {
+            return { startUrl: devSettings, region: 'us-east-1' }
+        }
+
+        return globals.globalState.tryGet('recentSso', Object, { startUrl: '', region: 'us-east-1' })
     }
 
     cancelAuthFlow() {
         AuthSSOServer.lastInstance?.cancelCurrentFlow()
+    }
+
+    validateUrl(url: string) {
+        return isValidUrl(url)
     }
 }

@@ -9,7 +9,7 @@ import fs from '../../shared/fs/fs'
 import { ToolkitError, isUserCancelledError } from '../../shared/errors'
 import { assertTreeItem } from '../shared/treeview/testUtil'
 import { getTestWindow } from '../shared/vscode/window'
-import { assertTelemetry, captureEventOnce, getMetrics } from '../testUtil'
+import { assertTelemetry, captureEventOnce } from '../testUtil'
 import { createBuilderIdProfile, createSsoProfile, createTestAuth } from './testUtil'
 import { toCollection } from '../../shared/utilities/asyncCollection'
 import globals from '../../shared/extensionGlobals'
@@ -19,7 +19,6 @@ import { UserCredentialsUtils } from '../../shared/credentials/userCredentialsUt
 import { getCredentialsFilename } from '../../auth/credentials/sharedCredentialsFile'
 import { Connection, isIamConnection, isSsoConnection, scopesSsoAccountAccess } from '../../auth/connection'
 import { AuthNode, createDeleteConnectionButton, promptForConnection } from '../../auth/utils'
-import { isMinVscode } from '../../shared/vscode/env'
 
 const ssoProfile = createSsoProfile()
 const scopedSsoProfile = createSsoProfile({ scopes: ['foo'] })
@@ -28,7 +27,7 @@ describe('Auth', function () {
     let auth: ReturnType<typeof createTestAuth>
 
     beforeEach(function () {
-        auth = createTestAuth()
+        auth = createTestAuth(globals.globalState)
     })
 
     it('can create a new sso connection', async function () {
@@ -54,6 +53,35 @@ describe('Auth', function () {
         const conn = await auth.createConnection(ssoProfile)
         await auth.deleteConnection({ id: conn.id })
         assert.strictEqual((await auth.listConnections()).length, 0)
+        assertTelemetry('auth_modifyConnection', [
+            {
+                action: 'addProfile',
+                connectionState: 'unauthenticated',
+                source: 'Auth#createConnection:ProfileStore#addProfile',
+            },
+            {
+                action: 'getProfile',
+                connectionState: 'unauthenticated',
+                source: 'Auth#createConnection,updateConnectionState:ProfileStore#getProfileOrThrow',
+            },
+            {
+                action: 'updateConnectionState',
+                connectionState: 'valid',
+                source: 'Auth#createConnection,updateConnectionState',
+                sessionDuration: undefined,
+            },
+            {
+                action: 'getProfile',
+                connectionState: 'valid',
+                source: 'Auth#deleteConnection,invalidateConnection:ProfileStore#getProfileOrThrow',
+            },
+            {
+                action: 'updateConnectionState',
+                connectionState: 'invalid',
+                source: 'Auth#deleteConnection,invalidateConnection,updateConnectionState',
+                sessionDuration: 11223355,
+            },
+        ])
     })
 
     it('can delete an active connection', async function () {
@@ -63,6 +91,35 @@ describe('Auth', function () {
         await auth.deleteConnection(auth.activeConnection)
         assert.strictEqual((await auth.listConnections()).length, 0)
         assert.strictEqual(auth.activeConnection, undefined)
+        assertTelemetry('auth_modifyConnection', [
+            {
+                action: 'addProfile',
+                connectionState: 'unauthenticated',
+                source: 'Auth#createConnection:ProfileStore#addProfile',
+            },
+            {
+                action: 'getProfile',
+                connectionState: 'unauthenticated',
+                source: 'Auth#createConnection,updateConnectionState:ProfileStore#getProfileOrThrow',
+            },
+            {
+                action: 'updateConnectionState',
+                connectionState: 'valid',
+                source: 'Auth#createConnection,updateConnectionState',
+                sessionDuration: undefined,
+            },
+            {
+                action: 'getProfile',
+                connectionState: 'valid',
+                source: 'Auth#useConnection,refreshConnectionState,validateConnection,updateConnectionState:ProfileStore#getProfileOrThrow',
+            },
+            {
+                action: 'updateConnectionState',
+                connectionState: 'invalid',
+                source: 'Auth#deleteConnection,logout,invalidateConnection,updateConnectionState',
+                sessionDuration: 11223355,
+            },
+        ])
     })
 
     it('does not throw when creating a duplicate connection', async function () {
@@ -84,6 +141,35 @@ describe('Auth', function () {
         await auth.logout()
         assert.strictEqual(auth.activeConnection, undefined)
         assert.strictEqual(auth.activeConnectionEvents.last, undefined)
+        assertTelemetry('auth_modifyConnection', [
+            {
+                action: 'addProfile',
+                connectionState: 'unauthenticated',
+                source: 'Auth#createConnection:ProfileStore#addProfile',
+            },
+            {
+                action: 'getProfile',
+                connectionState: 'unauthenticated',
+                source: 'Auth#createConnection,updateConnectionState:ProfileStore#getProfileOrThrow',
+            },
+            {
+                action: 'updateConnectionState',
+                connectionState: 'valid',
+                source: 'Auth#createConnection,updateConnectionState',
+                sessionDuration: undefined,
+            },
+            {
+                action: 'getProfile',
+                connectionState: 'valid',
+                source: 'Auth#useConnection,refreshConnectionState,validateConnection,updateConnectionState:ProfileStore#getProfileOrThrow',
+            },
+            {
+                action: 'updateConnectionState',
+                connectionState: 'invalid',
+                source: 'Auth#logout,invalidateConnection,updateConnectionState',
+                sessionDuration: 11223355,
+            },
+        ])
     })
 
     describe('useConnection', function () {
@@ -247,6 +333,7 @@ describe('Auth', function () {
             const networkError = new ToolkitError('test', { code: 'ETIMEDOUT' })
             const expectedError = new ToolkitError('Failed to update connection due to networking issues', {
                 cause: networkError,
+                code: 'ETIMEDOUT',
             })
             const conn = await auth.createConnection(ssoProfile)
             auth.getTestTokenProvider(conn)?.getToken.rejects(networkError)
@@ -256,15 +343,10 @@ describe('Auth', function () {
             assert.strictEqual(auth.getConnectionState(conn), 'valid')
         })
 
-        it('reauthentication is indicated in metric', async function () {
+        it('reauthentication flag is set at start of reauth process', async function () {
             const conn = await auth.createInvalidSsoConnection(ssoProfile)
             await auth.reauthenticate(conn)
-            assertTelemetry('aws_loginWithBrowser', {
-                result: 'Succeeded',
-                isReAuth: true,
-                credentialStartUrl: ssoProfile.startUrl,
-            })
-            assert.strictEqual(getMetrics('aws_loginWithBrowser').length, 1)
+            auth.getTestTokenProvider(conn).createToken.calledWith({ isReAuth: true })
         })
     })
 
@@ -488,6 +570,47 @@ describe('Auth', function () {
             assert.strictEqual((await promptForConnection(auth))?.id, conn.id)
         })
 
+        it('shows a second quickPick for linked IAM profiles when selecting an SSO connection', async function () {
+            let quickPickCount = 0
+            getTestWindow().onDidShowQuickPick(async (picker) => {
+                await picker.untilReady()
+                quickPickCount++
+
+                if (quickPickCount === 1) {
+                    // First picker: select the SSO connection
+                    const connItem = picker.findItemOrThrow(/IAM Identity Center/)
+                    picker.acceptItem(connItem)
+                } else if (quickPickCount === 2) {
+                    // Second picker: select the linked IAM profile
+                    const linkedItem = picker.findItemOrThrow(/TestRole/)
+                    picker.acceptItem(linkedItem)
+                }
+            })
+
+            const linkedSsoProfile = createSsoProfile({ scopes: scopesSsoAccountAccess })
+            const conn = await auth.createConnection(linkedSsoProfile)
+
+            // Mock the SSOClient to return account roles
+            auth.ssoClient.listAccounts.returns(
+                toCollection(async function* () {
+                    yield [{ accountId: '123456789012' }]
+                })
+            )
+            auth.ssoClient.listAccountRoles.callsFake(() =>
+                toCollection(async function* () {
+                    yield [{ accountId: '123456789012', roleName: 'TestRole' }]
+                })
+            )
+
+            // Should get a linked IAM profile back, not the SSO connection
+            const result = await promptForConnection(auth)
+            assert.ok(isIamConnection(result || undefined), 'Expected an IAM connection to be returned')
+            assert.ok(
+                result?.id.startsWith(`sso:${conn.id}#`),
+                'Expected the IAM connection to be linked to the SSO connection'
+            )
+        })
+
         it('refreshes when clicking the refresh button', async function () {
             getTestWindow().onDidShowQuickPick(async (picker) => {
                 await picker.untilReady()
@@ -503,10 +626,6 @@ describe('Auth', function () {
         })
 
         it('reauthenticates a connection if the user selects an expired one', async function () {
-            if (isMinVscode('1.83.0')) {
-                this.skip()
-            }
-
             getTestWindow().onDidShowQuickPick(async (picker) => {
                 await picker.untilReady()
                 const connItem = picker.findItemOrThrow(/IAM Identity Center/)

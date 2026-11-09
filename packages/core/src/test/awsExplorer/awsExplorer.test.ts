@@ -8,7 +8,7 @@ import * as sinon from 'sinon'
 import { AwsExplorer } from '../../awsexplorer/awsExplorer'
 import { RegionNode } from '../../awsexplorer/regionNode'
 import { RegionProvider } from '../../shared/regions/regionProvider'
-import { FakeExtensionContext, FakeMemento } from '../fakeExtensionContext'
+import { FakeExtensionContext } from '../fakeExtensionContext'
 import {
     createTestRegionProvider,
     DEFAULT_TEST_REGION_CODE,
@@ -32,7 +32,7 @@ describe('AwsExplorer', function () {
         this.skip()
 
         const awsContext = makeFakeAwsContextWithPlaceholderIds({} as any as AWS.Credentials)
-        const regionProvider = createTestRegionProvider({ awsContext, globalState: new FakeMemento() })
+        const regionProvider = createTestRegionProvider({ awsContext })
         await regionProvider.updateExplorerRegions([DEFAULT_TEST_REGION_CODE])
 
         const fakeContext = await FakeExtensionContext.create()

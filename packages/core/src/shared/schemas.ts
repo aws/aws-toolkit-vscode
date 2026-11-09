@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import globals from './extensionGlobals'
 import { activateYamlExtension, YamlExtension } from './extensions/yaml'
 import * as pathutil from '../shared/utilities/pathUtils'
-import { getLogger } from './logger'
+import { getLogger } from './logger/logger'
 import { FileResourceFetcher } from './resourcefetcher/fileResourceFetcher'
 import { getPropertyFromJsonUrl, HttpResourceFetcher } from './resourcefetcher/httpResourceFetcher'
 import { Settings } from './settings'
@@ -18,6 +18,7 @@ import { AWS_SCHEME } from './constants'
 import fs from '../shared/fs/fs'
 import { normalizeVSCodeUri } from './utilities/vsCodeUtils'
 import { telemetry } from './telemetry/telemetry'
+import { JsonSchemasKey } from './globalState'
 
 // Note: this file is currently 12+ MB. When requesting it, specify compression/gzip.
 export const samAndCfnSchemaUrl =
@@ -148,39 +149,7 @@ export async function getDefaultSchemas(): Promise<Schemas | undefined> {
     const devfileSchemaUri = GlobalStorage.devfileSchemaUri()
     const devfileSchemaVersion = await getPropertyFromJsonUrl(devfileManifestUrl, 'tag_name')
 
-    // Sam schema is a superset of Cfn schema, so we can use it for both
-    const samAndCfnSchemaDestinationUri = GlobalStorage.samAndCfnSchemaDestinationUri()
-    const samAndCfnCacheKey = 'samAndCfnSchemaVersion'
-
     const schemas: Schemas = {}
-
-    try {
-        await updateSchemaFromRemoteETag({
-            destination: samAndCfnSchemaDestinationUri,
-            eTag: undefined,
-            url: samAndCfnSchemaUrl,
-            cacheKey: samAndCfnCacheKey,
-            extensionContext: globals.context,
-            title: schemaPrefix + 'cloudformation.schema.json',
-        })
-        schemas['cfn'] = samAndCfnSchemaDestinationUri
-    } catch (e) {
-        getLogger().verbose('Could not download sam/cfn schema: %s', (e as Error).message)
-    }
-
-    try {
-        await updateSchemaFromRemoteETag({
-            destination: samAndCfnSchemaDestinationUri,
-            eTag: undefined,
-            url: samAndCfnSchemaUrl,
-            cacheKey: samAndCfnCacheKey,
-            extensionContext: globals.context,
-            title: schemaPrefix + 'sam.schema.json',
-        })
-        schemas['sam'] = samAndCfnSchemaDestinationUri
-    } catch (e) {
-        getLogger().verbose('Could not download sam/cfn schema: %s', (e as Error).message)
-    }
 
     try {
         await updateSchemaFromRemote({
@@ -188,7 +157,6 @@ export async function getDefaultSchemas(): Promise<Schemas | undefined> {
             version: devfileSchemaVersion,
             url: `https://raw.githubusercontent.com/devfile/api/${devfileSchemaVersion}/schemas/latest/devfile.json`,
             cacheKey: 'devfileSchemaVersion',
-            extensionContext: globals.context,
             title: schemaPrefix + 'devfile.schema.json',
         })
         schemas['devfile'] = devfileSchemaUri
@@ -206,17 +174,15 @@ export async function getDefaultSchemas(): Promise<Schemas | undefined> {
  * @param params.version Remote version
  * @param params.url Url to fetch from
  * @param params.cacheKey Cache key to check version against
- * @param params.extensionContext VSCode extension context
  */
 export async function updateSchemaFromRemote(params: {
     destination: vscode.Uri
     version?: string
     url: string
-    cacheKey: string
-    extensionContext: vscode.ExtensionContext
+    cacheKey: JsonSchemasKey
     title: string
 }): Promise<void> {
-    const cachedVersion = params.extensionContext.globalState.get<string>(params.cacheKey)
+    const cachedVersion = globals.globalState.get<string>(params.cacheKey)
     const outdated = params.version && params.version !== cachedVersion
 
     // Check that the cached file actually can be fetched. Else we might
@@ -230,7 +196,8 @@ export async function updateSchemaFromRemote(params: {
 
     try {
         const httpFetcher = new HttpResourceFetcher(params.url, { showUrl: true })
-        const content = await httpFetcher.get()
+        const resp = await httpFetcher.get()
+        const content = await resp?.text()
 
         if (!content) {
             throw new Error(`failed to resolve schema: ${params.destination}`)
@@ -257,17 +224,15 @@ export async function updateSchemaFromRemote(params: {
  * @param params.eTag E-Tag to send with fetch request. If this matches the url's it means we can use our cache.
  * @param params.url Url to fetch from
  * @param params.cacheKey Cache key to check version against
- * @param params.extensionContext VSCode extension context
  */
 export async function updateSchemaFromRemoteETag(params: {
     destination: vscode.Uri
     eTag?: string
     url: string
-    cacheKey: string
-    extensionContext: vscode.ExtensionContext
+    cacheKey: JsonSchemasKey
     title: string
 }): Promise<void> {
-    const cachedETag = params.extensionContext.globalState.get<string>(params.cacheKey)
+    const cachedETag = globals.globalState.get<string>(params.cacheKey)
 
     // Check that the cached file actually can be fetched. Else we might
     // never update the cache.
@@ -320,8 +285,7 @@ async function doCacheContent(
         destination: vscode.Uri
         version?: string
         url: string
-        cacheKey: string
-        extensionContext: vscode.ExtensionContext
+        cacheKey: JsonSchemasKey
         title: string
     }
 ): Promise<void> {
@@ -329,9 +293,7 @@ async function doCacheContent(
     const dir = vscode.Uri.joinPath(params.destination, '..')
     await fs.mkdir(dir)
     await fs.writeFile(params.destination.fsPath, JSON.stringify(parsedFile))
-    await params.extensionContext.globalState.update(params.cacheKey, params.version).then(undefined, (err) => {
-        getLogger().warn(`schemas: failed to update cache key for "${params.title}": ${err?.message}`)
-    })
+    await globals.globalState.update(params.cacheKey, params.version)
 }
 
 /**

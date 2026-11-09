@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as localizedText from '../../../shared/localizedText'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage, showConfirmationMessage } from '../../../shared/utilities/messages'
 import { IotCertWithPoliciesNode } from '../explorer/iotCertificateNode'
@@ -106,6 +106,6 @@ export async function deleteCertCommand(node: IotCertWithPoliciesNode): Promise<
         )
     }
 
-    //Refresh the Certificate Folder node
+    // Refresh the Certificate Folder node
     await node.parent.refreshNode()
 }

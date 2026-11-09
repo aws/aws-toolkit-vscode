@@ -17,7 +17,9 @@ export class SecurityScanLanguageContext {
             java: 'java',
             python: 'python',
             javascript: 'javascript',
+            javascriptreact: 'javascript',
             typescript: 'typescript',
+            typescriptreact: 'typescript',
             csharp: 'csharp',
             go: 'go',
             golang: 'go',
@@ -34,6 +36,18 @@ export class SecurityScanLanguageContext {
             c: 'c',
             cpp: 'cpp',
             php: 'php',
+            xml: 'plaintext', // xml does not exist in CodewhispererLanguage
+            toml: 'plaintext',
+            'pip-requirements': 'plaintext',
+            'java-properties': 'plaintext',
+            'go.mod': 'plaintext',
+            'go.sum': 'plaintext',
+            kotlin: 'kotlin',
+            scala: 'scala',
+            sh: 'shell',
+            shell: 'shell',
+            shellscript: 'shell',
+            brazilPackageConfig: 'plaintext',
         })
     }
 

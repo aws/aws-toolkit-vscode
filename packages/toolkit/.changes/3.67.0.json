@@ -1,0 +1,18 @@
+{
+	"date": "2025-06-25",
+	"version": "3.67.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "State Machine deployments can now be initiated directly from Workflow Studio without closing the editor"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Step Function performance metrics now accurately reflect only Workflow Studio document activity"
+		},
+		{
+			"type": "Feature",
+			"description": "AccessAnalyzer: CheckNoPublicAccess custom policy check supports additional resource types."
+		}
+	]
+}

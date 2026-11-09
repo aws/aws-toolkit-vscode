@@ -12,8 +12,8 @@ import { compare, Operation } from 'fast-json-patch'
 import { ResourceNode } from '../explorer/nodes/resourceNode'
 import { ResourceTypeNode } from '../explorer/nodes/resourceTypeNode'
 import { AwsResourceManager } from '../awsResourceManager'
-import { CloudControlClient } from '../../shared/clients/cloudControlClient'
-import { CloudControl } from 'aws-sdk'
+import { CloudControlClient } from '../../shared/clients/cloudControl'
+import { ResourceDescription } from '@aws-sdk/client-cloudcontrol'
 import globals from '../../shared/extensionGlobals'
 import { telemetry } from '../../shared/telemetry/telemetry'
 
@@ -224,7 +224,7 @@ export async function updateResource(
     )
 }
 
-function computeDiff(currentDefinition: CloudControl.ResourceDescription, updatedDefinition: string): Operation[] {
+function computeDiff(currentDefinition: ResourceDescription, updatedDefinition: string): Operation[] {
     const current = JSON.parse(currentDefinition.Properties!)
     const updated = JSON.parse(updatedDefinition)
     return compare(current, updated)

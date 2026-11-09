@@ -15,7 +15,7 @@ import {
 } from '../../../../awsService/cloudWatchLogs/commands/viewLogStream'
 import { LogGroupNode } from '../../../../awsService/cloudWatchLogs/explorer/logGroupNode'
 import globals from '../../../../shared/extensionGlobals'
-import { formatLocalized } from '../../../../shared/utilities/textUtilities'
+import { formatLocalized } from '../../../../shared/datetime'
 
 class MockSelectLogStreamWizardContext implements SelectLogStreamWizardContext {
     public constructor(private readonly pickLogStreamResponses: LogSearchChoice[] = []) {

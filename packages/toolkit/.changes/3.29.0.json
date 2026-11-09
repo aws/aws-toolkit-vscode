@@ -1,0 +1,10 @@
+{
+	"date": "2024-10-17",
+	"version": "3.29.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Fix userCredentialsUtils.test.ts so it won't remove the actual aws config"
+		}
+	]
+}

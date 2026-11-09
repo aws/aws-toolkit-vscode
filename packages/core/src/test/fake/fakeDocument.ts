@@ -46,7 +46,7 @@ class MockLine implements TextLine {
 
     public get firstNonWhitespaceCharacterIndex(): number {
         if (this._firstNonWhitespaceIndex === undefined) {
-            this._firstNonWhitespaceIndex = this._contents.trimStart().length - this._contents.length
+            this._firstNonWhitespaceIndex = this._contents.length - this._contents.trimStart().length
         }
         return this._firstNonWhitespaceIndex
     }

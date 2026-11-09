@@ -4,12 +4,12 @@
  */
 
 import { fileExists } from '../../filesystemUtilities'
-import { getLogger, Logger } from '../../logger'
+import { getLogger, Logger } from '../../logger/logger'
 import { logAndThrowIfUnexpectedExitCode, SamCliProcessInvoker } from './samCliInvokerUtils'
 import { pushIf } from '../../utilities/collectionUtils'
 import { localize } from '../../utilities/vsCodeUtils'
 import { Timeout, waitTimeout } from '../../utilities/timeoutUtils'
-import { ChildProcessResult } from '../../utilities/childProcess'
+import { ChildProcessResult } from '../../utilities/processUtils'
 import { dirname } from 'path'
 
 export interface SamCliBuildInvocationArguments {

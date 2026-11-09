@@ -12,7 +12,7 @@ import { once } from '../utilities/functionUtils'
 import { Commands } from '../vscode/commands2'
 import { TreeNode } from './resourceTreeDataProvider'
 import { createErrorItem, createPlaceholderItem } from './utils'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 
 interface SimpleResourceProvider<T = unknown> {
     readonly paginated?: false

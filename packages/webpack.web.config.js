@@ -38,10 +38,23 @@ module.exports = (env, argv) => {
             }),
             /**
              * HACK: the HttpResourceFetcher breaks Web mode if imported, BUT we still dynamically import this module for non web mode
-             * environments. The following allows compilation to pass in Web mode by never bundling the module in the final output.
+             * environments. The following allows compilation to pass in Web mode by never bundling the module in the final output for web mode.
              */
             new webpack.IgnorePlugin({
-                resourceRegExp: /httpResourceFetcher/, // matches the path in the require() statement
+                resourceRegExp: /node\/httpResourceFetcher/, // matches the path in the require() statement
+            }),
+            /**
+             * HACK: the ps-list module breaks Web mode if imported, BUT we still dynamically import this module for non web mode
+             * environments. The following allows compilation to pass by never bundling the module in the final output for web mode.
+             */
+            new webpack.IgnorePlugin({
+                resourceRegExp: /ps-list/, // matches the path in the require() statement
+            }),
+            new webpack.IgnorePlugin({
+                resourceRegExp: /svgdom/, // matches the path in the require() statement
+            }),
+            new webpack.NormalModuleReplacementPlugin(/^node:/, (resource) => {
+                resource.request = resource.request.replace(/^node:/, '')
             }),
         ],
         resolve: {
@@ -64,10 +77,13 @@ module.exports = (env, argv) => {
                 http: false, // http: require.resolve('stream-http'),
                 https: false, // https: require.resolve('https-browserify'),
                 zlib: false, // zlib: require.resolve('browserify-zlib'),
-                constants: false, //constants: require.resolve('constants-browserify'),
+                constants: false, // constants: require.resolve('constants-browserify'),
                 // These do not have a straight forward replacement
                 child_process: false, // Reason for error: 'TypeError: The "original" argument must be of type Function'
                 async_hooks: false,
+                net: false,
+                util: false,
+                http2: false,
             },
         },
         optimization: {

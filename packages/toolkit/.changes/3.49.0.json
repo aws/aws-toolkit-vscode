@@ -1,0 +1,30 @@
+{
+	"date": "2025-03-06",
+	"version": "3.49.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Step Functions: Updated previewStateMachine command to open with Workflow Studio instead"
+		},
+		{
+			"type": "Feature",
+			"description": "Lambda: Users can explore Serverless Land patterns"
+		},
+		{
+			"type": "Feature",
+			"description": "Step Functions: Added support for calling the TestState API in Workflow Studio"
+		},
+		{
+			"type": "Feature",
+			"description": "Step Functions: Added support for using Workflow Studio for editing ASL files in JSON and YAML"
+		},
+		{
+			"type": "Feature",
+			"description": "AppBuilder: selecting a runtime in the local invoke view can override the runtime specified in template.yaml"
+		},
+		{
+			"type": "Feature",
+			"description": "Step Functions: Allow starting state machine execution with no input provided"
+		}
+	]
+}

@@ -7,6 +7,6 @@
 export const gumbyChat = 'gumbyChat'
 
 // This sets the tab name
-export const featureName = 'Q - Code Transform'
+export const featureName = 'Q - Code Transformation'
 
 export const dependencyNoAvailableVersions = 'no available versions'

@@ -34,6 +34,26 @@
                             >.</em
                         >
                     </div>
+                    <div style="margin-top: 10px">
+                        <em>For helpful feedback, please include:</em>
+                        <ul style="margin-top: 5px; margin-bottom: 5px">
+                            <li>
+                                <em><strong>Issue:</strong> A brief summary of the issue or suggestion</em>
+                            </li>
+                            <li>
+                                <em
+                                    ><strong>Reproduction Steps:</strong> Clear steps to reproduce the issue (if
+                                    applicable)</em
+                                >
+                            </li>
+                            <li>
+                                <em
+                                    ><strong>Expected vs. Actual:</strong> What you expected and what actually
+                                    happened</em
+                                >
+                            </li>
+                        </ul>
+                    </div>
                     <br />
                     <div>
                         <em>
@@ -66,7 +86,16 @@ const client = WebviewClientFactory.create<FeedbackWebview>()
 export default defineComponent({
     data() {
         return {
-            comment: '',
+            comment: `Issue:
+
+Reproduction Steps:
+1. 
+2. 
+3. 
+
+Expected Behavior: 
+
+Actual Behavior: `,
             sentiment: '',
             isSubmitting: false,
             error: '',

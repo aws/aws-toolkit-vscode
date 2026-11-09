@@ -8,11 +8,10 @@ import * as os from 'os'
 import * as vscode from 'vscode'
 import * as path from 'path'
 import { VueWebview } from '../../webviews/main'
-import { isCloud9 } from '../../shared/extensionUtilities'
 import globals from '../../shared/extensionGlobals'
 import { telemetry, CodewhispererLanguage, CodewhispererGettingStartedTask } from '../../shared/telemetry/telemetry'
-import { fs } from '../../shared'
-import { getLogger } from '../../shared/logger'
+import { fs } from '../../shared/fs/fs'
+import { getLogger } from '../../shared/logger/logger'
 import { AmazonQPromptSettings } from '../../shared/settings'
 import { CodeWhispererSource } from '../commands/types'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
@@ -29,8 +28,12 @@ export class CodeWhispererWebview extends VueWebview {
 
     private isFileSaved: boolean = false
     private getLocalFilePath(fileName: string): string {
-        //This will store the files in the global storage path of VSCode
-        return path.join(globals.context.globalStorageUri.fsPath, fileName)
+        const baseDir = path.resolve(globals.context.globalStorageUri.fsPath)
+        const resolved = path.resolve(baseDir, fileName)
+        if (!resolved.startsWith(baseDir + path.sep)) {
+            throw new Error(`Path is outside of storage directory: ${fileName}`)
+        }
+        return resolved
     }
 
     // This function opens TypeScript/JavaScript/Python/Java/C# file in the editor.
@@ -81,22 +84,22 @@ export class CodeWhispererWebview extends VueWebview {
         }
     }
 
-    //This function returns the OS type of the machine used in Shortcuts and Generate Suggestion Sections
+    // This function returns the OS type of the machine used in Shortcuts and Generate Suggestion Sections
     public getOSType(): OSType {
         return os.platform() === 'darwin' ? 'Mac' : 'RestOfOS'
     }
 
-    //This function opens the Keyboard shortcuts in VSCode
+    // This function opens the Keyboard shortcuts in VSCode
     async openShortCuts(): Promise<void> {
         await vscode.commands.executeCommand('workbench.action.openGlobalKeybindings', 'codewhisperer')
     }
 
-    //This function opens the Feedback CodeWhisperer page in the webview
+    // This function opens the Feedback CodeWhisperer page in the webview
     async openFeedBack(): Promise<void> {
         return submitFeedback(placeholder, 'Amazon Q')
     }
 
-    //------Telemetry------
+    // ------Telemetry------
     /** This represents the cause for the webview to open, whether a certain button was clicked or it opened automatically */
     #codeWhispererSource?: CodeWhispererSource
 
@@ -113,7 +116,7 @@ export class CodeWhispererWebview extends VueWebview {
             passive: true,
         })
     }
-    //Telemetry for CodeWhisperer Try Example with two params Language and Task Type
+    // Telemetry for CodeWhisperer Try Example with two params Language and Task Type
     emitTryExampleClick(languageSelected: CodewhispererLanguage, taskType: CodewhispererGettingStartedTask) {
         telemetry.codewhisperer_onboardingClick.emit({
             codewhispererLanguage: languageSelected,
@@ -121,7 +124,7 @@ export class CodeWhispererWebview extends VueWebview {
         })
     }
 }
-//List of all events that are emitted from the webview of CodeWhisperer
+// List of all events that are emitted from the webview of CodeWhisperer
 export type CodeWhispererUiClick =
     | 'codewhisperer_Resources_Documentation'
     | 'codewhisperer_Resources_Feedback'
@@ -148,7 +151,7 @@ export async function showCodeWhispererWebview(
     }
     const webview = await activePanel!.show({
         title: localize('AWS.view.gettingStartedPage.title', `Learn Amazon Q`),
-        viewColumn: isCloud9() ? vscode.ViewColumn.One : vscode.ViewColumn.Active,
+        viewColumn: vscode.ViewColumn.Active,
     })
 
     if (!subscriptions) {
@@ -160,8 +163,8 @@ export async function showCodeWhispererWebview(
             }),
         ]
         const prompts = AmazonQPromptSettings.instance
-        //To check the condition If the user has already seen the welcome message
-        if (await prompts.isPromptEnabled('codeWhispererNewWelcomeMessage')) {
+        // To check the condition If the user has already seen the welcome message
+        if (prompts.isPromptEnabled('codeWhispererNewWelcomeMessage')) {
             telemetry.ui_click.emit({ elementId: 'codewhisperer_Learn_PageOpen', passive: true })
         } else {
             telemetry.ui_click.emit({ elementId: 'codewhisperer_Learn_PageOpen', passive: false })

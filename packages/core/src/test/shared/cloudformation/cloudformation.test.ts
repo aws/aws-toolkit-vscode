@@ -30,7 +30,7 @@ describe('CloudFormation', function () {
     })
 
     afterEach(async function () {
-        await fs.delete(filename, { force: true })
+        await fs.delete(filename, { recursive: true })
     })
 
     it('isValidFilename()', async function () {

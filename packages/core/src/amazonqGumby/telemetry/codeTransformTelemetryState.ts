@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { randomUUID } from '../../common/crypto'
+import { randomUUID } from '../../shared/crypto'
 import { codeTransformMetaDataToJsonString, ICodeTransformMetaData } from './codeTransformMetadata'
+import globals from '../../shared/extensionGlobals'
 
 interface ICodeTransformTelemetryState {
     sessionId: string
@@ -19,7 +20,7 @@ export class CodeTransformTelemetryState {
     private constructor() {
         this.mainState = {
             sessionId: randomUUID(),
-            sessionStartTime: Date.now(),
+            sessionStartTime: globals.clock.Date.now(),
             resultStatus: '',
             codeTransformMetadata: {},
         }
@@ -36,7 +37,7 @@ export class CodeTransformTelemetryState {
         this.mainState.sessionId = randomUUID()
     }
     public setStartTime = () => {
-        this.mainState.sessionStartTime = Date.now()
+        this.mainState.sessionStartTime = globals.clock.Date.now()
     }
     public setResultStatus = (newValue: string) => {
         this.mainState.resultStatus = newValue

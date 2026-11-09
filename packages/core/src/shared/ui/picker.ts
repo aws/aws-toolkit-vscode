@@ -7,7 +7,7 @@ import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { IteratorTransformer } from '../utilities/collectionUtils'
 import { createRefreshButton } from './buttons'
 
@@ -135,7 +135,9 @@ export async function promptUser<T extends vscode.QuickPickItem>({
 
         return response
     } finally {
-        disposables.forEach((d) => d.dispose() as void)
+        for (const d of disposables) {
+            d.dispose() as void
+        }
         picker.hide()
     }
 }
@@ -310,7 +312,7 @@ export class IteratingQuickPickController<TResponse> {
                                 // give quickpick item an error message
                                 // we should not blow away the existing items, they should still be viable
                                 const err = e as Error
-                                getLogger().error('Error while loading items for IteratingQuickPickController:', err)
+                                getLogger().error('Error while loading items for IteratingQuickPickController: %O', err)
                                 resolve({
                                     value: [
                                         {

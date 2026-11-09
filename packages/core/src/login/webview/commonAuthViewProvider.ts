@@ -11,7 +11,7 @@
 "type": "webview",
 "id": "aws.AmazonCommonAuth",
 "name": "%AWS.amazonq.login%",
-"when": "!isCloud9 && !aws.isSageMaker && !aws.amazonq.showView"
+"when": "!aws.isSageMaker && !aws.amazonq.showView"
 },
 
 * 2. Assign when clause context to this view. Manage the state of when clause context.
@@ -44,6 +44,9 @@ import { CodeCatalystAuthenticationProvider } from '../../codecatalyst/auth'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { AuthSources } from './util'
 import { AuthFlowStates } from './vue/types'
+import { getTelemetryMetadataForConn } from '../../auth/connection'
+import { AuthUtil } from '../../codewhisperer/util/authUtil'
+import { ExtensionUse } from '../../auth/utils'
 
 export class CommonAuthViewProvider implements WebviewViewProvider {
     public readonly viewType: string
@@ -81,14 +84,22 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
     ) {
         // Our callback won't fire on the first view.
         if (webviewView.visible) {
-            telemetry.auth_signInPageOpened.emit({ result: 'Succeeded', passive: true })
+            telemetry.auth_signInPageOpened.emit({
+                result: 'Succeeded',
+                passive: true,
+                source: ExtensionUse.instance.sourceForTelemetry(),
+            })
         }
 
         // This will fire whenever the user opens or closes the login page from 'somewhere else'
         // i.e. NOT when switching from/to the chat window, which uses the same view area.
         webviewView.onDidChangeVisibility(async () => {
             if (webviewView.visible) {
-                telemetry.auth_signInPageOpened.emit({ result: 'Succeeded', passive: true })
+                telemetry.auth_signInPageOpened.emit({
+                    result: 'Succeeded',
+                    passive: true,
+                    source: ExtensionUse.instance.sourceForTelemetry(),
+                })
             } else {
                 telemetry.auth_signInPageClosed.emit({ result: 'Succeeded', passive: true })
 
@@ -98,7 +109,7 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
                 if (authState === AuthFlowStates.REAUTHNEEDED || authState === AuthFlowStates.REAUTHENTICATING) {
                     this.webView!.server.storeMetricMetadata({
                         isReAuth: true,
-                        ...this.webView!.server.getMetadataForExistingConn(),
+                        ...(await getTelemetryMetadataForConn(AuthUtil.instance.conn)),
                     })
                 } else {
                     this.webView!.server.storeMetricMetadata({ isReAuth: false })
@@ -113,8 +124,6 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
             }
 
             this.onDidChangeVisibility?.fire(webviewView.visible)
-            // force webview to reload
-            await vscode.commands.executeCommand('workbench.action.webview.reloadWebviewAction')
         })
 
         const dist = Uri.joinPath(this.extensionContext.extensionUri, 'dist')
@@ -124,9 +133,10 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
             enableCommandUris: true,
             localResourceRoots: [dist, resources],
         }
-        webviewView.webview.html = this._getHtmlForWebview(this.extensionContext.extensionUri, webviewView.webview)
         // register the webview server
         await this.webView?.setup(webviewView.webview)
+
+        webviewView.webview.html = this._getHtmlForWebview(this.extensionContext.extensionUri, webviewView.webview)
     }
 
     private _getHtmlForWebview(extensionURI: Uri, webview: vscode.Webview) {
@@ -138,6 +148,10 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
         const entrypoint =
             serverHostname !== undefined ? Uri.parse(serverHostname).with({ path: `/${this.source}` }) : scriptUri
 
+        // Get Vue.js from dist/libs directory
+        const vueUri = Uri.joinPath(assetsPath, 'dist', 'libs', 'vue.min.js')
+        const vueScript = webview.asWebviewUri(vueUri)
+
         return `
             <!DOCTYPE html>
             <html lang="en">
@@ -148,7 +162,7 @@ export class CommonAuthViewProvider implements WebviewViewProvider {
                     <title>Base View Extension</title>
                 </head>
                 <body>
-                    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.4/vue.global.prod.min.js"></script>  
+                    <script src="${vueScript.toString()}"></script>  
                     <script>
                         const vscode = acquireVsCodeApi();
                     </script>

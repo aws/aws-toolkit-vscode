@@ -13,16 +13,16 @@ import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { ChildNodeLoader } from '../../../awsexplorer/childNodeLoader'
 import { ChildNodePage } from '../../../awsexplorer/childNodeLoader'
 import { inspect } from 'util'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { IotPolicyWithVersionsNode } from './iotPolicyNode'
 import { IotNode } from './iotNodes'
 import { Settings } from '../../../shared/settings'
 import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
 
-//Length of certificate ID. The certificate ID is the last segment of the ARN.
+// Length of certificate ID. The certificate ID is the last segment of the ARN.
 const certIdLength = 64
 
-//Number of digits of the certificate ID to show
+// Number of digits of the certificate ID to show
 const certPreviewLength = 8
 
 /**

@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Memento } from 'vscode'
 import { AwsContext } from '../../../shared/awsContext'
 import { RegionProvider } from '../../../shared/regions/regionProvider'
 
@@ -41,9 +40,6 @@ const endpoints = {
     ],
 }
 
-export function createTestRegionProvider(opts?: {
-    globalState?: Memento & { setKeysForSync(keys: readonly string[]): void }
-    awsContext?: AwsContext
-}): RegionProvider {
-    return new RegionProvider(endpoints, opts?.globalState, opts?.awsContext)
+export function createTestRegionProvider(opts?: { awsContext?: AwsContext }): RegionProvider {
+    return new RegionProvider(endpoints, opts?.awsContext)
 }

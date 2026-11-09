@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { IotThingNode } from '../explorer/iotThingNode'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
@@ -12,7 +12,7 @@ import { createQuickPick, DataQuickPickItem } from '../../../shared/ui/pickerPro
 import { PromptResult } from '../../../shared/ui/prompter'
 import { IotClient } from '../../../shared/clients/iotClient'
 import { isValidResponse } from '../../../shared/wizards/wizard'
-import { Iot } from 'aws-sdk'
+import { Certificate, ListCertificatesResponse } from '@aws-sdk/client-iot'
 
 export type CertGen = typeof getCertList
 
@@ -46,15 +46,15 @@ export async function attachCertificateCommand(node: IotThingNode, promptFun = p
 
     getLogger().debug('Attached certificate %O', cert.certificateId)
 
-    //Refresh the Thing node
+    // Refresh the Thing node
     await node.refreshNode()
 }
 
 /**
  * Prompts the user to pick a certificate to attach.
  */
-async function promptForCert(iot: IotClient, certFetch: CertGen): Promise<PromptResult<Iot.Certificate>> {
-    const placeHolder: DataQuickPickItem<Iot.Certificate> = {
+async function promptForCert(iot: IotClient, certFetch: CertGen): Promise<PromptResult<Certificate>> {
+    const placeHolder: DataQuickPickItem<Certificate> = {
         label: 'No certificates found',
         data: undefined,
     }
@@ -71,10 +71,10 @@ async function promptForCert(iot: IotClient, certFetch: CertGen): Promise<Prompt
  */
 async function* getCertList(iot: IotClient) {
     let marker: string | undefined = undefined
-    let filteredCerts: Iot.Certificate[]
+    let filteredCerts: Certificate[]
     do {
         try {
-            const certResponse: Iot.ListCertificatesResponse = await iot.listCertificates({ marker })
+            const certResponse: ListCertificatesResponse = await iot.listCertificates({ marker })
             marker = certResponse.nextMarker
 
             /* These fields should always be defined when using the above API,

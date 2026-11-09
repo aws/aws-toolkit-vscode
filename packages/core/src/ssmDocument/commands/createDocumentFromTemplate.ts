@@ -9,7 +9,7 @@ const localize = nls.loadMessageBundle()
 import * as path from 'path'
 import * as vscode from 'vscode'
 import * as yaml from 'js-yaml'
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger, Logger } from '../../shared/logger/logger'
 import * as picker from '../../shared/ui/picker'
 import { promptUserForDocumentFormat } from '../util/util'
 import { readFileAsString } from '../../shared/filesystemUtilities'

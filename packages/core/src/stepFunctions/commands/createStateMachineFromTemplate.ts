@@ -10,7 +10,7 @@ import { dump, load } from 'js-yaml'
 import * as path from 'path'
 import * as vscode from 'vscode'
 import { readFileAsString } from '../../shared/filesystemUtilities'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { CreateStateMachineWizard, TemplateFormats } from '../wizards/createStateMachineWizard'
 
 import { YAML_ASL, JSON_ASL } from '../constants/aslFormats'

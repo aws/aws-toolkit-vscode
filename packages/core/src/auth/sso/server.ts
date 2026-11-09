@@ -5,7 +5,7 @@
 
 import * as path from 'path'
 import http from 'http'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { ToolkitError } from '../../shared/errors'
 import { Socket } from 'net'
 import globals from '../../shared/extensionGlobals'
@@ -87,16 +87,23 @@ export class AuthSSOServer {
                     break
                 }
                 default: {
+                    const extensionRoot = path.resolve(globals.context.extensionUri.fsPath)
                     if (url.pathname.startsWith('/resources')) {
-                        const iconPath = path.join(globals.context.extensionUri.fsPath, url.pathname)
+                        const iconPath = path.resolve(extensionRoot, url.pathname.slice(1))
+                        if (!iconPath.startsWith(extensionRoot + path.sep)) {
+                            res.writeHead(403)
+                            res.end()
+                            break
+                        }
                         await this.loadResource(res, iconPath)
                         break
                     }
-                    const resourcePath = path.join(
-                        globals.context.extensionUri.fsPath,
-                        'dist/src/auth/sso/vue',
-                        url.pathname
-                    )
+                    const resourcePath = path.resolve(extensionRoot, 'dist/src/auth/sso/vue', url.pathname.slice(1))
+                    if (!resourcePath.startsWith(extensionRoot + path.sep)) {
+                        res.writeHead(403)
+                        res.end()
+                        break
+                    }
                     await this.loadResource(res, resourcePath)
                     break
                 }
@@ -163,9 +170,9 @@ export class AuthSSOServer {
 
             getLogger().debug('AuthSSOServer: Attempting to close server.')
 
-            this.connections.forEach((connection) => {
+            for (const connection of this.connections) {
                 connection.destroy()
-            })
+            }
 
             this.server.close((err) => {
                 if (err) {
@@ -218,7 +225,7 @@ export class AuthSSOServer {
 
     private async loadResource(res: http.ServerResponse, resourcePath: string) {
         try {
-            const file = await fs.readFile(resourcePath)
+            const file = await fs.readFileBytes(resourcePath)
             res.writeHead(200)
             res.end(file)
         } catch (e) {

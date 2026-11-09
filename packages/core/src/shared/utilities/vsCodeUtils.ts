@@ -179,7 +179,7 @@ export function isUntitledScheme(uri: vscode.Uri): boolean {
  * Example: `['foo', '**\/bar/'] => "["foo", "bar"]"`
  */
 export function globDirPatterns(dirs: string[]): string[] {
-    //The patterns themselves are not useful, but with postformating like "**/${pattern}/" they become glob dir patterns
+    // The patterns themselves are not useful, but with postformating like "**/${pattern}/" they become glob dir patterns
     return dirs.map((current) => {
         // Trim all "*" and "/" chars.
         // Note that the replace() patterns and order is intentionaly so that "**/*foo*/**" yields "*foo*".
@@ -215,8 +215,11 @@ export function reloadWindowPrompt(message: string): void {
  * if user dismisses the vscode confirmation prompt.
  */
 export async function openUrl(url: vscode.Uri, source?: string): Promise<boolean> {
+    // Avoid PII in URL.
+    const truncatedUrl = `${url.scheme}${url.authority}${url.path}${url.fragment.substring(20)}`
+
     return telemetry.aws_openUrl.run(async (span) => {
-        span.record({ url: url.toString(), source })
+        span.record({ url: truncatedUrl, source })
         const didOpen = await vscode.env.openExternal(url)
         if (!didOpen) {
             throw new CancellationError('user')

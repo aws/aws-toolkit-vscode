@@ -56,13 +56,13 @@ describe('SchemaCodeGenUtils', async function () {
     ]
 
     describe('buildSchemaPackageName', async function () {
-        testScenarios.forEach((test) => {
+        for (const test of testScenarios) {
             it(test.scenario, async () => {
                 const codeGen = new SchemaCodeGenUtils()
                 const result = codeGen.buildSchemaPackageName(test.input)
                 assert.strictEqual(result, test.expectedResult, 'Invalid package name returned')
             })
-        })
+        }
     })
 })
 

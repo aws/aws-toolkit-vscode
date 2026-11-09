@@ -11,12 +11,16 @@ import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import { ToolkitError } from '../../../shared/errors'
 import { getLogger } from '../../../shared/logger/logger'
 import { CodeWhispererSupplementalContext } from '../../models/model'
+import * as os from 'os'
+import { crossFileContextConfig } from '../../models/constants'
+import { BaseLanguageClient } from 'vscode-languageclient'
 
 export async function fetchSupplementalContext(
     editor: vscode.TextEditor,
-    cancellationToken: vscode.CancellationToken
+    cancellationToken: vscode.CancellationToken,
+    languageClient?: BaseLanguageClient
 ): Promise<CodeWhispererSupplementalContext | undefined> {
-    const timesBeforeFetching = performance.now()
+    const timesBeforeFetching = Date.now()
 
     const isUtg = await isTestFile(editor.document.uri.fsPath, {
         languageId: editor.document.languageId,
@@ -30,20 +34,24 @@ export async function fetchSupplementalContext(
     if (isUtg) {
         supplementalContextPromise = fetchSupplementalContextForTest(editor, cancellationToken)
     } else {
-        supplementalContextPromise = fetchSupplementalContextForSrc(editor, cancellationToken)
+        supplementalContextPromise = fetchSupplementalContextForSrc(editor, cancellationToken, languageClient)
     }
 
     return supplementalContextPromise
         .then((value) => {
             if (value) {
-                return {
+                const resBeforeTruncation = {
                     isUtg: isUtg,
                     isProcessTimeout: false,
-                    supplementalContextItems: value.supplementalContextItems,
+                    supplementalContextItems: value.supplementalContextItems.filter(
+                        (item) => item.content.trim().length !== 0
+                    ),
                     contentsLength: value.supplementalContextItems.reduce((acc, curr) => acc + curr.content.length, 0),
-                    latency: performance.now() - timesBeforeFetching,
+                    latency: Date.now() - timesBeforeFetching,
                     strategy: value.strategy,
                 }
+
+                return truncateSuppelementalContext(resBeforeTruncation)
             } else {
                 return undefined
             }
@@ -55,8 +63,8 @@ export async function fetchSupplementalContext(
                     isProcessTimeout: true,
                     supplementalContextItems: [],
                     contentsLength: 0,
-                    latency: performance.now() - timesBeforeFetching,
-                    strategy: 'Empty',
+                    latency: Date.now() - timesBeforeFetching,
+                    strategy: 'empty',
                 }
             } else {
                 getLogger().error(
@@ -65,4 +73,67 @@ export async function fetchSupplementalContext(
                 return undefined
             }
         })
+}
+
+/**
+ * Requirement
+ * - Maximum 5 supplemental context.
+ * - Each chunk can't exceed 10240 characters
+ * - Sum of all chunks can't exceed 20480 characters
+ */
+export function truncateSuppelementalContext(
+    context: CodeWhispererSupplementalContext
+): CodeWhispererSupplementalContext {
+    let c = context.supplementalContextItems.map((item) => {
+        if (item.content.length > crossFileContextConfig.maxLengthEachChunk) {
+            return {
+                ...item,
+                content: truncateLineByLine(item.content, crossFileContextConfig.maxLengthEachChunk),
+            }
+        } else {
+            return item
+        }
+    })
+
+    if (c.length > crossFileContextConfig.maxContextCount) {
+        c = c.slice(0, crossFileContextConfig.maxContextCount)
+    }
+
+    let curTotalLength = c.reduce((acc, cur) => {
+        return acc + cur.content.length
+    }, 0)
+    while (curTotalLength >= 20480 && c.length - 1 >= 0) {
+        const last = c[c.length - 1]
+        c = c.slice(0, -1)
+        curTotalLength -= last.content.length
+    }
+
+    return {
+        ...context,
+        supplementalContextItems: c,
+        contentsLength: curTotalLength,
+    }
+}
+
+export function truncateLineByLine(input: string, l: number): string {
+    const maxLength = l > 0 ? l : -1 * l
+    if (input.length === 0) {
+        return ''
+    }
+
+    const shouldAddNewLineBack = input.endsWith(os.EOL)
+    let lines = input.trim().split(os.EOL)
+    let curLen = input.length
+    while (curLen > maxLength && lines.length - 1 >= 0) {
+        const last = lines[lines.length - 1]
+        lines = lines.slice(0, -1)
+        curLen -= last.length + 1
+    }
+
+    const r = lines.join(os.EOL)
+    if (shouldAddNewLineBack) {
+        return r + os.EOL
+    } else {
+        return r
+    }
 }

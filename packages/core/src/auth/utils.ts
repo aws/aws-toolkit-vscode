@@ -10,17 +10,18 @@ const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
 import * as localizedText from '../shared/localizedText'
+import { consoleSessionHelpUrl } from '../shared/constants'
 import { codicon, getIcon } from '../shared/icons'
 import { createQuickPick, DataQuickPickItem, showQuickPick } from '../shared/ui/pickerPrompter'
 import { isValidResponse } from '../shared/wizards/wizard'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
 import { formatError, ToolkitError } from '../shared/errors'
-import { asString } from './providers/credentials'
+import { CredentialsId, asString } from './providers/credentials'
 import { TreeNode } from '../shared/treeview/resourceTreeDataProvider'
 import { createInputBox } from '../shared/ui/inputPrompter'
-import { telemetry } from '../shared/telemetry/telemetry'
+import { CredentialSourceId, telemetry } from '../shared/telemetry/telemetry'
 import { createCommonButtons, createExitButton, createHelpButton, createRefreshButton } from '../shared/ui/buttons'
-import { getIdeProperties, isAmazonQ, isCloud9 } from '../shared/extensionUtilities'
+import { getIdeProperties, isAmazonQ } from '../shared/extensionUtilities'
 import { addScopes, getDependentAuths } from './secondaryAuth'
 import { DevSettings } from '../shared/settings'
 import { createRegionPrompter } from '../shared/ui/common/region'
@@ -40,18 +41,26 @@ import {
     hasScopes,
     scopesSsoAccountAccess,
     isSsoConnection,
+    IamConnection,
 } from './connection'
 import { Commands, placeholder } from '../shared/vscode/commands2'
 import { Auth } from './auth'
 import { validateIsNewSsoUrl, validateSsoUrlFormat } from './sso/validation'
-import { getLogger } from '../shared/logger'
-import { isValidAmazonQConnection, isValidCodeWhispererCoreConnection } from '../codewhisperer/util/authUtil'
+import { getLogger } from '../shared/logger/logger'
+import { AuthUtil, isValidAmazonQConnection, isValidCodeWhispererCoreConnection } from '../codewhisperer/util/authUtil'
 import { AuthFormId } from '../login/webview/vue/types'
 import { extensionVersion } from '../shared/vscode/env'
-import { ExtStartUpSources } from '../shared/telemetry'
 import { CommonAuthWebview } from '../login/webview/vue/backend'
 import { AuthSource } from '../login/webview/util'
 import { setContext } from '../shared/vscode/setContext'
+import { CredentialsProviderManager } from './providers/credentialsProviderManager'
+import { SharedCredentialsProviderFactory } from './providers/sharedCredentialsProviderFactory'
+import { Ec2CredentialsProvider } from './providers/ec2CredentialsProvider'
+import { EcsCredentialsProvider } from './providers/ecsCredentialsProvider'
+import { EnvVarsCredentialsProvider } from './providers/envVarsCredentialsProvider'
+import { showMessageWithUrl } from '../shared/utilities/messages'
+import { credentialHelpUrl } from '../shared/constants'
+import { ExtStartUpSources, ExtStartUpSource, hadClientIdOnStartup } from '../shared/telemetry/util'
 
 // iam-only excludes Builder ID and IAM Identity Center from the list of valid connections
 // TODO: Understand if "iam" should include these from the list at all
@@ -64,12 +73,24 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'iam-only' 
     if (resp === 'addNewConnection') {
         // We could call this command directly, but it either lives in packages/toolkit or will at some point.
         const source: AuthSource = 'addConnectionQuickPick' // enforcing type sanity check
-        await vscode.commands.executeCommand('aws.toolkit.auth.manageConnections', placeholder, source)
+        await vscode.commands.executeCommand('aws.toolkit.auth.manageConnections', placeholder, source, undefined, true)
         return undefined
     }
 
     if (resp === 'editCredentials') {
         return globals.awsContextCommands.onCommandEditCredentials()
+    }
+
+    // If selected connection is SSO connection and has linked IAM profiles, show second quick pick with the linked IAM profiles
+    if (isSsoConnection(resp)) {
+        const linkedProfiles = await getLinkedIamProfiles(auth, resp)
+
+        if (linkedProfiles.length > 0) {
+            const linkedResp = await showLinkedProfilePicker(linkedProfiles, resp)
+            if (linkedResp) {
+                return linkedResp
+            }
+        }
     }
 
     return resp
@@ -82,8 +103,9 @@ export async function promptForConnection(auth: Auth, type?: 'iam' | 'iam-only' 
 export async function promptAndUseConnection(...[auth, type]: Parameters<typeof promptForConnection>) {
     return telemetry.aws_setCredentials.run(async (span) => {
         let conn = await promptForConnection(auth, type)
+        // Returning because either conn is a valid connection, or the customer selected 'addNewConnection' or 'editCredentials'
         if (!conn) {
-            throw new CancellationError('user')
+            return
         }
 
         // HACK: We assume that if we are toolkit we want AWS account scopes.
@@ -101,25 +123,73 @@ export async function promptAndUseConnection(...[auth, type]: Parameters<typeof 
     })
 }
 
-export async function signout(auth: Auth, conn: Connection | undefined = auth.activeConnection) {
-    if (conn?.type === 'sso') {
-        // TODO: does deleting the connection make sense UX-wise?
-        // this makes it disappear from the list of available connections
-        await auth.deleteConnection(conn)
-
-        const iamConnections = (await auth.listConnections()).filter((c) => c.type === 'iam')
-        const fallbackConn = iamConnections.find((c) => c.id === 'profile:default') ?? iamConnections[0]
-        if (fallbackConn !== undefined) {
-            await auth.useConnection(fallbackConn)
-        }
-    } else {
-        await auth.logout()
-
-        const fallbackConn = (await auth.listConnections()).find((c) => c.type === 'sso')
-        if (fallbackConn !== undefined) {
-            await auth.useConnection(fallbackConn)
-        }
+/**
+ * Get a IAM connection, while prompt && connection not valid: prompt for choosing a new connection
+ * @param opts.prompt: controls if prompt is shown when no valid connection is found
+ * @returns active iam connection, or undefined if not found/no prompt
+ */
+export async function getIAMConnection(
+    opts: { prompt: boolean; messageText?: string } = {
+        prompt: false,
     }
+) {
+    const connection = Auth.instance.activeConnection
+    if (connection?.type === 'iam' && connection.state === 'valid') {
+        return connection
+    }
+    if (!opts.prompt) {
+        return
+    }
+    const authRequiredMessage = 'The current command requires authentication with IAM credentials.'
+    let errorMessage = localize(
+        'aws.toolkit.auth.requireAuthmessage',
+        opts.messageText ? opts.messageText : authRequiredMessage
+    )
+    if (connection?.state === 'valid') {
+        errorMessage =
+            localize('aws.toolkit.auth.requireIAMInvalidAuth', 'Authentication through Builder ID detected.') +
+            errorMessage
+    }
+    const acceptMessage = localize('aws.toolkit.auth.accept', 'Select Connection')
+    const modalResponse = await showMessageWithUrl(
+        errorMessage,
+        credentialHelpUrl,
+        localizedText.learnMore,
+        'info',
+        [acceptMessage],
+        true
+    )
+    if (modalResponse !== acceptMessage) {
+        return
+    }
+    await promptAndUseConnection(Auth.instance, 'iam')
+    return Auth.instance.activeConnection
+}
+
+export async function signout(auth: Auth, conn: Connection | undefined = auth.activeConnection): Promise<void> {
+    return telemetry.function_call.run(
+        async () => {
+            if (conn?.type === 'sso') {
+                // TODO: does deleting the connection make sense UX-wise?
+                // this makes it disappear from the list of available connections
+                await auth.deleteConnection(conn)
+
+                const iamConnections = (await auth.listConnections()).filter((c) => c.type === 'iam')
+                const fallbackConn = iamConnections.find((c) => c.id === 'profile:default') ?? iamConnections[0]
+                if (fallbackConn !== undefined) {
+                    await auth.useConnection(fallbackConn)
+                }
+            } else {
+                await auth.logout()
+
+                const fallbackConn = (await auth.listConnections()).find((c) => c.type === 'sso')
+                if (fallbackConn !== undefined) {
+                    await auth.useConnection(fallbackConn)
+                }
+            }
+        },
+        { emit: false, functionId: { name: 'signoutAuthUtils' } }
+    )
 }
 
 export const createBuilderIdItem = () =>
@@ -176,20 +246,25 @@ export async function createStartUrlPrompter(title: string, requiredScopes?: str
 }
 
 export async function createBuilderIdConnection(auth: Auth, scopes?: string[]) {
-    const newProfile = createBuilderIdProfile(scopes)
-    const existingConn = (await auth.listConnections()).find(isBuilderIdConnection)
-    if (!existingConn) {
-        return auth.createConnection(newProfile)
-    }
+    return telemetry.function_call.run(
+        async () => {
+            const newProfile = createBuilderIdProfile(scopes)
+            const existingConn = (await auth.listConnections()).find(isBuilderIdConnection)
+            if (!existingConn) {
+                return auth.createConnection(newProfile)
+            }
 
-    const userResponse = await promptLogoutExistingBuilderIdConnection()
-    if (userResponse !== 'signout') {
-        throw new CancellationError('user')
-    }
+            const userResponse = await promptLogoutExistingBuilderIdConnection()
+            if (userResponse !== 'signout') {
+                throw new CancellationError('user')
+            }
 
-    await signout(auth, existingConn)
+            await signout(auth, existingConn)
 
-    return auth.createConnection(newProfile)
+            return auth.createConnection(newProfile)
+        },
+        { emit: false, functionId: { name: 'createBuilderIdConnectionAuthUtils' } }
+    )
 }
 
 /**
@@ -279,6 +354,36 @@ export const createDeleteConnectionButton: () => vscode.QuickInputButton = () =>
     return { tooltip: deleteConnection, iconPath: getIcon('vscode-trash') }
 }
 
+async function getLinkedIamProfiles(auth: Auth, ssoConnection: SsoConnection): Promise<IamConnection[]> {
+    const allConnections = await auth.listAndTraverseConnections().promise()
+
+    return allConnections.filter(
+        (conn) => isIamConnection(conn) && conn.id.startsWith(`sso:${ssoConnection.id}#`)
+    ) as IamConnection[]
+}
+
+/**
+ * Shows a quick pick with linked IAM profiles for a selected SSO connection
+ */
+async function showLinkedProfilePicker(
+    linkedProfiles: IamConnection[],
+    ssoConnection: SsoConnection
+): Promise<IamConnection | undefined> {
+    const title = `Select an IAM Role for ${ssoConnection.label}`
+
+    const items: DataQuickPickItem<IamConnection>[] = linkedProfiles.map((profile) => ({
+        label: codicon`${getIcon('vscode-key')} ${profile.label}`,
+        description: 'IAM Credential, sourced from IAM Identity Center',
+        data: profile,
+    }))
+
+    return await showQuickPick(items, {
+        title,
+        placeholder: 'Select an IAM role',
+        buttons: [createRefreshButton(), createExitButton()],
+    })
+}
+
 export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' | 'sso') {
     const addNewConnection = {
         label: codicon`${getIcon('vscode-plus')} Add New Connection`,
@@ -340,14 +445,19 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' |
     prompter.quickPick.onDidTriggerItemButton(async (e) => {
         // User wants to delete a specific connection
         if (e.button.tooltip === deleteConnection) {
-            telemetry.ui_click.emit({ elementId: 'connection_deleteFromList' })
-            const conn = e.item.data as Connection
+            await telemetry.function_call.run(
+                async () => {
+                    telemetry.ui_click.emit({ elementId: 'connection_deleteFromList' })
+                    const conn = e.item.data as Connection
 
-            // Set prompter in to a busy state so that
-            // tests must wait for refresh to fully complete
-            prompter.busy = true
-            await auth.deleteConnection(conn)
-            refreshPrompter()
+                    // Set prompter in to a busy state so that
+                    // tests must wait for refresh to fully complete
+                    prompter.busy = true
+                    await auth.deleteConnection(conn)
+                    refreshPrompter()
+                },
+                { emit: false, functionId: { name: 'quickPickDeleteConnection' } }
+            )
         }
     })
 
@@ -367,22 +477,25 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' |
         for await (const conn of connections) {
             if (conn.label.includes('profile:') && !hasShownEdit) {
                 hasShownEdit = true
-                yield [toPickerItem(conn), editCredentials]
+                yield [await toPickerItem(conn), editCredentials]
             } else {
-                yield [toPickerItem(conn)]
+                yield [await toPickerItem(conn)]
             }
         }
     }
 
-    function toPickerItem(conn: Connection): DataQuickPickItem<Connection> {
+    async function toPickerItem(conn: Connection): Promise<DataQuickPickItem<Connection>> {
         const state = auth.getConnectionState(conn)
         // Only allow SSO connections to be deleted
         const deleteButton: vscode.QuickInputButton[] = conn.type === 'sso' ? [createDeleteConnectionButton()] : []
+        // Get endpoint URL if available
+        const connLabel = conn.endpointUrl ? `${conn.label} (${conn.endpointUrl})` : conn.label
         if (state === 'valid') {
+            const label = codicon`${getConnectionIcon(conn)} ${connLabel}`
             return {
                 data: conn,
-                label: codicon`${getConnectionIcon(conn)} ${conn.label}`,
-                description: getConnectionDescription(conn),
+                label: label,
+                description: await getConnectionDescription(conn),
                 buttons: [...deleteButton],
             }
         }
@@ -400,7 +513,7 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' |
             detail: getDetail(),
             data: conn,
             invalidSelection: state !== 'authenticating',
-            label: codicon`${getIcon('vscode-error')} ${conn.label}`,
+            label: codicon`${getIcon('vscode-error')} ${connLabel}`,
             buttons: [...deleteButton],
             description:
                 state === 'authenticating'
@@ -436,7 +549,7 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' |
         }
     }
 
-    function getConnectionDescription(conn: Connection) {
+    async function getConnectionDescription(conn: Connection) {
         if (conn.type === 'iam') {
             // TODO: implement a proper `getConnectionSource` method to discover where a connection came from
             const descSuffix = conn.id.startsWith('profile:')
@@ -446,6 +559,14 @@ export function createConnectionPrompter(auth: Auth, type?: 'iam' | 'iam-only' |
                   : 'sourced from the environment'
 
             return `IAM Credential, ${descSuffix}`
+        }
+
+        // If this is an SSO connection, check if it has linked IAM profiles
+        if (isSsoConnection(conn)) {
+            const linkedProfiles = await getLinkedIamProfiles(auth, conn)
+            if (linkedProfiles.length > 0) {
+                return `Has ${linkedProfiles.length} IAM role${linkedProfiles.length > 1 ? 's' : ''} (click to select)`
+            }
         }
 
         const toolAuths = getDependentAuths(conn)
@@ -490,7 +611,14 @@ export class AuthNode implements TreeNode<Auth> {
         const conn = this.resource.activeConnection
         const itemLabel =
             conn?.label !== undefined
-                ? localize('aws.auth.node.connected', `Connected with {0}`, conn.label)
+                ? conn?.endpointUrl !== undefined
+                    ? localize(
+                          'aws.auth.node.connectedWithEndpoint',
+                          `Connected with {0} ({1})`,
+                          conn.label,
+                          conn?.endpointUrl
+                      )
+                    : localize('aws.auth.node.connected', `Connected with {0}`, conn.label)
                 : localize('aws.auth.node.selectConnection', 'Select a connection...')
 
         const item = new vscode.TreeItem(itemLabel)
@@ -499,9 +627,9 @@ export class AuthNode implements TreeNode<Auth> {
         if (conn !== undefined && conn.state !== 'valid') {
             item.iconPath = getIcon('vscode-error')
             if (conn.state === 'authenticating') {
-                this.setDescription(item, 'authenticating...')
+                item.description = 'authenticating...'
             } else {
-                this.setDescription(item, 'expired or invalid, click to authenticate')
+                item.description = 'expired or invalid, click to authenticate'
                 item.command = {
                     title: 'Reauthenticate',
                     command: '_aws.toolkit.auth.reauthenticate',
@@ -514,14 +642,6 @@ export class AuthNode implements TreeNode<Auth> {
         }
 
         return item
-    }
-
-    private setDescription(item: vscode.TreeItem, text: string) {
-        if (isCloud9()) {
-            item.tooltip = item.tooltip ?? text
-        } else {
-            item.description = text
-        }
     }
 }
 
@@ -629,28 +749,51 @@ export class ExtensionUse {
     /**
      * Check if this is the first use/session of the extension.
      */
-    isFirstUse(
-        state: vscode.Memento = globals.context.globalState,
-        hasExistingConnections = () => Auth.instance.hasConnections
-    ): boolean {
+    isFirstUse(hasExistingConnections = () => Auth.instance.hasConnections): boolean {
         if (this.isFirstUseCurrentSession !== undefined) {
             return this.isFirstUseCurrentSession
         }
 
-        this.isFirstUseCurrentSession = state.get(this.isExtensionFirstUseKey)
-        if (this.isFirstUseCurrentSession === undefined) {
-            // The variable in the store is not defined yet, fallback to checking if they have existing connections.
-            this.isFirstUseCurrentSession = !hasExistingConnections()
-
-            getLogger().debug(
-                `isFirstUse: State not found, marking user as '${
-                    this.isFirstUseCurrentSession ? '' : 'NOT '
-                }first use' since they 'did ${this.isFirstUseCurrentSession ? 'NOT ' : ''}have existing connections'.`
-            )
+        // This is for sure not their first use
+        const isFirstUse = globals.globalState.tryGet('isExtensionFirstUse', Boolean)
+        if (isFirstUse === false) {
+            this.isFirstUseCurrentSession = isFirstUse
+            return this.isFirstUseCurrentSession
         }
 
+        /**
+         * SANITY CHECK: If the clientId already existed on startup, then isFirstUse MUST be false. So
+         * there is a bug in the state.
+         */
+        if (hadClientIdOnStartup(globals.globalState)) {
+            telemetry.function_call.emit({
+                result: 'Failed',
+                functionName: 'isFirstUse',
+                reason: 'ClientIdAlreadyExisted',
+            })
+        }
+
+        if (isAmazonQ()) {
+            this.isFirstUseCurrentSession = true
+            if (hasExistingConnections()) {
+                telemetry.function_call.emit({
+                    result: 'Failed',
+                    functionName: 'isFirstUse',
+                    reason: 'UnexpectedConnections',
+                })
+            }
+        } else {
+            // The variable in the store is not defined yet, fallback to checking if they have existing connections.
+            this.isFirstUseCurrentSession = !hasExistingConnections()
+        }
+        getLogger().debug(
+            `isFirstUse: State not found, marking user as '${
+                this.isFirstUseCurrentSession ? '' : 'NOT '
+            }first use' since they 'did ${this.isFirstUseCurrentSession ? 'NOT ' : ''}have existing connections'.`
+        )
+
         // Update state, so next time it is not first use
-        this.updateMemento(state, this.isExtensionFirstUseKey, false)
+        this.updateMemento('isExtensionFirstUse', false)
 
         return this.isFirstUseCurrentSession
     }
@@ -663,22 +806,33 @@ export class ExtensionUse {
      * Caveat: This may return true even if an update hadn't occurred IF
      * this function hasn't been called.
      */
-    wasUpdated(state: vscode.Memento = globals.context.globalState) {
+    wasUpdated() {
         if (this.wasExtensionUpdated !== undefined) {
             return this.wasExtensionUpdated
         }
         const currentVersion = extensionVersion
 
-        this.wasExtensionUpdated = currentVersion !== state.get(this.lastExtensionVersionKey)
-        this.updateMemento(state, this.lastExtensionVersionKey, currentVersion)
+        this.wasExtensionUpdated = currentVersion !== globals.globalState.get('lastExtensionVersion')
+        this.updateMemento(this.lastExtensionVersionKey, currentVersion)
 
         return this.wasExtensionUpdated
     }
 
-    private updateMemento(memento: vscode.Memento, key: string, val: any) {
-        memento.update(key, val).then(undefined, (e) => {
-            getLogger().error('Memento.update failed: %s', (e as Error).message)
-        })
+    /**
+     * Returns a {@link ExtStartUpSource} based on the current state of the extension.
+     */
+    sourceForTelemetry(): ExtStartUpSource {
+        if (this.isFirstUse()) {
+            return ExtStartUpSources.firstStartUp
+        } else if (this.wasUpdated()) {
+            return ExtStartUpSources.update
+        } else {
+            return ExtStartUpSources.reload
+        }
+    }
+
+    private updateMemento(key: 'isExtensionFirstUse' | 'lastExtensionVersion', val: any) {
+        globals.globalState.tryUpdate(key, val)
     }
 
     static #instance: ExtensionUse
@@ -720,4 +874,72 @@ export function getAuthFormIdsFromConnection(conn?: Connection): AuthFormId[] {
     }
 
     return authIds
+}
+
+export function initializeCredentialsProviderManager() {
+    const manager = CredentialsProviderManager.getInstance()
+    manager.addProviderFactory(new SharedCredentialsProviderFactory())
+    manager.addProviders(new Ec2CredentialsProvider(), new EcsCredentialsProvider(), new EnvVarsCredentialsProvider())
+}
+
+export async function getAuthType() {
+    let authType: CredentialSourceId | undefined = undefined
+    if (AuthUtil.instance.isEnterpriseSsoInUse() && AuthUtil.instance.isConnectionValid()) {
+        authType = 'iamIdentityCenter'
+    } else if (AuthUtil.instance.isBuilderIdInUse() && AuthUtil.instance.isConnectionValid()) {
+        authType = 'awsId'
+    }
+    return authType
+}
+
+export const localStackConnectionHeader = 'x-localstack'
+export const localStackConnectionString = 'localstack'
+
+export function isLocalStackConnection(): boolean {
+    return (
+        globals.globalState.tryGet('aws.toolkit.externalConnection', String, undefined) === localStackConnectionString
+    )
+}
+
+/**
+ * Constructs a credentials ID from a profile name.
+ *
+ * @param profileName - Profile name
+ * @returns Credentials ID string
+ */
+export function getConnectionIdFromProfile(profileName: string): string {
+    const credentialsId: CredentialsId = {
+        credentialSource: 'profile',
+        credentialTypeId: profileName,
+    }
+    return asString(credentialsId)
+}
+
+/**
+ * Sets up and activates a console connection via browser login.
+ * Prompts user to log in via browser, creates a profile-based connection, and sets it as active.
+ *
+ * @param profileName - Profile name (typically Lambda function name)
+ * @param region - AWS region
+ * @throws Error if console login fails or user cancels
+ */
+export async function setupConsoleConnection(profileName: string, region: string): Promise<void> {
+    getLogger().info('Auth: Sets up a connection via browser login for profile: %s, region: %s', profileName, region)
+    await vscode.commands.executeCommand('aws.toolkit.auth.consoleLogin', profileName, region)
+    const connectionId = getConnectionIdFromProfile(profileName)
+    // Verify connection was actually created before trying to use it.
+    // The telemetry wrapper around the console login command catches and logs errors but returns undefined
+    // instead of re-throwing them. When users cancel (userCancelled=true), the command completes without error,
+    // so we must check if the connection exists before attempting to use it to avoid confusing downstream errors.
+    const connection = await Auth.instance.getConnection({ id: connectionId })
+    if (!connection) {
+        const message = 'Unable to connect to AWS. Console login was cancelled or did not complete successfully.'
+        void vscode.window.showWarningMessage(message, localizedText.learnMore).then((selection) => {
+            if (selection === localizedText.learnMore) {
+                void vscode.env.openExternal(vscode.Uri.parse(consoleSessionHelpUrl))
+            }
+        })
+        throw new ToolkitError(message, { cancelled: true })
+    }
+    await Auth.instance.useConnection({ id: connectionId })
 }

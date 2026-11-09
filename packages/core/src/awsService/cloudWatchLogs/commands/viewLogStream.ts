@@ -10,9 +10,8 @@ import * as vscode from 'vscode'
 import * as picker from '../../../shared/ui/picker'
 import { MultiStepWizard, WIZARD_RETRY, WIZARD_TERMINATE, WizardStep } from '../../../shared/wizards/multiStepWizard'
 import { LogGroupNode } from '../explorer/logGroupNode'
-import { CloudWatchLogs } from 'aws-sdk'
-
-import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
+import * as CloudWatchLogs from '@aws-sdk/client-cloudwatch-logs'
+import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogs'
 import { getPaginatedAwsCallIter, IteratorTransformer } from '../../../shared/utilities/collectionUtils'
 import {
     CloudWatchLogsGroupInfo,
@@ -21,11 +20,11 @@ import {
     initLogData as initLogData,
     filterLogEventsFromUri,
 } from '../registry/logDataRegistry'
-import { createURIFromArgs } from '../cloudWatchLogsUtils'
 import { prepareDocument, searchLogGroup } from './searchLogGroup'
 import { telemetry, Result } from '../../../shared/telemetry/telemetry'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
-import { formatLocalized } from '../../../shared/utilities/textUtilities'
+import { cwlUriSchema } from '../cloudWatchLogsUtils'
+import { formatLocalized } from '../../../shared/datetime'
 
 export async function viewLogStream(node: LogGroupNode, registry: LogDataRegistry): Promise<void> {
     await telemetry.cloudwatchlogs_open.run(async (span) => {
@@ -52,7 +51,7 @@ export async function viewLogStream(node: LogGroupNode, registry: LogDataRegistr
             limit: registry.configuration.get('limit', 10000),
         }
 
-        const uri = createURIFromArgs(logGroupInfo, parameters)
+        const uri = cwlUriSchema.form({ logGroupInfo: logGroupInfo, parameters: parameters })
         const logData = initLogData(logGroupInfo, parameters, filterLogEventsFromUri)
         await prepareDocument(uri, logData, registry)
     })
@@ -82,7 +81,7 @@ export class DefaultSelectLogStreamWizardContext implements SelectLogStreamWizar
     ) {}
 
     public async pickLogStream(): Promise<LogSearchChoice> {
-        const client = new DefaultCloudWatchLogsClient(this.regionCode)
+        const client = new CloudWatchLogsClient(this.regionCode)
         const request: CloudWatchLogs.DescribeLogStreamsRequest = {
             logGroupName: this.logGroupName,
             orderBy: 'LastEventTime',

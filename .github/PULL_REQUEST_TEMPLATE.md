@@ -1,17 +1,11 @@
 ## Problem
 
+
 ## Solution
 
-<!---
-    REMINDER:
-    - Read CONTRIBUTING.md first.
-    - Add test coverage for your changes.
-    - Update the changelog using `npm run newChange`.
-    - Link to related issues/commits.
-    - Testing: how did you test your changes?
-    - Screenshots (if the pull request is related to UI/UX then please include light and dark theme screenshots)
--->
 
-## License
+---
 
-By submitting this pull request, I confirm that my contribution is made under the terms of the Apache 2.0 license.
+- Treat all work as PUBLIC. Private `feature/x` branches will not be squash-merged at release time.
+- Your code changes must meet the guidelines in [CONTRIBUTING.md](https://github.com/aws/aws-toolkit-vscode/blob/master/CONTRIBUTING.md#guidelines).
+- License: I confirm that my contribution is made under the terms of the Apache 2.0 license.

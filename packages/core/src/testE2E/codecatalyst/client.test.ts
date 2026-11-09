@@ -15,12 +15,12 @@ import {
 import { getThisDevEnv, prepareDevEnvConnection } from '../../codecatalyst/model'
 import { Auth } from '../../auth/auth'
 import { CodeCatalystAuthenticationProvider } from '../../codecatalyst/auth'
-import { CodeCatalystCommands, DevEnvironmentSettings } from '../../codecatalyst/commands'
+import { CodeCatalystCommands, DevEnvironmentSettings, UpdateDevEnvironmentSettings } from '../../codecatalyst/commands'
 import globals from '../../shared/extensionGlobals'
 import { CodeCatalystCreateWebview, SourceResponse } from '../../codecatalyst/vue/create/backend'
 import { waitUntil } from '../../shared/utilities/timeoutUtils'
 import { AccessDeniedException } from '@aws-sdk/client-sso-oidc'
-import { GetDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
+import { GetDevEnvironmentRequest, _InstanceType } from '@aws-sdk/client-codecatalyst'
 import { getTestWindow } from '../../test/shared/vscode/window'
 import { patchObject, registerAuthHook, skipTest, using } from '../../test/setupUtil'
 import { isExtensionInstalled } from '../../shared/utilities/vsCodeUtils'
@@ -202,7 +202,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
         })
 
         it('prompts to install the ssh extension if not available', async function () {
-            if (isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh)) {
+            if (isExtensionInstalled(VSCODE_EXTENSION_ID.remotessh.id)) {
                 skipTest(this, 'remote ssh already installed')
             }
 
@@ -292,7 +292,10 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
         })
 
         it('updates the properties of an existing dev environment', async function () {
-            const newDevEnvSettings = { alias: createAlias(), instanceType: 'dev.standard1.medium' }
+            const newDevEnvSettings = {
+                alias: createAlias(),
+                instanceType: 'dev.standard1.medium',
+            } satisfies UpdateDevEnvironmentSettings
 
             // Ensure current properties do not equal the updated properties
             assert.notStrictEqual(defaultDevEnv.alias, newDevEnvSettings.alias)
@@ -344,9 +347,9 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
             if (remainingDevEnvs.length > 0) {
                 // Dev Envs may still be returned if they are still in the process of being deleted.
                 // Just ensure they are in the process or fully deleted.
-                remainingDevEnvs.forEach((devEnv) => {
+                for (const devEnv of remainingDevEnvs) {
                     assert.ok(['DELETING', 'DELETED'].includes(devEnv.status), 'Dev Env was not successfully deleted')
-                })
+                }
             }
         })
 
@@ -425,15 +428,7 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
      */
     async function createTestCodeCatalystClient(auth: Auth): Promise<CodeCatalystClient> {
         const conn = await useCodeCatalystSsoConnection(auth)
-        return await createCodeCatalystClient(conn, undefined, undefined, {
-            // Add retries for tests since many may be running in parallel in github CI.
-            // AWS SDK adds jitter automatically.
-            // https://github.com/aws/aws-sdk-js/blob/3e616251947c73d5239178c167a9d73d985ca581/lib/util.js#L884
-            retryDelayOptions: {
-                base: 1200, // ms
-            },
-            maxRetries: 5,
-        })
+        return await createCodeCatalystClient(conn, undefined, undefined)
     }
 
     /**
@@ -619,6 +614,9 @@ describe('Test how this codebase uses the CodeCatalyst API', function () {
     ): Promise<void> {
         const result = await waitUntil(
             async function () {
+                if (!devEnv.spaceName || !devEnv.projectName) {
+                    return false
+                }
                 const devEnvData = await client.getDevEnvironment({
                     spaceName: devEnv.spaceName,
                     projectName: devEnv.projectName,

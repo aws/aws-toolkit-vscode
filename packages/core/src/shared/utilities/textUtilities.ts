@@ -3,14 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import * as crypto from 'crypto'
-import * as fs from 'fs'
+import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import { default as stripAnsi } from 'strip-ansi'
-import { isCloud9 } from '../extensionUtilities'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
+import { ViewDiffMessage } from '../../amazonq/commons/controllers/contentController'
 
 /**
- * Truncates string `s` if it exceeds `n` chars.
+ * Truncates string `s` if it has or exceeds `n` chars.
  *
  * If `n` is negative, truncates at start instead of end.
  *
@@ -30,11 +31,20 @@ export function truncate(s: string, n: number, suffix?: string): string {
 }
 
 /**
- * Indents a string.
+ * Indents a given string with spaces.
  *
- * @param size Indent width (number of space chars).
- * @param clear Clear existing whitespace, if any.
- * @param s Text to indent.
+ * @param {string} s - The input string to be indented.
+ * @param {number} [size=4] - The number of spaces to use for indentation. Defaults to 4.
+ * @param {boolean} [clear=false] - If true, the function will clear any existing indentation and apply the new indentation.
+ * @returns {string} The indented string.
+ *
+ * @example
+ * const indentedString = indent('Hello\nWorld', 2);
+ * console.log(indentedString); // Output: "  Hello\n  World"
+ *
+ * @example
+ * const indentedString = indent('  Hello\n    World', 4, true);
+ * console.log(indentedString); // Output: "    Hello\n    World"
  */
 export function indent(s: string, size: number = 4, clear: boolean = false): string {
     const n = Math.abs(size)
@@ -110,10 +120,10 @@ export function getStringHash(text: string | Buffer): string {
 }
 
 /**
- * Temporary util while Cloud9 does not have codicon support
+ * Previously used to add Cloud9 support (no icons). Might be useful in the future, so let's leave it here.
  */
 export function addCodiconToString(codiconName: string, text: string): string {
-    return isCloud9() ? text : `$(${codiconName}) ${text}`
+    return `$(${codiconName}) ${text}`
 }
 
 /**
@@ -191,129 +201,15 @@ export function toSnakeCase(obj: Record<string, any>) {
 }
 
 /**
- * Gets a relative date between the from date and now date (default: current time)
- * e.g. "in 1 minute", '1 minute ago'
- * works on the scales of seconds, minutes, hours, days, weeks, months, years
- * @param from start Date
- * @param now end Date (default: current time)
- * @returns string representation of relative date
- */
-export function getRelativeDate(from: Date, now: Date = new Date()): string {
-    const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto', style: 'long' })
-
-    const second = 1000
-    const minute = second * 60
-    const hour = minute * 60
-    const day = hour * 24
-    const week = day * 7
-
-    // Prevent clock skew showing future date - adjust 5 seconds
-    const fromAdj = new Date(from.valueOf() - 5 * second)
-
-    const diff = fromAdj.valueOf() - now.valueOf()
-    const absDiff = Math.abs(diff)
-    // seconds
-    if (absDiff < minute) {
-        // magnitude is less than a minute
-        return rtf.format(Math.floor(diff / second), 'second')
-    }
-    // minutes
-    if (absDiff < hour) {
-        // magnitude is less than an hour
-        return rtf.format(Math.floor(diff / minute), 'minute')
-    }
-    // hours
-    if (absDiff < day) {
-        // magnitude is less than a day
-        return rtf.format(Math.floor(diff / hour), 'hour')
-    }
-    // days
-    if (absDiff < week) {
-        // magnitude is less than a week
-        return rtf.format(Math.floor(diff / day), 'day')
-    }
-    // weeks
-    if (
-        (Math.abs(fromAdj.getUTCMonth() - now.getUTCMonth()) === 0 &&
-            Math.abs(fromAdj.getUTCFullYear() - now.getUTCFullYear()) === 0) || // same month of same year
-        (fromAdj.getUTCMonth() - now.getUTCMonth() === 1 && fromAdj.getUTCDate() < now.getUTCDate()) || // different months, but less than a month apart in terms of numeric days
-        (now.getUTCMonth() - fromAdj.getUTCMonth() === 1 && now.getUTCDate() < fromAdj.getUTCDate()) // same as above but in the opposite direction
-    ) {
-        return rtf.format(Math.floor(diff / week), 'week')
-    }
-    // months
-    if (
-        Math.abs(fromAdj.getUTCFullYear() - now.getUTCFullYear()) === 0 || // same year, and all the other conditions above didn't pass
-        (fromAdj.getUTCFullYear() - now.getUTCFullYear() === 1 && fromAdj.getUTCMonth() < now.getUTCMonth()) || // different years, but less than a year apart in terms of months
-        (now.getUTCFullYear() - fromAdj.getUTCFullYear() === 1 && now.getUTCMonth() < fromAdj.getUTCMonth()) // same as the above, but in reverse
-    ) {
-        // add/subtract months to make up for the difference between years
-        let adjMonths = 0
-        if (fromAdj.getUTCFullYear() > now.getUTCFullYear()) {
-            adjMonths = 12
-        } else if (fromAdj.getUTCFullYear() < now.getUTCFullYear()) {
-            adjMonths = -12
-        }
-        return rtf.format(Math.floor(fromAdj.getUTCMonth() - now.getUTCMonth() + adjMonths), 'month')
-    }
-    // years
-    // if all conditionals above have failed, we're looking in terms of a > 1 year gap
-    return rtf.format(Math.floor(fromAdj.getUTCFullYear() - now.getUTCFullYear()), 'year')
-}
-
-/**
- * Format for rendering readable dates.
- *
- * Same format used in the S3 console, but it's also locale-aware.
- * This specifically combines a separate date and time format
- * in order to avoid a comma between the date and time.
- *
- * US: Jan 5, 2020 5:30:20 PM GMT-0700
- * GB: 5 Jan 2020 17:30:20 GMT+0100
- */
-export function formatLocalized(d: Date = new Date(), cloud9 = isCloud9()): string {
-    const dateFormat = new Intl.DateTimeFormat('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-    })
-    const timeFormat = new Intl.DateTimeFormat('en-US', {
-        hour: 'numeric',
-        minute: 'numeric',
-        second: 'numeric',
-        timeZoneName: cloud9 ? 'short' : 'shortOffset',
-    })
-
-    return `${dateFormat.format(d)} ${timeFormat.format(d)}`
-}
-/**
- * Matches Insights console timestamp, e.g.: 2019-03-04T11:40:08.781-08:00
- * TODO: Do we want this this verbose? Log stream just shows HH:mm:ss
- */
-export function formatDateTimestamp(forceUTC: boolean, d: Date = new Date()): string {
-    let offsetString: string
-    if (!forceUTC) {
-        // manually adjust offset seconds if looking for a GMT timestamp:
-        // the date is created in local time, but `getISOString` will always output unadjusted GMT
-        d = new Date(d.getTime() - d.getTimezoneOffset() * 1000 * 60)
-        offsetString = '+00:00'
-    } else {
-        // positive offset means GMT-n, negative offset means GMT+n
-        // offset is in minutes
-        offsetString = `${d.getTimezoneOffset() <= 0 ? '+' : '-'}${(d.getTimezoneOffset() / 60)
-            .toString()
-            .padStart(2, '0')}:00`
-    }
-    const iso = d.toISOString()
-    // trim 'Z' (last char of iso string) and add offset string
-    return `${iso.substring(0, iso.length - 1)}${offsetString}`
-}
-
-/**
- * To satisfy a pentesting concern, encodes HTML to mitigate risk of HTML injection
+ * Encodes HTML special characters to mitigate risk of HTML injection.
  */
 export function encodeHTML(str: string) {
-    return str.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
 }
 
 /**
@@ -334,33 +230,6 @@ export function sanitizeFilename(input: string, replaceString = '_'): string {
                 replaceString
             )
     )
-}
-
-// Given number of milliseconds elapsed (ex. 4,500,000) return hr / min / sec it represents (ex. "1 hr 15 min")
-export function convertToTimeString(durationInMs: number) {
-    const time = new Date(durationInMs)
-    const hours = time.getUTCHours()
-    const minutes = time.getUTCMinutes()
-    const seconds = time.getUTCSeconds()
-    let timeString = `${seconds} sec`
-    if (minutes > 0) {
-        timeString = `${minutes} min ${timeString}`
-    }
-    if (hours > 0) {
-        timeString = `${hours} hr ${timeString}`
-    }
-    return timeString
-}
-
-// Given Date object, return timestamp it represents (ex. "01/01/23, 12:00 AM")
-export function convertDateToTimestamp(date: Date) {
-    return date.toLocaleDateString('en-US', {
-        month: '2-digit',
-        day: '2-digit',
-        year: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-    })
 }
 
 /**
@@ -394,4 +263,27 @@ export function undefinedIfEmpty(str: string | undefined): string | undefined {
     }
 
     return undefined
+}
+
+export function decodeBase64(base64Str: string): string {
+    return Buffer.from(base64Str, 'base64').toString()
+}
+/**
+ * Extracts the file path and selection context from the message.
+ *
+ * @param {any} message - The message object containing the file and selection context.
+ * @returns {Object} - An object with `filePath` and `selection` properties.
+ */
+export function extractFileAndCodeSelectionFromMessage(message: ViewDiffMessage) {
+    const filePath = message?.context?.activeFileContext?.filePath
+    const fileText = message?.context?.activeFileContext?.fileText
+    const selection = message?.context?.focusAreaContext?.selectionInsideExtendedCodeBlock as vscode.Selection
+    return { filePath, fileText, selection }
+}
+
+export function matchesPattern(source: string, target: string | RegExp) {
+    if (typeof target === 'string') {
+        return source.includes(target)
+    }
+    return target.test(source)
 }

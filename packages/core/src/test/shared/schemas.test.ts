@@ -42,32 +42,35 @@ describe('SchemaService', function () {
 
     it('assigns schemas to the yaml extension', async function () {
         const stub = sinon.stub()
+        const fooUri = vscode.Uri.parse('/foo')
+        const barUri = vscode.Uri.parse('/bar')
         fakeYamlExtension.assignSchema = stub
         service.registerMapping({
-            uri: vscode.Uri.parse('/foo'),
+            uri: fooUri,
             type: 'yaml',
             schema: 'cfn',
         })
         service.registerMapping({
-            uri: vscode.Uri.parse('/bar'),
+            uri: barUri,
             type: 'yaml',
             schema: 'sam',
         })
         await service.processUpdates()
-        assert(stub.firstCall.calledWithExactly(vscode.Uri.file('/foo'), cfnSchema))
-        assert(stub.secondCall.calledWithExactly(vscode.Uri.file('/bar'), samSchema))
+        assert(stub.firstCall.calledWithExactly(fooUri, cfnSchema))
+        assert(stub.secondCall.calledWithExactly(barUri, samSchema))
     })
 
     it('removes schemas from the yaml extension', async function () {
         const stub = sinon.stub()
+        const fooUri = vscode.Uri.parse('/foo')
         fakeYamlExtension.removeSchema = stub
         service.registerMapping({
-            uri: vscode.Uri.parse('/foo'),
+            uri: fooUri,
             type: 'yaml',
             schema: undefined,
         })
         await service.processUpdates()
-        assert(stub.calledOnceWithExactly(vscode.Uri.file('/foo')))
+        assert(stub.calledOnceWithExactly(fooUri))
     })
 
     it('registers schemas to json configuration', async function () {

@@ -6,9 +6,34 @@
 import assert from 'assert'
 import { Memento, ConfigurationTarget } from 'vscode'
 import { Settings } from '../../../shared/settings'
-import { convertLegacy, getClientId, getUserAgent, platformPair, TelemetryConfig } from '../../../shared/telemetry/util'
+import {
+    convertLegacy,
+    getClientId,
+    getUserAgent,
+    getUserAgentPairs,
+    userAgentPairsToString,
+    hadClientIdOnStartup,
+    platformPair,
+    SessionId,
+    telemetryClientIdEnvKey,
+    TelemetryConfig,
+    validateMetricEvent,
+    isAnonymousClientId,
+    testClientId,
+    telemetryDisabledClientId,
+    nilClientId,
+} from '../../../shared/telemetry/util'
 import { extensionVersion } from '../../../shared/vscode/env'
 import { FakeMemento } from '../../fakeExtensionContext'
+import { GlobalState } from '../../../shared/globalState'
+import { randomUUID } from 'crypto'
+import { isUuid } from '../../../shared/crypto'
+import { MetricDatum } from '../../../shared/telemetry/clienttelemetry'
+import { assertLogsContain } from '../../globalSetup.test'
+import { getClientName } from '../../../shared/telemetry/util'
+import * as extensionUtilities from '../../../shared/extensionUtilities'
+import * as sinon from 'sinon'
+import * as vscode from 'vscode'
 
 describe('TelemetryConfig', function () {
     const settingKey = 'aws.telemetry'
@@ -72,17 +97,17 @@ describe('TelemetryConfig', function () {
     ]
 
     describe('isTelemetryEnabled', function () {
-        scenarios.forEach((scenario) => {
+        for (const scenario of scenarios) {
             it(scenario.desc, async () => {
                 await settings.update(settingKey, scenario.initialSettingValue)
 
                 assert.strictEqual(sut.isEnabled(), scenario.expectedIsEnabledValue)
             })
-        })
+        }
     })
 
     describe('sanitizeTelemetrySetting', function () {
-        scenarios.forEach((scenario) => {
+        for (const scenario of scenarios) {
             it(scenario.desc, () => {
                 const tryConvert = () => {
                     try {
@@ -94,26 +119,84 @@ describe('TelemetryConfig', function () {
 
                 assert.deepStrictEqual(tryConvert(), scenario.expectedSanitizedValue)
             })
-        })
+        }
+    })
+})
+
+describe('getSessionId', function () {
+    it('returns a stable UUID', function () {
+        const result = SessionId.getSessionId()
+
+        assert.deepStrictEqual(isUuid(result), true)
+        assert.deepStrictEqual(SessionId.getSessionId(), result, 'Subsequent call did not return the same UUID')
+    })
+
+    it('overwrites something that does not look like a UUID', function () {
+        ;(globalThis as any).amzn_sessionId = 'notAUUID'
+        const result = SessionId.getSessionId()
+
+        assert.deepStrictEqual(isUuid(result), true)
+        assert.deepStrictEqual(SessionId.getSessionId(), result, 'Subsequent call did not return the same UUID')
     })
 })
 
 describe('getClientId', function () {
-    it('should generate a unique id', async function () {
-        const c1 = getClientId(new FakeMemento(), true, false, 'x1')
-        const c2 = getClientId(new FakeMemento(), true, false, 'x2')
+    before(function () {
+        setClientIdEnvVar(undefined)
+    })
+
+    afterEach(function () {
+        setClientIdEnvVar(undefined)
+    })
+
+    function testGetClientId(globalState: GlobalState) {
+        return getClientId(globalState, true, false, randomUUID())
+    }
+
+    function setClientIdEnvVar(val: string | undefined) {
+        if (val === undefined) {
+            delete process.env[telemetryClientIdEnvKey]
+            return
+        }
+
+        process.env[telemetryClientIdEnvKey] = val
+    }
+
+    it('generates a unique id if no other id is available', function () {
+        const c1 = testGetClientId(new GlobalState(new FakeMemento()))
+        setClientIdEnvVar(undefined)
+        const c2 = testGetClientId(new GlobalState(new FakeMemento()))
         assert.notStrictEqual(c1, c2)
     })
 
+    it('uses id stored in global state if an id is not found in process.env', async function () {
+        const expectedClientId = 'myId'
+
+        const memento = new GlobalState(new FakeMemento())
+        await memento.update('telemetryClientId', expectedClientId)
+
+        assert.strictEqual(testGetClientId(memento), expectedClientId)
+    })
+
+    it('uses the id stored in process.env if available', async function () {
+        const expectedClientId = 'myId'
+
+        const e = new GlobalState(new FakeMemento())
+        await e.update('telemetryClientId', randomUUID())
+        setClientIdEnvVar(expectedClientId)
+
+        assert.strictEqual(testGetClientId(new GlobalState(new FakeMemento())), expectedClientId)
+    })
+
     it('returns the same value across the calls sequentially', async function () {
-        const memento = new FakeMemento()
-        const c1 = getClientId(memento, true, false, 'y1')
-        const c2 = getClientId(memento, true, false, 'y2')
+        const memento = new GlobalState(new FakeMemento())
+        const c1 = testGetClientId(memento)
+        const c2 = testGetClientId(memento)
         assert.strictEqual(c1, c2)
     })
 
-    it('returns the nil UUID if it fails to save generated UUID', async function () {
-        const mememto: Memento = {
+    it('returns nil UUID if it fails to save generated UUID', async function () {
+        const memento: Memento = {
             keys: () => [],
             get(key) {
                 return undefined
@@ -122,35 +205,78 @@ describe('getClientId', function () {
                 throw new Error()
             },
         }
-        const clientId = getClientId(mememto, true, false, 'x3')
-        assert.strictEqual(clientId, '00000000-0000-0000-0000-000000000000')
+        const clientId = testGetClientId(new GlobalState(memento))
+        // XXX: `notStrictEqual` since getClientId() is now synchronous. Because memento.update() is async.
+        assert.notStrictEqual(clientId, '00000000-0000-0000-0000-000000000000')
     })
 
-    it('returns the nil UUID if fails to retrive a saved UUID.', async function () {
-        const mememto: Memento = {
+    it('returns the nil UUID if it fails to get the saved UUID', async function () {
+        const memento: Memento = {
             keys: () => [],
             get(key) {
                 throw new Error()
             },
             async update(key, value) {},
         }
-        const clientId = getClientId(mememto, true, false, 'x4')
+        class FakeGlobalState extends GlobalState {
+            override tryGet<T>(key: any, defaultVal?: T): T | undefined {
+                return this.memento.get(key)
+            }
+        }
+        const clientId = testGetClientId(new FakeGlobalState(memento))
         assert.strictEqual(clientId, '00000000-0000-0000-0000-000000000000')
     })
 
     it('should be ffffffff-ffff-ffff-ffff-ffffffffffff if in test enviroment', async function () {
-        const clientId = getClientId(new FakeMemento(), true)
+        const clientId = getClientId(new GlobalState(new FakeMemento()), true)
         assert.strictEqual(clientId, 'ffffffff-ffff-ffff-ffff-ffffffffffff')
     })
 
     it('should be ffffffff-ffff-ffff-ffff-ffffffffffff if telemetry is not enabled in test enviroment', async function () {
-        const clientId = getClientId(new FakeMemento(), false)
+        const clientId = getClientId(new GlobalState(new FakeMemento()), false)
         assert.strictEqual(clientId, 'ffffffff-ffff-ffff-ffff-ffffffffffff')
     })
 
     it('should be 11111111-1111-1111-1111-111111111111 if telemetry is not enabled', async function () {
-        const clientId = getClientId(new FakeMemento(), false, false)
+        const clientId = getClientId(new GlobalState(new FakeMemento()), false, false)
         assert.strictEqual(clientId, '11111111-1111-1111-1111-111111111111')
+    })
+
+    describe('hadClientIdOnStartup', async function () {
+        it('returns false when no existing clientId', async function () {
+            const globalState = new GlobalState(new FakeMemento())
+            assert.strictEqual(hadClientIdOnStartup(globalState, testGetClientId), false)
+        })
+
+        it('returns true when existing env var clientId', async function () {
+            const globalState = new GlobalState(new FakeMemento())
+            setClientIdEnvVar('aaa-111')
+            assert.strictEqual(hadClientIdOnStartup(globalState, testGetClientId), true)
+        })
+
+        it('returns true when existing state clientId', async function () {
+            const globalState = new GlobalState(new FakeMemento())
+            await globalState.update('telemetryClientId', 'bbb-222')
+            assert.strictEqual(hadClientIdOnStartup(globalState, testGetClientId), true)
+        })
+    })
+})
+
+describe('isAnonymousClientId', function () {
+    it('is true for the test/automation sentinel', function () {
+        assert.strictEqual(isAnonymousClientId(testClientId), true)
+    })
+
+    it('is true for the telemetry-disabled sentinel', function () {
+        assert.strictEqual(isAnonymousClientId(telemetryDisabledClientId), true)
+    })
+
+    it('is true for the nil (error) sentinel', function () {
+        assert.strictEqual(isAnonymousClientId(nilClientId), true)
+    })
+
+    it('is false for a real client id', function () {
+        assert.strictEqual(isAnonymousClientId(randomUUID()), false)
     })
 })
 
@@ -184,5 +310,259 @@ describe('getUserAgent', function () {
         const clientPairIndex = pairs.findIndex((pair) => pair.startsWith('ClientId/'))
         const beforeClient = pairs[clientPairIndex - 1]
         assert.strictEqual(beforeClient, platformPair())
+    })
+})
+
+describe('getUserAgentPairs', function () {
+    it('returns array of [name, version] pairs', function () {
+        const pairs = getUserAgentPairs()
+        assert.ok(Array.isArray(pairs))
+        assert.strictEqual(pairs.length, 1, 'Should have exactly one pair by default')
+        assert.ok(Array.isArray(pairs[0]), 'Each pair should be an array')
+        assert.strictEqual(pairs[0].length, 2, 'Each pair should have exactly 2 elements')
+        assert.ok(pairs[0][0].includes('Toolkit-For-VSCode'), 'Should include toolkit name')
+        assert.strictEqual(pairs[0][1], extensionVersion, 'Should include extension version')
+    })
+
+    it('includes platform pair when opted in', function () {
+        const pairs = getUserAgentPairs({ includePlatform: true })
+        assert.ok(pairs.length > 1, 'Should have more than one pair when platform is included')
+        const platformPairStr = platformPair()
+        const [platformName, platformVersion] = platformPairStr.split('/')
+        const foundPlatformPair = pairs.find((pair) => pair[0] === platformName && pair[1] === platformVersion)
+        assert.ok(foundPlatformPair, 'Should include platform pair')
+    })
+
+    it('includes ClientId pair when opted in', function () {
+        const pairs = getUserAgentPairs({ includeClientId: true })
+        const clientIdPair = pairs.find((pair) => pair[0] === 'ClientId')
+        assert.ok(clientIdPair, 'Should include ClientId pair')
+        assert.ok(clientIdPair[1], 'ClientId should have a value')
+    })
+
+    it('includes both platform and ClientId when both opted in', function () {
+        const pairs = getUserAgentPairs({ includePlatform: true, includeClientId: true })
+        assert.ok(pairs.length >= 3, 'Should have at least 3 pairs')
+        const clientIdPair = pairs.find((pair) => pair[0] === 'ClientId')
+        assert.ok(clientIdPair, 'Should include ClientId pair')
+        const platformPairStr = platformPair()
+        const [platformName] = platformPairStr.split('/')
+        const foundPlatformPair = pairs.find((pair) => pair[0] === platformName)
+        assert.ok(foundPlatformPair, 'Should include platform pair')
+    })
+
+    it('omits ClientId by default', function () {
+        const pairs = getUserAgentPairs()
+        const clientIdPair = pairs.find((pair) => pair[0] === 'ClientId')
+        assert.strictEqual(clientIdPair, undefined, 'Should not include ClientId by default')
+    })
+
+    it('omits platform by default', function () {
+        const pairs = getUserAgentPairs()
+        assert.strictEqual(pairs.length, 1, 'Should have exactly one pair when nothing is opted in')
+    })
+})
+
+describe('userAgentPairsToString', function () {
+    it('converts pairs to string format', function () {
+        const pairs: [string, string][] = [
+            ['LAMBDA-DEBUG', '1.0.0'],
+            ['AWS-Toolkit', '2.0'],
+        ]
+        const result = userAgentPairsToString(pairs)
+        assert.strictEqual(result, 'LAMBDA-DEBUG/1.0.0 AWS-Toolkit/2.0')
+    })
+
+    it('handles single pair', function () {
+        const pairs: [string, string][] = [['AWS-Toolkit-For-VSCode', extensionVersion]]
+        const result = userAgentPairsToString(pairs)
+        assert.strictEqual(result, `AWS-Toolkit-For-VSCode/${extensionVersion}`)
+    })
+
+    it('handles empty array', function () {
+        const pairs: [string, string][] = []
+        const result = userAgentPairsToString(pairs)
+        assert.strictEqual(result, '')
+    })
+
+    it('matches getUserAgent output when using getUserAgentPairs', function () {
+        const userAgentString = getUserAgent({ includePlatform: true, includeClientId: true })
+        const userAgentPairs = getUserAgentPairs({ includePlatform: true, includeClientId: true })
+        const reconstructedString = userAgentPairsToString(userAgentPairs)
+        assert.strictEqual(reconstructedString, userAgentString, 'String conversion should match getUserAgent output')
+    })
+})
+
+describe('validateMetricEvent', function () {
+    it('does not validate exempt metrics', function () {
+        const metricEvent: MetricDatum = {
+            MetricName: 'exempt_metric',
+            Value: 1,
+            Unit: 'None',
+            Metadata: [{ Key: 'result', Value: 'Succeeded' }],
+        } as MetricDatum
+
+        validateMetricEvent(metricEvent, true, (_) => true)
+        assert.throws(() => assertLogsContain('invalid Metric', false, 'warn'))
+    })
+
+    it('passes validation for metrics with proper result property', function () {
+        const metricEvent: MetricDatum = {
+            MetricName: 'valid_metric',
+            Value: 1,
+            Unit: 'None',
+            Metadata: [{ Key: 'result', Value: 'Succeeded' }],
+        } as MetricDatum
+
+        validateMetricEvent(metricEvent, true, (_) => false)
+        assert.throws(() => assertLogsContain('invalid Metric', false, 'warn'))
+    })
+
+    it('passes validation for metrics with Failed result and reason property', function () {
+        const metricEvent: MetricDatum = {
+            MetricName: 'valid_failed_metric',
+            Value: 1,
+            Unit: 'None',
+            Metadata: [
+                { Key: 'result', Value: 'Failed' },
+                { Key: 'reason', Value: 'Something went wrong' },
+            ],
+        } as MetricDatum
+
+        validateMetricEvent(metricEvent, true, (_) => false)
+    })
+
+    it('fails validation for metrics missing result property when fatal=true', function () {
+        const metricEvent: MetricDatum = {
+            MetricName: 'invalid_metric_no_result',
+            Value: 1,
+            Unit: 'None',
+            Metadata: [{ Key: 'someOtherProperty', Value: 'value' }],
+        } as MetricDatum
+
+        assert.throws(
+            () => validateMetricEvent(metricEvent, true, (_) => false),
+            /emitted without the `result` property/
+        )
+    })
+
+    it('logs warning for metrics missing result property when fatal=false', function () {
+        const metricEvent: MetricDatum = {
+            MetricName: 'invalid_metric_no_result',
+            Value: 1,
+            Unit: 'None',
+            Metadata: [{ Key: 'someOtherProperty', Value: 'value' }],
+        } as MetricDatum
+
+        validateMetricEvent(metricEvent, false, (_) => false)
+        assertLogsContain('invalid Metric', false, 'warn')
+    })
+
+    it('fails validation for metrics with Failed result but missing reason property when fatal=true', function () {
+        const metricEvent: MetricDatum = {
+            MetricName: 'invalid_metric_failed_no_reason',
+            Value: 1,
+            Unit: 'None',
+            Metadata: [{ Key: 'result', Value: 'Failed' }],
+        } as MetricDatum
+
+        assert.throws(
+            () => validateMetricEvent(metricEvent, true),
+            /emitted with result=Failed but without the `reason` property/
+        )
+    })
+
+    it('logs warning for metrics with Failed result but missing reason property when fatal=false', function () {
+        const metricEvent: MetricDatum = {
+            MetricName: 'invalid_metric_failed_no_reason',
+            Value: 1,
+            Unit: 'None',
+            Metadata: [{ Key: 'result', Value: 'Failed' }],
+        } as MetricDatum
+
+        validateMetricEvent(metricEvent, false)
+        assertLogsContain('invalid Metric', false, 'warn')
+    })
+
+    it('does not fail validation for metrics with missing fields with fatal=true', function () {
+        const metricEvent: MetricDatum = {
+            MetricName: 'invalid_metric_missing_fields',
+            Value: 1,
+            Unit: 'None',
+            Metadata: [
+                { Key: 'result', Value: 'Succeeded' },
+                { Key: 'missingFields', Value: 'field1,field2' },
+            ],
+        } as MetricDatum
+
+        validateMetricEvent(metricEvent, false)
+        assertLogsContain('invalid Metric', false, 'warn')
+    })
+})
+
+describe('getClientName', function () {
+    let sandbox: sinon.SinonSandbox
+    let isSageMakerStub: sinon.SinonStub
+
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
+        isSageMakerStub = sandbox.stub(extensionUtilities, 'isSageMaker')
+    })
+
+    afterEach(function () {
+        sandbox.restore()
+    })
+
+    it('returns "AmazonQ-For-SMUS-CE" when in SMUS environment', function () {
+        isSageMakerStub.withArgs('SMUS').returns(true)
+        sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
+
+        const result = getClientName()
+
+        assert.strictEqual(result, 'AmazonQ-For-SMUS-CE')
+        assert.ok(isSageMakerStub.calledOnceWith('SMUS'))
+    })
+
+    it('returns "AmazonQ-For-SMAI-CE" when in SMAI environment', function () {
+        isSageMakerStub.withArgs('SMUS').returns(false)
+        isSageMakerStub.withArgs('SMAI').returns(true)
+        sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
+
+        const result = getClientName()
+
+        assert.strictEqual(result, 'AmazonQ-For-SMAI-CE')
+        assert.ok(isSageMakerStub.calledWith('SMUS'))
+        assert.ok(isSageMakerStub.calledWith('SMAI'))
+    })
+
+    it('returns vscode app name when not in SMUS environment', function () {
+        const mockAppName = 'Visual Studio Code'
+        isSageMakerStub.withArgs('SMUS').returns(false)
+        isSageMakerStub.withArgs('SMAI').returns(false)
+        sandbox.stub(vscode.env, 'appName').value(mockAppName)
+
+        const result = getClientName()
+
+        assert.strictEqual(result, mockAppName)
+        assert.ok(isSageMakerStub.calledWith('SMUS'))
+        assert.ok(isSageMakerStub.calledWith('SMAI'))
+    })
+
+    it('handles undefined app name gracefully', function () {
+        isSageMakerStub.withArgs('SMUS').returns(false)
+        sandbox.stub(vscode.env, 'appName').value(undefined)
+
+        const result = getClientName()
+
+        assert.strictEqual(result, undefined)
+    })
+
+    it('prioritizes SMUS detection over app name', function () {
+        isSageMakerStub.withArgs('SMUS').returns(true)
+        sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
+
+        const result = getClientName()
+
+        assert.strictEqual(result, 'AmazonQ-For-SMUS-CE')
     })
 })

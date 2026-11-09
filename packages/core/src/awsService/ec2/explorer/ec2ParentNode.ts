@@ -7,8 +7,10 @@ import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { makeChildrenNodes } from '../../../shared/treeview/utils'
 import { PlaceholderNode } from '../../../shared/treeview/nodes/placeholderNode'
 import { Ec2InstanceNode } from './ec2InstanceNode'
-import { Ec2Client } from '../../../shared/clients/ec2Client'
+import { Ec2Client } from '../../../shared/clients/ec2'
 import { updateInPlace } from '../../../shared/utilities/collectionUtils'
+import { PollingSet } from '../../../shared/utilities/pollingSet'
+import { Filter } from '@aws-sdk/client-ec2'
 
 export const parentContextValue = 'awsEc2ParentNode'
 export type Ec2Node = Ec2InstanceNode | Ec2ParentNode
@@ -17,6 +19,8 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
     protected readonly placeHolderMessage = '[No EC2 Instances Found]'
     protected ec2InstanceNodes: Map<string, Ec2InstanceNode>
     public override readonly contextValue: string = parentContextValue
+    public readonly pollingSet: PollingSet<string> = new PollingSet(5000, this.updatePendingNodes.bind(this))
+    private tagFilter: Filter[] | undefined
 
     public constructor(
         public override readonly regionCode: string,
@@ -25,10 +29,26 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
     ) {
         super('EC2', vscode.TreeItemCollapsibleState.Collapsed)
         this.ec2InstanceNodes = new Map<string, Ec2InstanceNode>()
+        this.tagFilter = undefined
+    }
+
+    public setTagFilter(key: string, value: string): void {
+        if (key !== '') {
+            if (value !== '') {
+                this.tagFilter = [{ Name: `tag:${key}`, Values: [value] }]
+                this.label = `EC2 [tag: ${key}=${value}]`
+            } else {
+                this.tagFilter = [{ Name: 'tag-key', Values: [key] }]
+                this.label = `EC2 [tag: ${key}]`
+            }
+        } else {
+            this.tagFilter = undefined
+            this.label = 'EC2'
+        }
     }
 
     public override async getChildren(): Promise<AWSTreeNodeBase[]> {
-        return await makeChildrenNodes({
+        const result = await makeChildrenNodes({
             getChildNodes: async () => {
                 await this.updateChildren()
 
@@ -37,21 +57,60 @@ export class Ec2ParentNode extends AWSTreeNodeBase {
             getNoChildrenPlaceholderNode: async () => new PlaceholderNode(this, this.placeHolderMessage),
             sort: (nodeA, nodeB) => nodeA.name.localeCompare(nodeB.name),
         })
+        return result
     }
 
+    public trackPendingNode(instanceId: string) {
+        if (!this.ec2InstanceNodes.has(instanceId)) {
+            throw new Error(`Attempt to track ec2 node ${instanceId} that isn't a child`)
+        }
+        this.pollingSet.add(instanceId)
+    }
+    // TODO: make use of childNodeLoader to avoid loading all of this at once.
     public async updateChildren(): Promise<void> {
-        const ec2Instances = await (await this.ec2Client.getInstances()).toMap((instance) => instance.InstanceId)
+        const instanceMap = await this.ec2Client
+            .getInstances(this.tagFilter)
+            .flatten()
+            .toMap((instance) => instance.InstanceId)
+
         updateInPlace(
             this.ec2InstanceNodes,
-            ec2Instances.keys(),
-            (key) => this.ec2InstanceNodes.get(key)!.updateInstance(ec2Instances.get(key)!),
-            (key) =>
-                new Ec2InstanceNode(this, this.ec2Client, this.regionCode, this.partitionId, ec2Instances.get(key)!)
+            instanceMap.keys(),
+            (key) => this.ec2InstanceNodes.get(key)!.updateInstance(instanceMap.get(key)!),
+            (key) => new Ec2InstanceNode(this, this.ec2Client, this.regionCode, this.partitionId, instanceMap.get(key)!)
         )
+    }
+
+    public getInstanceNode(instanceId: string): Ec2InstanceNode {
+        const childNode = this.ec2InstanceNodes.get(instanceId)
+        if (childNode) {
+            return childNode
+        } else {
+            throw new Error(`Node with id ${instanceId} from polling set not found`)
+        }
+    }
+
+    private async updatePendingNodes() {
+        for (const instanceId of this.pollingSet.values()) {
+            const childNode = this.getInstanceNode(instanceId)
+            await this.updatePendingNode(childNode)
+        }
+    }
+
+    private async updatePendingNode(node: Ec2InstanceNode) {
+        await node.updateStatus()
+        if (!node.isPending()) {
+            this.pollingSet.delete(node.InstanceId)
+            await node.refreshNode()
+        }
     }
 
     public async clearChildren() {
         this.ec2InstanceNodes = new Map<string, Ec2InstanceNode>()
+    }
+
+    public addChild(node: Ec2InstanceNode) {
+        this.ec2InstanceNodes.set(node.InstanceId, node)
     }
 
     public async refreshNode(): Promise<void> {

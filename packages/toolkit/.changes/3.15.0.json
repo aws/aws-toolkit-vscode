@@ -1,0 +1,10 @@
+{
+	"date": "2024-07-18",
+	"version": "3.15.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Unexpected SSO expiration on Windows due to EPERM"
+		}
+	]
+}

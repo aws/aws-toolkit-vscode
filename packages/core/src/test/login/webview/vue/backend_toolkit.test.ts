@@ -16,8 +16,9 @@ import {
     CodeCatalystAuthStorage,
     defaultScopes,
 } from '../../../../codecatalyst/auth'
-import { FakeSecretStorage, FakeMemento } from '../../../fakeExtensionContext'
+import { FakeSecretStorage } from '../../../fakeExtensionContext'
 import * as authUtils from '../../../../auth/utils'
+import globals from '../../../../shared/extensionGlobals'
 
 // TODO: remove auth page and tests
 describe('Toolkit Login', function () {
@@ -34,10 +35,9 @@ describe('Toolkit Login', function () {
 
     beforeEach(function () {
         sandbox = createSandbox()
-        auth = createTestAuth()
+        auth = createTestAuth(globals.globalState)
         codecatalystAuth = new CodeCatalystAuthenticationProvider(
             new CodeCatalystAuthStorage(new FakeSecretStorage()),
-            new FakeMemento(),
             auth
         )
         sandbox.stub(Auth, 'instance').value(auth)
@@ -117,6 +117,33 @@ describe('Toolkit Login', function () {
         assertTelemetry('auth_addConnection', {
             result: 'Succeeded',
             credentialSourceId: 'sharedCredentials',
+            authEnabledFeatures: 'awsExplorer',
+        })
+    })
+
+    it('signs in with console credentials and emits telemetry', async function () {
+        const stub = sandbox.stub(authUtils, 'setupConsoleConnection').resolves()
+        await backend.startConsoleCredentialSetup(profileName, region)
+
+        assert.ok(stub.calledOnceWith(profileName, region))
+        assertTelemetry('auth_addConnection', {
+            result: 'Succeeded',
+            credentialSourceId: 'consoleCredentials',
+            authEnabledFeatures: 'awsExplorer',
+        })
+    })
+
+    it('returns error when console credential setup fails', async function () {
+        const error = new Error('Console login failed')
+        sandbox.stub(authUtils, 'setupConsoleConnection').rejects(error)
+
+        const result = await backend.startConsoleCredentialSetup(profileName, region)
+
+        assert.strictEqual(result?.id, backend.id)
+        assert.strictEqual(result?.text, 'Console login failed')
+        assertTelemetry('auth_addConnection', {
+            result: 'Failed',
+            credentialSourceId: 'consoleCredentials',
             authEnabledFeatures: 'awsExplorer',
         })
     })

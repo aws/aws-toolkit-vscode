@@ -4,20 +4,20 @@
  */
 
 import { EventEmitter } from 'vscode'
-import { MessagePublisher } from '../messages/messagePublisher'
+import { MessagePublisher, UiMessagePublisher } from '../messages/messagePublisher'
 import { MessageListener } from '../messages/messageListener'
 import { TabType } from '../webview/ui/storages/tabsStorage'
 
 export interface AmazonQAppInitContext {
     registerWebViewToAppMessagePublisher(eventEmitter: MessagePublisher<any>, tabType: TabType): void
-    getAppsToWebViewMessagePublisher(): MessagePublisher<any>
+    getAppsToWebViewMessagePublisher(): UiMessagePublisher<any>
     onDidChangeAmazonQVisibility: EventEmitter<boolean>
 }
 
 export class DefaultAmazonQAppInitContext implements AmazonQAppInitContext {
     private readonly appsToWebViewEventEmitter = new EventEmitter<any>()
     private readonly appsToWebViewMessageListener = new MessageListener<any>(this.appsToWebViewEventEmitter)
-    private readonly appsToWebViewMessagePublisher = new MessagePublisher<any>(this.appsToWebViewEventEmitter)
+    private readonly appsToWebViewMessagePublisher = new UiMessagePublisher<any>(this.appsToWebViewEventEmitter)
     private readonly webViewToAppsMessagePublishers: Map<TabType, MessagePublisher<any>> = new Map()
     public readonly onDidChangeAmazonQVisibility = new EventEmitter<boolean>()
 
@@ -41,7 +41,7 @@ export class DefaultAmazonQAppInitContext implements AmazonQAppInitContext {
         return this.appsToWebViewMessageListener
     }
 
-    getAppsToWebViewMessagePublisher(): MessagePublisher<any> {
+    getAppsToWebViewMessagePublisher(): UiMessagePublisher<any> {
         return this.appsToWebViewMessagePublisher
     }
 }

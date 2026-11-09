@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as localizedText from '../../../shared/localizedText'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { IotThingNode } from '../explorer/iotThingNode'
 import { showViewLogsMessage, showConfirmationMessage } from '../../../shared/utilities/messages'
@@ -58,6 +58,6 @@ export async function deleteThingCommand(node: IotThingNode): Promise<void> {
         void showViewLogsMessage(localize('AWS.iot.deleteThing.error', 'Failed to delete Thing: {0}', thingName))
     }
 
-    //Refresh the Things Folder node
+    // Refresh the Things Folder node
     await node.parent.refreshNode()
 }

@@ -19,7 +19,7 @@ const environmentEndpoint = process.env['__MDE_ENVIRONMENT_API'] ?? 'http://127.
 export class DevEnvClient implements vscode.Disposable {
     static #instance: DevEnvClient
     private readonly timer
-    private lastStatus = ''
+    private LastSeenStatus = ''
     private onStatusChangeFn: undefined | ((oldStatus: string, newStatus: string) => void)
 
     /** Singleton instance (to avoid multiple polling workers). */
@@ -36,19 +36,19 @@ export class DevEnvClient implements vscode.Disposable {
             getLogger().debug('codecatalyst: DevEnvClient started')
             this.timer = globals.clock.setInterval(async () => {
                 const r = await this.getStatus()
-                if (this.lastStatus !== r.status) {
+                if (this.LastSeenStatus !== r.status) {
                     const newStatus = r.status ?? 'NULL'
                     getLogger().info(
                         'codecatalyst: DevEnvClient: status change (old=%s new=%s)%s%s',
-                        this.lastStatus,
+                        this.LastSeenStatus,
                         newStatus,
                         r.actionId ? ` action=${r.actionId}` : '',
                         r.message ? `: "${r.message}"` : ''
                     )
                     if (this.onStatusChangeFn) {
-                        this.onStatusChangeFn(this.lastStatus, newStatus)
+                        this.onStatusChangeFn(this.LastSeenStatus, newStatus)
                     }
-                    this.lastStatus = newStatus ?? 'NULL'
+                    this.LastSeenStatus = newStatus ?? 'NULL'
                 }
             }, 1000)
         }

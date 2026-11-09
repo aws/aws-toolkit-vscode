@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../../../shared/logger'
+import { getLogger } from '../../../../shared/logger/logger'
 import { CdkAppLocation, getApp } from '../cdkProject'
 import { ConstructNode, generateConstructNodes } from './constructNode'
 import { TreeNode } from '../../../../shared/treeview/resourceTreeDataProvider'

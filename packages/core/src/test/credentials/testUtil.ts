@@ -8,9 +8,8 @@ import * as vscode from 'vscode'
 import { Auth } from '../../auth/auth'
 import { CredentialsProviderManager } from '../../auth/providers/credentialsProviderManager'
 import { SsoClient } from '../../auth/sso/clients'
-import { builderIdStartUrl, SsoToken } from '../../auth/sso/model'
+import { ClientRegistration, SsoToken } from '../../auth/sso/model'
 import { DeviceFlowAuthorization, SsoAccessTokenProvider } from '../../auth/sso/ssoAccessTokenProvider'
-import { FakeMemento } from '../fakeExtensionContext'
 import { captureEvent, EventCapturer } from '../testUtil'
 import { stub } from '../utilities/stubber'
 import globals from '../../shared/extensionGlobals'
@@ -19,6 +18,13 @@ import { mergeAndValidateSections, parseIni } from '../../auth/credentials/share
 import { SharedCredentialsProvider } from '../../auth/providers/sharedCredentialsProvider'
 import { Connection, IamConnection, ProfileStore, SsoConnection, SsoProfile } from '../../auth/connection'
 import * as sinon from 'sinon'
+import { builderIdStartUrl } from '../../auth/sso/constants'
+
+export const mockRegistration = {
+    clientId: 'test-client-id',
+    clientSecret: 'test-client-secret',
+    expiresAt: new Date(Date.now()),
+}
 
 /** Mock Connection objects for test usage */
 export const ssoConnection: SsoConnection = {
@@ -28,9 +34,21 @@ export const ssoConnection: SsoConnection = {
     ssoRegion: 'us-east-1',
     startUrl: 'https://nkomonen.awsapps.com/start',
     getToken: sinon.stub(),
+    getRegistration: async () => mockRegistration as ClientRegistration,
+    endpointUrl: undefined,
 }
-export const builderIdConnection: SsoConnection = { ...ssoConnection, startUrl: builderIdStartUrl, label: 'builderId' }
-export const iamConnection: IamConnection = { type: 'iam', id: '0', label: 'iam', getCredentials: sinon.stub() }
+export const builderIdConnection: SsoConnection = {
+    ...ssoConnection,
+    startUrl: builderIdStartUrl,
+    label: 'builderId',
+}
+export const iamConnection: IamConnection = {
+    type: 'iam',
+    id: '0',
+    label: 'iam',
+    getCredentials: sinon.stub(),
+    endpointUrl: undefined,
+}
 
 export function createSsoProfile(props?: Partial<Omit<SsoProfile, 'type'>>): SsoProfile {
     return {
@@ -61,10 +79,12 @@ function createTestTokenProvider() {
     let counter = 0
     const provider = stub(DeviceFlowAuthorization)
     provider.getToken.callsFake(async () => token)
+    provider.getClientRegistration.callsFake(async () => mockRegistration as ClientRegistration)
     provider.createToken.callsFake(
         async () => (token = { accessToken: String(++counter), expiresAt: new Date(Date.now() + 1000000) })
     )
     provider.invalidate.callsFake(async () => (token = undefined))
+    provider.getSessionDuration.callsFake(() => 11223355)
 
     return provider
 }
@@ -80,7 +100,7 @@ type TestAuth = Auth & {
     getTestTokenProvider(connection: Pick<Connection, 'id'>): ReturnType<typeof createTestTokenProvider>
 }
 
-export function createTestAuth(): TestAuth {
+export function createTestAuth(globalState: vscode.Memento): TestAuth {
     const tokenProviders = new Map<string, ReturnType<typeof createTestTokenProvider>>()
 
     function getTokenProvider(...[profile]: ConstructorParameters<typeof SsoAccessTokenProvider>) {
@@ -99,7 +119,7 @@ export function createTestAuth(): TestAuth {
     async function invalidateCachedCredentials(conn: Connection) {
         if (conn.type === 'sso') {
             const provider = tokenProviders.get(conn.id)
-            await provider?.invalidate()
+            await provider?.invalidate('test')
         } else {
             globals.loginManager.store.invalidateCredentials(fromString(conn.id))
         }
@@ -108,7 +128,7 @@ export function createTestAuth(): TestAuth {
     const ssoClient = stub(SsoClient, { region: 'not set' })
     ssoClient.logout.resolves()
 
-    const store = new ProfileStore(new FakeMemento())
+    const store = new ProfileStore(globalState)
     const credentialsManager = new CredentialsProviderManager()
     const auth = new Auth(store, credentialsManager, () => ssoClient, getTokenProvider)
 

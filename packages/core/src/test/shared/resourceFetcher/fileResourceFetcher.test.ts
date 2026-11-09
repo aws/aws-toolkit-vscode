@@ -4,10 +4,10 @@
  */
 
 import assert from 'assert'
-import * as fs from 'fs-extra'
 import { join } from 'path'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { FileResourceFetcher } from '../../../shared/resourcefetcher/fileResourceFetcher'
+import { fs } from '../../../shared'
 
 describe('FileResourceFetcher', async function () {
     let tempFolder: string
@@ -17,7 +17,7 @@ describe('FileResourceFetcher', async function () {
     })
 
     afterEach(async function () {
-        await fs.remove(tempFolder)
+        await fs.delete(tempFolder, { recursive: true })
     })
 
     it('loads the contents of a file', async function () {

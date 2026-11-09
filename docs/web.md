@@ -16,7 +16,7 @@ You can run the Web mode implementation of the extension in the following ways.
 -   To see logs, using the Command Palette search: `Toggle Developer Tools`. Then go to the `Console` tab. In web mode VS Code seems to duplicate log messages, idk how to fix this.
 -   The difference between web mode and Node.js/desktop is that in web mode everything runs in browser environment so certain things like Node.js modules will **not** be available.
 
-## Running in an actual Browser
+## Running in an actual Browser (Recommended)
 
 The following steps will result in a Chrome window running with VS Code
 and the web version of the AWS Toolkit extension installed:
@@ -43,7 +43,7 @@ and the web version of the AWS Toolkit extension installed:
     const context = browser
     ```
 
-2. In the `Run & Debug` menu select the `Extension (Chrome)` option
+2. In the `Run & Debug` menu select the `Extension Web` option
 
 > Note: To stop the debug session, you need to click the read `Disconnect` button multiple times
 
@@ -62,6 +62,12 @@ do the following:
 
 Now when you run the extension in the browser it will do CORS checks.
 
+### Troubleshooting
+
+-   `Extension Web` fails to launch
+    -   Update `@vscode/test-web` by running `$ npm install @vscode/test-web@latest`
+    -   Update/install playwright with `$ npx playwright install`. This will be mentioned in one of the build tasks outputs.
+
 ## Running in [vscode.dev](https://vscode.dev)
 
 The following will explain how to get your latest local development changes running in the actual `vscode.dev`. Use this if you want to test on an actual VS Code Web instance.
@@ -69,7 +75,7 @@ The following will explain how to get your latest local development changes runn
 1. Build the extension. We need the Web mode entrypoint file to exist.
 2. OPTIONAL: Start up your browser with security disabled. Certain functionalities do not support CORS and will fail otherwise.
     - On MacOS from the CLI is similar to `/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --disable-web-security`
-3. `cd` to the extension you want to test in `packages/`. Eg: `packages/amazonq/`.
+3. `cd` to the extension you want to test in `packages/`. Eg: `packages/toolkit/`.
     - We need to do this since the following command hosts your build from the `cwd`.
 4. Follow the [VS Code documentation](https://code.visualstudio.com/api/extension-guides/web-extensions#test-your-web-extension-in-vscode.dev) for setting up certs, serving your the latest changes, and installing the extension to `vscode.dev`.
 
@@ -85,7 +91,7 @@ VS Code window, in the background it is running in a Browser context.
 
 ## Adding Web mode specific npm modules
 
-If you need to manage npm modules required for Web mode, such as a [browserfied module](https://www.npmjs.com/package/os-browserify), see [the documentation here](../packages/core/src/web/README.md).
+If you need to manage npm modules required for Web mode, such as a [browserfied module](https://www.npmjs.com/package/os-browserify), see [the documentation here](../packages/core/src/web/README.md#packagejson).
 
 ## Finding incompatible transitive dependencies
 

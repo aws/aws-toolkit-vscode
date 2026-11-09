@@ -33,24 +33,24 @@ describe('GlobalState', function () {
     ]
 
     describe('get()', function () {
-        scenarios.forEach((scenario) => {
+        for (const scenario of scenarios) {
             it(scenario.desc, async () => {
                 await globalState.update(testKey, scenario.testValue)
 
                 const actualValue = globalState.get(testKey)
                 assert.deepStrictEqual(actualValue, scenario.testValue)
             })
-        })
+        }
     })
 
     describe('update()', function () {
-        scenarios.forEach((scenario) => {
+        for (const scenario of scenarios) {
             it(scenario.desc, async () => {
                 await globalState.update(testKey, scenario.testValue)
                 const savedValue = globalState.get(testKey)
                 assert.deepStrictEqual(savedValue, scenario.testValue)
             })
-        })
+        }
     })
 
     it('getStrict()', async () => {
@@ -95,6 +95,20 @@ describe('GlobalState', function () {
         assert.deepStrictEqual(globalState.tryGet(testKey, String, ''), '')
         assert.deepStrictEqual(globalState.tryGet(testKey, Object, {}), {})
         assert.deepStrictEqual(globalState.tryGet(testKey, Boolean, true), true)
+    })
+
+    it('clear()', async () => {
+        const keys = ['CODECATALYST_RECONNECT', 'SAM_INIT_ARCH_KEY', 'aws.redshift.connections']
+        await globalState.update(keys[0] as any, 'val1')
+        await globalState.update(keys[1] as any, 'val2')
+        await globalState.update(keys[2] as any, 'val3')
+        assert.deepStrictEqual(globalState.keys(), keys)
+        assert.deepStrictEqual(globalState.values(), ['val1', 'val2', 'val3'])
+
+        await globalState.clear()
+
+        assert.deepStrictEqual(globalState.keys(), [])
+        assert.deepStrictEqual(globalState.values(), [])
     })
 
     describe('redshift state', function () {

@@ -7,18 +7,21 @@ import * as vscode from 'vscode'
 import { Commands } from '../shared/vscode/commands2'
 import { TransformationHubViewProvider } from '../codewhisperer/service/transformByQ/transformationHubViewProvider'
 import { ExtContext } from '../shared/extensions'
-import { stopTransformByQ } from '../codewhisperer/commands/startTransformByQ'
+import {
+    cleanupTransformationJob,
+    postTransformationJob,
+    stopTransformByQ,
+} from '../codewhisperer/commands/startTransformByQ'
 import { transformByQState } from '../codewhisperer/models/model'
 import { ProposedTransformationExplorer } from '../codewhisperer/service/transformByQ/transformationResultsViewProvider'
 import { CodeTransformTelemetryState } from './telemetry/codeTransformTelemetryState'
 import { telemetry } from '../shared/telemetry/telemetry'
-import { CancelActionPositions } from './telemetry/codeTransformTelemetry'
-import { setContext } from '../shared'
+import { setContext } from '../shared/vscode/setContext'
 
 export async function activate(context: ExtContext) {
     void setContext('gumby.wasQCodeTransformationUsed', false)
 
-    const transformationHubViewProvider = new TransformationHubViewProvider()
+    const transformationHubViewProvider = TransformationHubViewProvider.instance
     new ProposedTransformationExplorer(context.extensionContext)
     // Register an activation event listener to determine when the IDE opens, closes or users
     // select to open a new workspace
@@ -46,9 +49,11 @@ export async function activate(context: ExtContext) {
     context.extensionContext.subscriptions.push(
         vscode.window.registerWebviewViewProvider('aws.amazonq.transformationHub', transformationHubViewProvider),
 
-        Commands.register('aws.amazonq.stopTransformationInHub', async (cancelSrc: CancelActionPositions) => {
+        Commands.register('aws.amazonq.stopTransformationInHub', async () => {
             if (transformByQState.isRunning()) {
-                void stopTransformByQ(transformByQState.getJobId(), cancelSrc)
+                await stopTransformByQ(transformByQState.getJobId())
+                await postTransformationJob()
+                await cleanupTransformationJob()
             }
         }),
 
@@ -66,6 +71,13 @@ export async function activate(context: ExtContext) {
                 vscode.Uri.file(transformByQState.getPlanFilePath())
             )
         }),
+
+        Commands.register(
+            'aws.amazonq.transformationHub.updateContent',
+            async (button, startTime, historyFileUpdated) => {
+                await transformationHubViewProvider.updateContent(button, startTime, historyFileUpdated)
+            }
+        ),
 
         workspaceChangeEvent
     )

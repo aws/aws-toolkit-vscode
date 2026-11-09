@@ -6,8 +6,6 @@
 import { commandPalette } from '../../codewhisperer/commands/types'
 import { CodeScanIssue } from '../../codewhisperer/models/model'
 import { Commands, VsCodeCommandArg, placeholder } from '../../shared/vscode/commands2'
-import { ChatControllerMessagePublishers } from '../controllers/chat/controller'
-import vscode from 'vscode'
 
 /**
  * Opens the Amazon Q panel, showing the correct View that should
@@ -25,8 +23,8 @@ export const focusAmazonQPanel = Commands.declare(
          * So when we try to focus the following Views, only one will show depending
          * on the context.
          */
-        await vscode.commands.executeCommand('aws.AmazonQChatView.focus')
-        await vscode.commands.executeCommand('aws.amazonq.AmazonCommonAuth.focus')
+        await Commands.tryExecute('aws.amazonq.AmazonQChatView.focus')
+        await Commands.tryExecute('aws.amazonq.AmazonCommonAuth.focus')
     }
 )
 
@@ -38,62 +36,11 @@ export const focusAmazonQPanelKeybinding = Commands.declare('_aws.amazonq.focusC
     await focusAmazonQPanel.execute(placeholder, 'keybinding')
 })
 
-const getCommandTriggerType = (data: any): EditorContextCommandTriggerType => {
-    // data is undefined when commands triggered from keybinding or command palette. Currently no
-    // way to differentiate keybinding and command palette, so both interactions are recorded as keybinding
-    return data === undefined ? 'keybinding' : 'contextMenu'
-}
-
-export function registerCommands(controllerPublishers: ChatControllerMessagePublishers) {
-    Commands.register('aws.amazonq.explainCode', async (data) => {
-        return focusAmazonQPanel.execute(placeholder, 'amazonq.explainCode').then(() => {
-            controllerPublishers.processContextMenuCommand.publish({
-                type: 'aws.amazonq.explainCode',
-                triggerType: getCommandTriggerType(data),
-            })
-        })
-    })
-    Commands.register('aws.amazonq.refactorCode', async (data) => {
-        return focusAmazonQPanel.execute(placeholder, 'amazonq.refactorCode').then(() => {
-            controllerPublishers.processContextMenuCommand.publish({
-                type: 'aws.amazonq.refactorCode',
-                triggerType: getCommandTriggerType(data),
-            })
-        })
-    })
-    Commands.register('aws.amazonq.fixCode', async (data) => {
-        return focusAmazonQPanel.execute(placeholder, 'amazonq.fixCode').then(() => {
-            controllerPublishers.processContextMenuCommand.publish({
-                type: 'aws.amazonq.fixCode',
-                triggerType: getCommandTriggerType(data),
-            })
-        })
-    })
-    Commands.register('aws.amazonq.optimizeCode', async (data) => {
-        return focusAmazonQPanel.execute(placeholder, 'amazonq.optimizeCode').then(() => {
-            controllerPublishers.processContextMenuCommand.publish({
-                type: 'aws.amazonq.optimizeCode',
-                triggerType: getCommandTriggerType(data),
-            })
-        })
-    })
-    Commands.register('aws.amazonq.sendToPrompt', async (data) => {
-        return focusAmazonQPanel.execute(placeholder, 'amazonq.sendToPrompt').then(() => {
-            controllerPublishers.processContextMenuCommand.publish({
-                type: 'aws.amazonq.sendToPrompt',
-                triggerType: getCommandTriggerType(data),
-            })
-        })
-    })
-    Commands.register('aws.amazonq.explainIssue', async (issue) => {
-        return focusAmazonQPanel.execute(placeholder, 'amazonq.explainIssue').then(() => {
-            controllerPublishers.processContextMenuCommand.publish({
-                type: 'aws.amazonq.explainIssue',
-                triggerType: 'click',
-                issue,
-            })
-        })
-    })
+export function registerCommands() {
+    /**
+     * make these no-ops, since theres still callers that need to be deprecated
+     */
+    Commands.register('aws.amazonq.updateContextCommandItems', () => {})
 }
 
 export type EditorContextBaseCommandType =
@@ -102,6 +49,7 @@ export type EditorContextBaseCommandType =
     | 'aws.amazonq.fixCode'
     | 'aws.amazonq.optimizeCode'
     | 'aws.amazonq.sendToPrompt'
+    | 'aws.amazonq.generateUnitTests'
 
 export type CodeScanIssueCommandType = 'aws.amazonq.explainIssue'
 

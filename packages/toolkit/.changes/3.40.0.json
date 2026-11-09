@@ -1,0 +1,14 @@
+{
+	"date": "2024-12-17",
+	"version": "3.40.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Auth: SSO failed to missing refreshToken"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "AppBuilder : Support template parameters override for SAM deploy and sync for all entry points"
+		}
+	]
+}

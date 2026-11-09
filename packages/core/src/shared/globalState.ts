@@ -8,20 +8,91 @@ import { getLogger } from './logger/logger'
 import * as redshift from '../awsService/redshift/models/models'
 import { TypeConstructor, cast } from './utilities/typeConstructors'
 
-type globalKey =
+type ToolId = 'codecatalyst' | 'codewhisperer' | 'testId' | 'smus'
+export type ToolIdStateKey = `${ToolId}.savedConnectionId`
+
+export type JsonSchemasKey = 'devfileSchemaVersion' | 'samAndCfnSchemaVersion'
+
+type samInitStateKey =
+    | 'ACTIVATION_TEMPLATE_PATH_KEY'
+    | 'ACTIVATION_LAUNCH_PATH_KEY'
+    | 'SAM_INIT_RUNTIME_KEY'
+    | 'SAM_INIT_IMAGE_BOOLEAN_KEY'
+    | 'SAM_INIT_ARCH_KEY'
+
+type stepFunctionsKey = 'SCRIPT_LAST_DOWNLOADED_URL' | 'CSS_LAST_DOWNLOADED_URL'
+
+export type globalKey =
+    | samInitStateKey
+    | stepFunctionsKey
+    | ToolIdStateKey
+    | JsonSchemasKey
+    | 'amazonq.telemetry.migrated'
+    | 'aws.amazonq.codewhisperer.newCustomizations'
+    | 'aws.amazonq.hasShownWalkthrough'
+    | 'aws.amazonq.showTryChatCodeLens'
+    | 'aws.amazonq.securityIssueFilters'
+    | 'aws.amazonq.codescan.groupingStrategy'
+    | 'aws.amazonq.notifications'
+    | 'aws.amazonq.welcomeChatShowCount'
+    | 'aws.amazonq.disclaimerAcknowledged' // Legacy, use `AmazonQPromptSettings` instead.
+    | 'aws.notifications'
+    | 'aws.notifications.dev' // keys to store notifications for testing
     | 'aws.downloadPath'
     | 'aws.lastTouchedS3Folder'
     | 'aws.lastUploadedToS3Folder'
     | 'aws.redshift.connections'
     | 'aws.toolkit.amazonq.dismissed'
     | 'aws.toolkit.amazonqInstall.dismissed'
+    | 'aws.amazonq.workspaceIndexToggleOn'
+    | 'aws.toolkit.lsp.versions'
+    | 'aws.toolkit.lsp.manifest'
+    | 'aws.amazonq.customization.overrideV2'
+    | 'aws.smus.authenticationPreferences'
+    | 'aws.smus.recentDomains'
+    | 'aws.smus.pendingSignIn'
+    | 'aws.amazonq.regionProfiles'
+    | 'aws.amazonq.regionProfiles.cache'
     // Deprecated/legacy names. New keys should start with "aws.".
+    | '#sessionCreationDates' // Legacy name from `ssoAccessTokenProvider.ts`.
     | 'CODECATALYST_RECONNECT'
+    | 'CODEWHISPERER_AUTO_SCANS_ENABLED'
+    | 'CODEWHISPERER_AUTO_TRIGGER_ENABLED'
+    | 'CODEWHISPERER_HINT_DISPLAYED'
+    | 'CODEWHISPERER_PERSISTED_CUSTOMIZATIONS'
+    | 'CODEWHISPERER_SELECTED_CUSTOMIZATION'
     | 'CODEWHISPERER_USER_GROUP'
+    | 'awsTelemetryNoticeVersionAck'
+    | 'codecatalyst.connections'
+    | 'dev.beta'
+    | 'globalsMostRecentVersion'
     | 'gumby.wasQCodeTransformationUsed'
-    | 'hasAlreadyOpenedAmazonQ'
-    // Legacy name from `ssoAccessTokenProvider.ts`.
-    | '#sessionCreationDates'
+    | 'isExtensionFirstUse'
+    | 'lastExtensionVersion'
+    | 'lastSelectedRegion'
+    | 'lastOsStartTime'
+    | 'recentCredentials'
+    | 'recentSso'
+    // List of regions enabled in AWS Explorer.
+    | 'region'
+    // TODO: implement this via `PromptSettings` instead of globalState.
+    | 'sam.sync.updateMessage'
+    | 'telemetryClientId'
+    | 'telemetryId'
+    | 'aws.toolkit.lambda.walkthroughSelected'
+    | 'aws.toolkit.lambda.walkthroughCompleted'
+    | 'aws.toolkit.appComposer.templateToOpenOnStart'
+    | 'aws.lambda.remoteDebugContext'
+    | 'aws.lambda.remoteDebugSnapshot'
+    // List of Domain-Users to show/hide Sagemaker SpaceApps in AWS Explorer.
+    | 'aws.sagemaker.selectedDomainUsers'
+    // List of Cluster-Namespaces to show/hide Hyperpod Spaces in AWS Explorer
+    | 'aws.hyperpod.selectedClusterNamespaces'
+    // Name of the connection if it's not to the AWS cloud. Current supported value only 'localstack'
+    | 'aws.toolkit.externalConnection'
+    | 'aws.cloudformation.region'
+    | 'aws.cloudformation.selectedResourceTypes'
+    | 'aws.cloudformation.lsp.manifest'
 
 /**
  * Extension-local (not visible to other vscode extensions) shared state which persists after IDE
@@ -36,10 +107,14 @@ type globalKey =
  * - garbage collection
  */
 export class GlobalState implements vscode.Memento {
-    constructor(private readonly memento: vscode.Memento) {}
+    constructor(protected readonly memento: vscode.Memento) {}
 
     keys(): readonly string[] {
         return this.memento.keys()
+    }
+
+    values() {
+        return this.memento.keys().map((k) => this.memento.get(k))
     }
 
     /**
@@ -50,9 +125,9 @@ export class GlobalState implements vscode.Memento {
      * {@link String}, {@link Boolean}, etc.
      * @param defaultVal Value returned if `key` has no value.
      */
-    getStrict<T>(key: globalKey, type: TypeConstructor<T>, defaulVal?: T) {
+    getStrict<T>(key: globalKey, type: TypeConstructor<T>, defaultVal?: T) {
         try {
-            const val = this.memento.get<T>(key) ?? defaulVal
+            const val = this.memento.get<T>(key) ?? defaultVal
             return !type || val === undefined ? val : cast(val, type)
         } catch (e) {
             const msg = `GlobalState: invalid state (or read failed) for key: "${key}"`
@@ -74,40 +149,53 @@ export class GlobalState implements vscode.Memento {
      * @param key Key name
      * @param defaultVal Value returned if `key` has no value.
      */
-    get<T>(key: globalKey, defaulVal?: T): T | undefined {
+    get<T>(key: globalKey, defaultVal?: T): T | undefined {
         const skip = (o: any) => o as T // Don't type check.
-        return this.getStrict(key, skip, defaulVal)
+        return this.getStrict(key, skip, defaultVal)
     }
 
     /**
-     * Gets the value for `key` if it satisfies the `type` specification, else logs an error and returns `defaulVal`.
+     * Gets the value for `key` if it satisfies the `type` specification, else logs an error and returns `defaultVal`.
      *
      * @param key Key name
      * @param type Type validator function, or primitive type constructor such as {@link Object},
      * {@link String}, {@link Boolean}, etc.
      * @param defaultVal Value returned if `key` has no value.
      */
-    tryGet<T>(key: globalKey, type: TypeConstructor<T>, defaulVal?: T): T | undefined {
+    tryGet<T>(key: globalKey, type: TypeConstructor<T>): T | undefined
+    tryGet<T>(key: globalKey, type: TypeConstructor<T>, defaultVal: T): T
+    tryGet<T>(key: globalKey, type: TypeConstructor<T>, defaultVal?: T): T | undefined {
         try {
-            return this.getStrict(key, type, defaulVal)
+            return this.getStrict(key, type, defaultVal)
         } catch (e) {
             getLogger().error('%s', (e as Error).message)
-            return defaulVal
+            return defaultVal
         }
     }
 
-    /** Asynchronously updates globalState, or logs an error on failure. */
+    /**
+     * Asynchronously updates globalState, or logs an error on failure.
+     *
+     * Only for callers that cannot `await` or don't care about errors and race conditions. Prefer
+     * `await update()` where possible.
+     */
     tryUpdate(key: globalKey, value: any): void {
-        this.memento.update(key, value).then(
-            undefined, // TODO: log.debug() ?
-            (e) => {
-                getLogger().error('GlobalState: failed to set "%s": %s', key, (e as Error).message)
-            }
-        )
+        this.update(key, value).then(undefined, () => {
+            // Errors are logged by update().
+        })
     }
 
-    update(key: globalKey, value: any): Thenable<void> {
-        return this.memento.update(key, value)
+    async update(key: globalKey, value: any): Promise<void> {
+        try {
+            await this.memento.update(key, value)
+        } catch (e) {
+            getLogger().error('GlobalState: failed to set "%s": %s', key, (e as Error).message)
+            throw e
+        }
+    }
+
+    clear() {
+        return Promise.allSettled(this.memento.keys().map((k) => this.memento.update(k, undefined)))
     }
 
     /**
@@ -150,8 +238,7 @@ export class GlobalState implements vscode.Memento {
                     throw new Error()
                 }
                 return v
-            },
-            undefined
+            }
         )
         return all?.[warehouseArn]
     }
@@ -183,21 +270,17 @@ export class GlobalState implements vscode.Memento {
      * @param id Session id
      */
     getSsoSessionCreationDate(id: string): number | undefined {
-        const all = this.tryGet<Record<string, number>>(
-            '#sessionCreationDates',
-            (v) => {
-                if (v !== undefined && typeof v !== 'object') {
-                    throw new Error()
-                }
-                const item = (v as any)?.[id]
-                // Requested item must be a number.
-                if (item !== undefined && typeof item !== 'number') {
-                    throw new Error()
-                }
-                return v
-            },
-            undefined
-        )
+        const all = this.tryGet<Record<string, number>>('#sessionCreationDates', (v) => {
+            if (v !== undefined && typeof v !== 'object') {
+                throw new Error()
+            }
+            const item = (v as any)?.[id]
+            // Requested item must be a number.
+            if (item !== undefined && typeof item !== 'number') {
+                throw new Error()
+            }
+            return v
+        })
         return all?.[id]
     }
 }

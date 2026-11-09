@@ -7,17 +7,17 @@ import * as nls from 'vscode-nls'
 import * as os from 'os'
 const localize = nls.loadMessageBundle()
 
-import { StepFunctions } from 'aws-sdk'
-import * as fs from 'fs-extra'
+import * as StepFunctions from '@aws-sdk/client-sfn'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { DefaultStepFunctionsClient, StepFunctionsClient } from '../../shared/clients/stepFunctionsClient'
+import { StepFunctionsClient } from '../../shared/clients/stepFunctions'
 
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger, Logger } from '../../shared/logger/logger'
 import { Result } from '../../shared/telemetry/telemetry'
 import { StateMachineNode } from '../explorer/stepFunctionsNodes'
-import { previewStateMachineCommand } from '../activation'
 import { telemetry } from '../../shared/telemetry/telemetry'
+import { fs } from '../../shared/fs/fs'
+import { WorkflowStudioEditorProvider } from '../workflowStudio/workflowStudioEditorProvider'
 
 export async function downloadStateMachineDefinition(params: {
     outputChannel: vscode.OutputChannel
@@ -28,10 +28,11 @@ export async function downloadStateMachineDefinition(params: {
     let downloadResult: Result = 'Succeeded'
     const stateMachineName = params.stateMachineNode.details.name
     try {
-        const client: StepFunctionsClient = new DefaultStepFunctionsClient(params.stateMachineNode.regionCode)
-        const stateMachineDetails: StepFunctions.DescribeStateMachineOutput = await client.getStateMachineDetails(
-            params.stateMachineNode.details.stateMachineArn
-        )
+        const client: StepFunctionsClient = new StepFunctionsClient(params.stateMachineNode.regionCode)
+        const stateMachineDetails: StepFunctions.DescribeStateMachineCommandOutput =
+            await client.getStateMachineDetails({
+                stateMachineArn: params.stateMachineNode.details.stateMachineArn,
+            })
 
         if (params.isPreviewAndRender) {
             const doc = await vscode.workspace.openTextDocument({
@@ -40,7 +41,10 @@ export async function downloadStateMachineDefinition(params: {
             })
 
             const textEditor = await vscode.window.showTextDocument(doc)
-            await previewStateMachineCommand.execute(textEditor)
+            await WorkflowStudioEditorProvider.openWithWorkflowStudio(textEditor.document.uri, {
+                preserveFocus: true,
+                viewColumn: vscode.ViewColumn.Beside,
+            })
         } else {
             const wsPath = vscode.workspace.workspaceFolders
                 ? vscode.workspace.workspaceFolders[0].uri.fsPath
@@ -50,7 +54,7 @@ export async function downloadStateMachineDefinition(params: {
 
             if (fileInfo) {
                 const filePath = fileInfo.fsPath
-                fs.writeFileSync(filePath, stateMachineDetails.definition, 'utf8')
+                await fs.writeFile(filePath, stateMachineDetails.definition || '', 'utf8')
                 const openPath = vscode.Uri.file(filePath)
                 const doc = await vscode.workspace.openTextDocument(openPath)
                 await vscode.window.showTextDocument(doc)

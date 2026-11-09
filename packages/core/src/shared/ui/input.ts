@@ -127,7 +127,9 @@ export async function promptUser({
 
         return response
     } finally {
-        disposables.forEach((d) => d.dispose() as void)
+        for (const d of disposables) {
+            d.dispose() as void
+        }
         inputBox.hide()
     }
 }

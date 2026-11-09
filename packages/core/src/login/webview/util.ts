@@ -4,7 +4,7 @@
  */
 
 import { cwQuickPickSource, cwTreeNodeSource, amazonQChatSource } from '../../codewhisperer/commands/types'
-import { ExtStartUpSources } from '../../shared/telemetry'
+import { ExtStartUpSources } from '../../shared/telemetry/util'
 import { vscodeComponent } from '../../shared/vscode/commands2'
 
 /**
@@ -21,6 +21,7 @@ export const AuthSources = {
     cwTreeNode: cwTreeNodeSource,
     amazonQChat: amazonQChatSource,
     authNode: 'authNode', // deprecated?
+    appBuilderWalkthrough: 'AppBuilderWalkthrough',
     unknown: 'unknown',
 } as const
 

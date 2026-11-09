@@ -5,61 +5,57 @@
 
 import { QuickActionCommand, QuickActionCommandGroup } from '@aws/mynah-ui/dist/static'
 import { TabType } from '../storages/tabsStorage'
+import { MynahIcons } from '@aws/mynah-ui'
 
 export interface QuickActionGeneratorProps {
-    isFeatureDevEnabled: boolean
     isGumbyEnabled: boolean
+    isScanEnabled: boolean
+    disableCommands?: string[]
 }
 
 export class QuickActionGenerator {
-    public isFeatureDevEnabled: boolean
     private isGumbyEnabled: boolean
+    private disabledCommands: string[]
 
     constructor(props: QuickActionGeneratorProps) {
-        this.isFeatureDevEnabled = props.isFeatureDevEnabled
         this.isGumbyEnabled = props.isGumbyEnabled
+        this.disabledCommands = props.disableCommands ?? []
     }
 
     public generateForTab(tabType: TabType): QuickActionCommandGroup[] {
         const quickActionCommands = [
             {
                 commands: [
-                    ...(this.isFeatureDevEnabled
-                        ? [
-                              {
-                                  command: '/dev',
-                                  placeholder: 'Describe your task or issue in as much detail as possible',
-                                  description:
-                                      'Plan and implement new functionality across multiple files in your workspace.',
-                              },
-                          ]
-                        : []),
-                    ...(this.isGumbyEnabled
+                    ...(this.isGumbyEnabled && !this.disabledCommands.includes('/transform')
                         ? [
                               {
                                   command: '/transform',
-                                  description: 'Transform your Java 8 or 11 Maven project to Java 17',
+                                  description: 'Transform your Java project',
+                                  icon: MynahIcons.TRANSFORM,
                               },
                           ]
                         : []),
                 ],
             },
             {
+                groupName: 'Quick Actions',
                 commands: [
                     {
                         command: '/help',
+                        icon: MynahIcons.HELP,
                         description: 'Learn more about Amazon Q',
                     },
                     {
                         command: '/clear',
+                        icon: MynahIcons.TRASH,
                         description: 'Clear this session',
                     },
                 ],
             },
-        ]
+        ].filter((section) => section.commands.length > 0)
 
         const commandUnavailability: Record<
-            TabType,
+            Exclude<TabType, []>,
             {
                 description: string
                 unavailableItems: string[]
@@ -69,13 +65,17 @@ export class QuickActionGenerator {
                 description: '',
                 unavailableItems: [],
             },
-            featuredev: {
-                description: "This command isn't available in /dev",
-                unavailableItems: ['/dev', '/transform', '/help', '/clear'],
+            review: {
+                description: "This command isn't available in /review",
+                unavailableItems: ['/help', '/clear'],
             },
             gumby: {
                 description: "This command isn't available in /transform",
-                unavailableItems: ['/dev', '/transform'],
+                unavailableItems: ['/dev', '/test', '/doc', '/review', '/help', '/clear'],
+            },
+            welcome: {
+                description: '',
+                unavailableItems: ['/clear'],
             },
             unknown: {
                 description: '',
@@ -85,6 +85,7 @@ export class QuickActionGenerator {
 
         return quickActionCommands.map((commandGroup) => {
             return {
+                groupName: commandGroup.groupName,
                 commands: commandGroup.commands.map((commandItem: QuickActionCommand) => {
                     const commandNotAvailable = commandUnavailability[tabType].unavailableItems.includes(
                         commandItem.command

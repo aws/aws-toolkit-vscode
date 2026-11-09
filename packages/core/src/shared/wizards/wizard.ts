@@ -46,10 +46,12 @@ export const WIZARD_RETRY = {
 // eslint-disable-next-line @typescript-eslint/naming-convention
 export const WIZARD_BACK = { id: WIZARD_CONTROL, type: ControlSignal.Back, toString: () => makeControlString('Back') }
 // eslint-disable-next-line @typescript-eslint/naming-convention
+export const WIZARD_SKIP = { id: WIZARD_CONTROL, type: ControlSignal.Skip, toString: () => makeControlString('Skip') }
+// eslint-disable-next-line @typescript-eslint/naming-convention
 export const WIZARD_EXIT = { id: WIZARD_CONTROL, type: ControlSignal.Exit, toString: () => makeControlString('Exit') }
 
 /** Control signals allow for alterations of the normal wizard flow */
-export type WizardControl = typeof WIZARD_RETRY | typeof WIZARD_BACK | typeof WIZARD_EXIT
+export type WizardControl = typeof WIZARD_RETRY | typeof WIZARD_BACK | typeof WIZARD_EXIT | typeof WIZARD_SKIP
 
 export function isWizardControl(obj: any): obj is WizardControl {
     return obj !== undefined && obj.id === WIZARD_CONTROL
@@ -92,7 +94,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     private assertReady() {
         // Check for `false` explicity so that the base-class constructor can access `this._form`.
         // We want to guard against confusion when implementing a subclass, not this base-class.
-        if (this._ready === false && this.init) {
+        if (this._ready === false) {
             throw Error('run() (or init()) must be called immediately after creating the Wizard')
         }
     }
@@ -111,7 +113,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         return this._stepOffset[1] + this.stateController.totalSteps
     }
 
-    public get _form() {
+    protected get _form() {
         this.assertReady()
         return this.__form
     }
@@ -134,7 +136,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
         this._estimator = estimator
     }
 
-    public constructor(private readonly options: WizardOptions<TState> = {}) {
+    public constructor(protected readonly options: WizardOptions<TState> = {}) {
         this.stateController = new StateMachineController(options.initState as TState)
         this.__form = options.initForm ?? new WizardForm()
         this._exitStep =
@@ -142,6 +144,14 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
 
         // Subclass constructor logic should live in `init()`, if it exists.
         this._ready = !this.init
+
+        if (typeof this.init === 'function') {
+            const _init = this.init.bind(this)
+            this.init = () => {
+                this._ready = true
+                return _init()
+            }
+        }
     }
 
     /**
@@ -152,25 +162,24 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     public async init?(): Promise<this>
 
     private assignSteps(): void {
-        this._form.properties.forEach((prop) => {
+        for (const prop of this._form.properties) {
             const provider = this._form.getPrompterProvider(prop)
             if (!this.boundSteps.has(prop) && provider !== undefined) {
                 this.boundSteps.set(prop, this.createBoundStep(prop, provider))
             }
-        })
+        }
     }
 
     public async run(): Promise<TState | undefined> {
         if (!this._ready && this.init) {
             this._ready = true // Let init() use `this._form`.
             await this.init()
-            delete this.init
         }
 
         this.assignSteps()
-        this.resolveNextSteps((this.options.initState ?? {}) as TState).forEach((step) =>
+        for (const step of this.resolveNextSteps((this.options.initState ?? {}) as TState)) {
             this.stateController.addStep(step)
-        )
+        }
 
         const outputState = await this.stateController.run()
 
@@ -236,14 +245,14 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
     protected resolveNextSteps(state: TState): Branch<TState> {
         const nextSteps: Branch<TState> = []
         const defaultState = this._form.applyDefaults(state)
-        this.boundSteps.forEach((step, targetProp) => {
+        for (const [targetProp, step] of this.boundSteps.entries()) {
             if (
                 this._form.canShowProperty(targetProp, state, defaultState) &&
                 !this.stateController.containsStep(step)
             ) {
                 nextSteps.push(step)
             }
-        })
+        }
         return nextSteps
     }
 
@@ -269,9 +278,7 @@ export class Wizard<TState extends Partial<Record<keyof TState, unknown>>> {
 
         if (isValidResponse(answer)) {
             state.stepCache.picked = prompter.recentItem
-        }
-
-        if (!isValidResponse(answer)) {
+        } else {
             delete state.stepCache.stepOffset
         }
 

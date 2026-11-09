@@ -23,4 +23,8 @@ export class ChatSessionStorage {
     public deleteSession(tabID: string) {
         this.sessions.delete(tabID)
     }
+
+    public deleteAllSessions() {
+        this.sessions.clear()
+    }
 }

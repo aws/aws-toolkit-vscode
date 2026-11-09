@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { formatDateTimestamp } from '../../../shared/datetime'
 import { CloudWatchLogsEvent, CloudWatchLogsGroupInfo } from '../registry/logDataRegistry'
-import { formatDateTimestamp } from '../../../shared/utilities/textUtilities'
 
 export const timestampSpaceEquivalent = '                             '
 

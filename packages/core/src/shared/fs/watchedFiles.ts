@@ -9,7 +9,6 @@ import * as pathutils from '../utilities/pathUtils'
 import * as path from 'path'
 import { globDirPatterns, isUntitledScheme, normalizeVSCodeUri } from '../utilities/vsCodeUtils'
 import { Settings } from '../settings'
-import { once } from '../utilities/functionUtils'
 import { Timeout } from '../utilities/timeoutUtils'
 
 /**
@@ -60,7 +59,6 @@ export function getExcludePattern() {
     const excludePattern = `**/{${excludePatternsStr}}/`
     return excludePattern
 }
-const getExcludePatternOnce = once(getExcludePattern)
 
 /**
  * WatchedFiles lets us watch files on the filesystem. It is used
@@ -180,6 +178,9 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
 
     /**
      * Adds a regex pattern to ignore paths containing the pattern
+     *
+     * TODO: this does NOT prevent addWatchPatterns() from creating a massive, expensive, recursive
+     * filewatcher for these patterns 🤦, it merely skips processing at event-time.
      */
     public addExcludedPattern(pattern: RegExp) {
         if (this._isDisposed) {
@@ -219,7 +220,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
                     item: item,
                 }
             } else {
-                getLogger().info(`${this.name}: failed to process: ${uri}`)
+                getLogger().debug(`${this.name}: failed to process: ${uri}`)
                 // if value isn't valid for type, remove from registry
                 this.registryData.delete(pathAsString)
             }
@@ -227,7 +228,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
             if (!quiet) {
                 throw e
             }
-            getLogger().info(`${this.name}: failed to process: ${uri}: ${(e as Error).message}`)
+            getLogger().error(`${this.name}: failed to process: ${uri}: ${(e as Error).message}`)
         }
         return undefined
     }
@@ -309,7 +310,7 @@ export abstract class WatchedFiles<T> implements vscode.Disposable {
         let skips = 0
         const found: vscode.Uri[] = []
 
-        const exclude = getExcludePatternOnce()
+        const exclude = getExcludePattern()
         getLogger().info(`${this.name}: building with: ${this.outputPatterns()}`)
 
         for (let i = 0; i < this.globs.length && !cancel?.completed; i++) {

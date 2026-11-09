@@ -11,10 +11,10 @@ import * as picker from '../../../shared/ui/picker'
 import * as vscode from 'vscode'
 import { ProgressLocation } from 'vscode'
 
-import { Stage } from 'aws-sdk/clients/apigateway'
-import { DefaultApiGatewayClient } from '../../../shared/clients/apiGatewayClient'
+import { Stage } from '@aws-sdk/client-api-gateway'
+import { ApiGatewayClient } from '../../../shared/clients/apiGateway'
 import { defaultDnsSuffix, RegionProvider } from '../../../shared/regions/regionProvider'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { telemetry } from '../../../shared/telemetry/telemetry'
 
 interface StageInvokeUrlQuickPick extends vscode.QuickPickItem {
@@ -25,7 +25,7 @@ interface StageInvokeUrlQuickPick extends vscode.QuickPickItem {
 export async function copyUrlCommand(node: RestApiNode, regionProvider: RegionProvider): Promise<void> {
     const region = node.regionCode
     const dnsSuffix = regionProvider.getDnsSuffixForRegion(region) || defaultDnsSuffix
-    const client = new DefaultApiGatewayClient(region)
+    const client = new ApiGatewayClient(region)
 
     let stages: Stage[]
     try {

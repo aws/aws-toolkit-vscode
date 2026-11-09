@@ -9,7 +9,7 @@ import { IotNode } from '../../../../awsService/iot/explorer/iotNodes'
 import { IotThingFolderNode } from '../../../../awsService/iot/explorer/iotThingFolderNode'
 import { IotThingNode } from '../../../../awsService/iot/explorer/iotThingNode'
 import { IotClient, IotThing } from '../../../../shared/clients/iotClient'
-import { Iot } from 'aws-sdk'
+import { ThingAttribute } from '@aws-sdk/client-iot'
 import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
 import { TestSettings } from '../../../utilities/testSettingsConfiguration'
 import sinon from 'sinon'
@@ -20,7 +20,7 @@ describe('IotThingFolderNode', function () {
 
     let iot: IotClient
     let config: TestSettings
-    const thing: Iot.ThingAttribute = { thingName: 'thing', thingArn: 'arn' }
+    const thing: ThingAttribute = { thingName: 'thing', thingArn: 'arn' }
     const expectedThing: IotThing = { name: 'thing', arn: 'arn' }
 
     function assertThingNode(node: AWSTreeNodeBase, expectedThing: IotThing): void {

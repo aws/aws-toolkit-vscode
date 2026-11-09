@@ -9,7 +9,7 @@ import * as vscode from 'vscode'
 import { deleteBucketCommand } from '../../../../awsService/s3/commands/deleteBucket'
 import { S3BucketNode } from '../../../../awsService/s3/explorer/s3BucketNode'
 import { S3Node } from '../../../../awsService/s3/explorer/s3Nodes'
-import { S3Client } from '../../../../shared/clients/s3Client'
+import { S3Client } from '../../../../shared/clients/s3'
 import { assertNoErrorMessages, getTestWindow } from '../../../shared/vscode/window'
 
 describe('deleteBucketCommand', function () {
@@ -27,7 +27,7 @@ describe('deleteBucketCommand', function () {
 
         s3 = {} as any as S3Client
         parentNode = new S3Node(s3)
-        node = new S3BucketNode({ name: bucketName, region: 'region', arn: 'arn' }, parentNode, s3)
+        node = new S3BucketNode({ Name: bucketName, BucketRegion: 'region', Arn: 'arn' }, parentNode, s3)
     })
 
     afterEach(function () {

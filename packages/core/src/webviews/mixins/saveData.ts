@@ -45,11 +45,11 @@ const saveData: Vue.ComponentOptionsMixin = {
         _unids.add(unid)
         const old = state[unid] ?? {}
 
-        Object.keys(this.$data).forEach((k) => {
+        for (const k of Object.keys(this.$data)) {
             this.$data[k] = old[k] ?? this.$data[k]
-        })
+        }
 
-        Object.keys(this.$data).forEach((k) => {
+        for (const k of Object.keys(this.$data)) {
             this.$watch(
                 k,
                 (v: unknown) => {
@@ -61,7 +61,7 @@ const saveData: Vue.ComponentOptionsMixin = {
                 },
                 { deep: true }
             )
-        })
+        }
     },
 }
 

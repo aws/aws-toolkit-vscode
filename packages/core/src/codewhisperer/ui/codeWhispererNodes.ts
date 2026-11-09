@@ -11,7 +11,6 @@ import { Commands, placeholder } from '../../shared/vscode/commands2'
 import {
     toggleCodeSuggestions,
     showReferenceLog,
-    showSecurityScan,
     showLearnMore,
     showFreeTierLimit,
     reconnect,
@@ -19,17 +18,19 @@ import {
     signoutCodeWhisperer,
     showIntroduction,
     toggleCodeScans,
+    selectRegionProfileCommand,
 } from '../commands/basicCommands'
 import { CodeWhispererCommandDeclarations } from '../commands/gettingStartedPageCommands'
-import { CodeScansState, codeScanState } from '../models/model'
+import { CodeScansState, RegionProfile } from '../models/model'
 import { getNewCustomizationsAvailable, getSelectedCustomization } from '../util/customizationUtil'
 import { cwQuickPickSource } from '../commands/types'
 import { AuthUtil } from '../util/authUtil'
 import { submitFeedback } from '../../feedback/vue/submitFeedback'
 import { focusAmazonQPanel } from '../../codewhispererChat/commands/registerCommands'
 import { isWeb } from '../../shared/extensionGlobals'
+import { getLogger } from '../../shared/logger/logger'
 
-export function createAutoSuggestions(pause: boolean): DataQuickPickItem<'autoSuggestions'> {
+export function createAutoSuggestions(running: boolean): DataQuickPickItem<'autoSuggestions'> {
     const labelResume = localize('AWS.codewhisperer.resumeCodeWhispererNode.label', 'Resume Auto-Suggestions')
     const iconResume = getIcon('vscode-debug-start')
     const labelPause = localize('AWS.codewhisperer.pauseCodeWhispererNode.label', 'Pause Auto-Suggestions')
@@ -37,23 +38,23 @@ export function createAutoSuggestions(pause: boolean): DataQuickPickItem<'autoSu
 
     return {
         data: 'autoSuggestions',
-        label: pause ? codicon`${iconPause} ${labelPause}` : codicon`${iconResume} ${labelResume}`,
-        description: pause ? 'Currently RUNNING' : 'Currently PAUSED',
+        label: running ? codicon`${iconPause} ${labelPause}` : codicon`${iconResume} ${labelResume}`,
+        description: running ? 'Currently RUNNING' : 'Currently PAUSED',
         onClick: () => toggleCodeSuggestions.execute(placeholder, cwQuickPickSource),
     } as DataQuickPickItem<'autoSuggestions'>
 }
 
-export function createAutoScans(pause: boolean): DataQuickPickItem<'autoScans'> {
-    const labelResume = localize('AWS.codewhisperer.resumeCodeWhispererNode.label', 'Resume Auto-Scans')
+export function createAutoScans(running: boolean): DataQuickPickItem<'autoScans'> {
+    const labelResume = localize('AWS.codewhisperer.resumeCodeWhispererNode.label', 'Resume Auto-Reviews')
     const iconResume = getIcon('vscode-debug-alt')
-    const labelPause = localize('AWS.codewhisperer.pauseCodeWhispererNode.label', 'Pause Auto-Scans')
+    const labelPause = localize('AWS.codewhisperer.pauseCodeWhispererNode.label', 'Pause Auto-Reviews')
     const iconPause = getIcon('vscode-debug-pause')
     const monthlyQuotaExceeded = CodeScansState.instance.isMonthlyQuotaExceeded()
 
     return {
         data: 'autoScans',
-        label: pause ? codicon`${iconPause} ${labelPause}` : codicon`${iconResume} ${labelResume}`,
-        description: monthlyQuotaExceeded ? 'Monthly quota exceeded' : pause ? 'RUNNING' : 'PAUSED',
+        label: running ? codicon`${iconPause} ${labelPause}` : codicon`${iconResume} ${labelResume}`,
+        description: monthlyQuotaExceeded ? 'Monthly quota exceeded' : running ? 'RUNNING' : 'PAUSED',
         onClick: () => toggleCodeScans.execute(placeholder, cwQuickPickSource),
     } as DataQuickPickItem<'autoScans'>
 }
@@ -67,18 +68,6 @@ export function createOpenReferenceLog(): DataQuickPickItem<'openReferenceLog'> 
         label: codicon`${icon} ${label}`,
         onClick: () => showReferenceLog.execute(placeholder, cwQuickPickSource),
     } as DataQuickPickItem<'openReferenceLog'>
-}
-
-export function createSecurityScan(): DataQuickPickItem<'securityScan'> {
-    const prefix = codeScanState.getPrefixTextForButton()
-    const label = `${prefix} Project Scan`
-    const icon = codeScanState.getIconForButton()
-
-    return {
-        data: 'securityScan',
-        label: codicon`${icon} ${label}`,
-        onClick: () => showSecurityScan.execute(placeholder, cwQuickPickSource),
-    } as DataQuickPickItem<'securityScan'>
 }
 
 export function createReconnect(): DataQuickPickItem<'reconnect'> {
@@ -131,6 +120,28 @@ export function createSelectCustomization(): DataQuickPickItem<'selectCustomizat
     } as DataQuickPickItem<'selectCustomization'>
 }
 
+export function createSelectRegionProfileNode(
+    profile: RegionProfile | undefined
+): DataQuickPickItem<'selectRegionProfile'> {
+    const selectedRegionProfile = profile
+
+    const label = profile ? 'Change Profile' : '(Required) Select Profile'
+    const icon = getIcon('vscode-arrow-swap')
+    const description = selectedRegionProfile
+        ? `Current profile: ${selectedRegionProfile.name}`
+        : 'A profile MUST be selected for features to work'
+
+    return {
+        data: 'selectRegionProfile',
+        label: codicon`${icon} ${label}`,
+        onClick: async () => {
+            await selectRegionProfileCommand.execute(placeholder, cwQuickPickSource)
+        },
+        description: description,
+        picked: profile === undefined,
+    }
+}
+
 /* Opens the Learn CodeWhisperer Page */
 export function createGettingStarted(): DataQuickPickItem<'gettingStarted'> {
     const label = localize('AWS.codewhisperer.gettingStartedNode.label', 'Try inline suggestion examples')
@@ -144,6 +155,18 @@ export function createGettingStarted(): DataQuickPickItem<'gettingStarted'> {
                 cwQuickPickSource
             ),
     } as DataQuickPickItem<'gettingStarted'>
+}
+
+export function createManageSubscription(): DataQuickPickItem<'manageSubscription'> {
+    const label = localize('AWS.command.manageSubscription', 'Manage Q Developer Pro Subscription')
+    // const kind = AuthUtil.instance.isBuilderIdInUse() ? 'AWS Builder ID' : 'IAM Identity Center'
+
+    return {
+        data: 'manageSubscription',
+        label: label,
+        iconPath: getIcon('vscode-link-external'),
+        onClick: () => Commands.tryExecute('aws.amazonq.manageSubscription'),
+    } as DataQuickPickItem<'manageSubscription'>
 }
 
 export function createSignout(): DataQuickPickItem<'signout'> {
@@ -209,7 +232,10 @@ export function switchToAmazonQNode(): DataQuickPickItem<'openChatPanel'> {
         data: 'openChatPanel',
         label: 'Open Chat Panel',
         iconPath: getIcon('vscode-comment'),
-        onClick: () => focusAmazonQPanel.execute(placeholder, 'codewhispererQuickPick'),
+        onClick: () =>
+            focusAmazonQPanel.execute(placeholder, 'codewhispererQuickPick').catch((e) => {
+                getLogger().error('focusAmazonQPanel failed: %s', e)
+            }),
     }
 }
 
@@ -218,7 +244,9 @@ export function createSignIn(): DataQuickPickItem<'signIn'> {
     const icon = getIcon('vscode-account')
 
     let onClick = () => {
-        void focusAmazonQPanel.execute(placeholder, 'codewhispererQuickPick')
+        focusAmazonQPanel.execute(placeholder, 'codewhispererQuickPick').catch((e) => {
+            getLogger().error('focusAmazonQPanel failed: %s', e)
+        })
     }
     if (isWeb()) {
         // TODO: nkomonen, call a Command instead

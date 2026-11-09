@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { getTabSizeSetting } from '../../../shared/utilities/editorUtilities'
 import { IotPolicyVersionNode } from '../explorer/iotPolicyVersionNode'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'

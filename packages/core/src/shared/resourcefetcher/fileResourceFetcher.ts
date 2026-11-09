@@ -4,7 +4,7 @@
  */
 
 import fs from '../fs/fs'
-import { getLogger, Logger } from '../logger'
+import { getLogger, Logger } from '../logger/logger'
 import { ResourceFetcher } from './resourcefetcher'
 
 export class FileResourceFetcher implements ResourceFetcher {
@@ -18,7 +18,7 @@ export class FileResourceFetcher implements ResourceFetcher {
     public async get(): Promise<string | undefined> {
         try {
             this.logger.verbose('loading file resource: "%s"', this.filepath)
-            return await fs.readFileAsString(this.filepath)
+            return await fs.readFileText(this.filepath)
         } catch (err) {
             this.logger.verbose('failed to load file resource: "%s": %s', this.filepath, (err as Error).message)
             return undefined

@@ -4,10 +4,8 @@
  */
 
 import * as vscode from 'vscode'
+import { manageAccessGuideURL } from '../amazonq/webview/ui/texts/constants'
 
-import { isCloud9 } from './extensionUtilities'
-
-export const regionSettingKey = 'region'
 export const profileSettingKey = 'profile'
 export const productName: string = 'aws-toolkit-vscode'
 
@@ -26,9 +24,12 @@ export const samTroubleshootingUrl = vscode.Uri.parse(
 )
 export const githubUrl: string = 'https://github.com/aws/aws-toolkit-vscode'
 export const githubCreateIssueUrl = `${githubUrl}/issues/new/choose`
-export const documentationUrl: string = isCloud9()
-    ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/toolkit-welcome.html'
-    : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html'
+
+export const documentationUrl = {
+    cloud9: vscode.Uri.parse('https://docs.aws.amazon.com/cloud9/latest/user-guide/toolkit-welcome.html'),
+    toolkit: vscode.Uri.parse('https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html'),
+} as const
+
 /**
  * General help page to help users understand the different ways of connecting to AWS (AWS ID, IAM credentials, SSO).
  *
@@ -42,27 +43,57 @@ export const credentialHelpUrl: string =
     'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/setup-credentials.html'
 export const ssoCredentialsHelpUrl: string =
     'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/sso-credentials.html'
-
+export const consoleSessionHelpUrl: string =
+    'https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sign-in.html#cli-configure-sign-in-prerequisites'
 export const supportedLambdaRuntimesUrl: string =
     'https://docs.aws.amazon.com/lambda/latest/dg/runtime-support-policy.html'
 export const createUrlForLambdaFunctionUrl = 'https://docs.aws.amazon.com/lambda/latest/dg/urls-configuration.html'
 // URLs for samInitWizard
-export const samInitDocUrl = vscode.Uri.parse(
-    isCloud9()
-        ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/serverless-apps-toolkit.html#sam-create'
-        : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html#serverless-apps-create'
-)
-export const launchConfigDocUrl: string = isCloud9()
-    ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/sam-debug-config-ref.html'
-    : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps-run-debug-config-ref.html'
+export const samInitDocUrl = {
+    cloud9: vscode.Uri.parse(
+        'https://docs.aws.amazon.com/cloud9/latest/user-guide/serverless-apps-toolkit.html#sam-create'
+    ),
+    toolkit: vscode.Uri.parse(
+        'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html#serverless-apps-create'
+    ),
+} as const
+export const launchConfigDocUrl = {
+    cloud9: vscode.Uri.parse('https://docs.aws.amazon.com/cloud9/latest/user-guide/sam-debug-config-ref.html'),
+    toolkit: vscode.Uri.parse(
+        'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps-run-debug-config-ref.html'
+    ),
+} as const
 // URLs for samDeployWizard
-export const samDeployDocUrl: string = isCloud9()
-    ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/serverless-apps-toolkit.html#deploy-serverless-app'
-    : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html#serverless-apps-deploy'
+export const samDeployDocUrl = {
+    cloud9: vscode.Uri.parse(
+        'https://docs.aws.amazon.com/cloud9/latest/user-guide/serverless-apps-toolkit.html#deploy-serverless-app'
+    ),
+    toolkit: vscode.Uri.parse(
+        'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html#serverless-apps-deploy'
+    ),
+} as const
 export const lambdaFunctionUrlConfigUrl: string = 'https://docs.aws.amazon.com/lambda/latest/dg/urls-configuration.html'
 // URLs for "sam sync" wizard.
 export const samSyncUrl = vscode.Uri.parse(
     'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/accelerate-getting-started.html'
+)
+// URLs for "sam build param selection"
+export const samBuildParamUrl = vscode.Uri.parse(
+    'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-build.html'
+)
+// URLs for "sam sync prarm selection"
+export const samSyncParamUrl = vscode.Uri.parse(
+    'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-cli-command-reference-sam-sync.html'
+)
+
+// URLs for "sam build" wizard.
+export const samBuildUrl = vscode.Uri.parse(
+    'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-building.html'
+)
+
+// URLs for "sam deploy" wizard.
+export const samDeployUrl = vscode.Uri.parse(
+    'https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/using-sam-cli-deploy.html'
 )
 
 // URLs for CDK
@@ -93,9 +124,14 @@ export const ssmJson: string = 'ssm-json'
 export const ssmYaml: string = 'ssm-yaml'
 
 // URL for post-Create SAM App
-export const debugNewSamAppUrl: string = isCloud9()
-    ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/serverless-apps-toolkit.html#sam-run-debug'
-    : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html#serverless-apps-debug'
+export const debugNewSamAppDocUrl = {
+    cloud9: vscode.Uri.parse(
+        'https://docs.aws.amazon.com/cloud9/latest/user-guide/serverless-apps-toolkit.html#sam-run-debug'
+    ),
+    toolkit: vscode.Uri.parse(
+        'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html#serverless-apps-debug'
+    ),
+} as const
 
 // URLs for ECS Exec
 export const ecsDocumentationUrl: string = 'https://docs.aws.amazon.com/AmazonECS/latest/developerguide/ecs-exec.html'
@@ -112,7 +148,19 @@ export const ecsIamPermissionsUrl = vscode.Uri.parse(
  * URI scheme for CloudWatch Logs Virtual Documents
  */
 export const CLOUDWATCH_LOGS_SCHEME = 'aws-cwl' // eslint-disable-line @typescript-eslint/naming-convention
+export const cloudwatchLogsLiveTailScheme = 'aws-cwl-lt'
+
 export const AWS_SCHEME = 'aws' // eslint-disable-line @typescript-eslint/naming-convention
+export const ec2LogsScheme = 'aws-ec2'
+export const amazonQDiffScheme = 'amazon-q-diff'
+
+export const startLiveTailHelpUrl =
+    'https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_StartLiveTail.html'
+export const startLiveTailLogStreamPrefixHelpUrl = `${startLiveTailHelpUrl}#CWL-StartLiveTail-request-logStreamNamePrefixes`
+export const startLiveTailLogStreamNamesHelpUrl = `${startLiveTailHelpUrl}#CWL-StartLiveTail-request-logStreamNames`
+
+export const cwlFilterPatternHelpUrl =
+    'https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/FilterAndPatternSyntax.html'
 
 export const lambdaPackageTypeImage = 'Image'
 
@@ -122,15 +170,17 @@ export const apprunnerConnectionHelpUrl =
 export const apprunnerConfigHelpUrl = 'https://docs.aws.amazon.com/apprunner/latest/dg/manage-configure.html'
 export const apprunnerRuntimeHelpUrl = 'https://docs.aws.amazon.com/apprunner/latest/dg/service-source-code.html'
 export const apprunnerPricingUrl = 'https://aws.amazon.com/apprunner/pricing/'
-export const apprunnerCreateServiceDocsUrl: string = isCloud9()
-    ? 'https://docs.aws.amazon.com/cloud9/latest/user-guide/creating-service-apprunner.html'
-    : 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/creating-service-apprunner.html'
-
+export const apprunnerCreateServiceDocUrl = {
+    cloud9: vscode.Uri.parse('https://docs.aws.amazon.com/cloud9/latest/user-guide/creating-service-apprunner.html'),
+    toolkit: vscode.Uri.parse(
+        'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/creating-service-apprunner.html'
+    ),
+} as const
 // URLs for S3
 // TODO: update docs to add the file viewer feature
 export const s3FileViewerHelpUrl = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/s3.html'
 
-//URL for Redshift
+// URL for Redshift
 export const redshiftHelpUrl = 'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/redshift.html'
 
 // URL for Amazon Q
@@ -139,3 +189,20 @@ export const amazonQHelpUrl = 'https://aws.amazon.com/q/'
 // URL for Amazon Q VS Code
 export const amazonQVscodeMarketplace =
     'https://marketplace.visualstudio.com/items?itemName=AmazonWebServices.amazon-q-vscode'
+
+/**
+ * Names of directories relevant to the crash reporting functionality.
+ *
+ * Moved here to resolve circular dependency issues.
+ */
+export const crashMonitoringDirName = 'crashMonitoring'
+
+export const amazonQTabSuffix = '(Generated by Amazon Q)'
+
+/**
+ * Common strings used throughout the application
+ */
+
+export const uploadCodeError = `I'm sorry, I couldn't upload your workspace artifacts to Amazon S3 to help you with this task. You might need to allow access to the S3 bucket. For more information, see the [Amazon Q documentation](${manageAccessGuideURL}) or contact your network or organization administrator.`
+
+export const featureName = 'Amazon Q Developer Agent for software development'

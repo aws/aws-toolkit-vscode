@@ -10,11 +10,10 @@ import * as EditorContext from '../util/editorContext'
 import * as CodeWhispererConstants from '../models/constants'
 import { ConfigurationEntry, GetRecommendationsResponse, vsCodeState } from '../models/model'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
-import { AWSError } from 'aws-sdk'
-import { isAwsError } from '../../shared/errors'
+import { ServiceException } from '@smithy/smithy-client'
+import { isServiceException } from '../../shared/errors'
 import { TelemetryHelper } from '../util/telemetryHelper'
-import { getLogger } from '../../shared/logger'
-import { isCloud9, isSageMaker } from '../../shared/extensionUtilities'
+import { getLogger } from '../../shared/logger/logger'
 import { hasVendedIamCredentials } from '../../auth/auth'
 import {
     asyncCallWithTimeout,
@@ -38,31 +37,52 @@ import globals from '../../shared/extensionGlobals'
 import { noSuggestions, updateInlineLockKey } from '../models/constants'
 import AsyncLock from 'async-lock'
 import { AuthUtil } from '../util/authUtil'
-import { CodeWhispererUserGroupSettings } from '../util/userGroupUtil'
 import { CWInlineCompletionItemProvider } from './inlineCompletionItemProvider'
 import { application } from '../util/codeWhispererApplication'
 import { openUrl } from '../../shared/utilities/vsCodeUtils'
 import { indent } from '../../shared/utilities/textUtilities'
 import path from 'path'
+import { isIamConnection } from '../../auth/connection'
+import { UserWrittenCodeTracker } from '../tracker/userWrittenCodeTracker'
+import { BaseLanguageClient } from 'vscode-languageclient'
 
 /**
  * This class is for getRecommendation/listRecommendation API calls and its states
  * It does not contain UI/UX related logic
  */
 
-// below commands override VS Code inline completion commands
-const prevCommand = Commands.declare('editor.action.inlineSuggest.showPrevious', () => async () => {
-    await RecommendationHandler.instance.showRecommendation(-1)
-})
-const nextCommand = Commands.declare('editor.action.inlineSuggest.showNext', () => async () => {
-    await RecommendationHandler.instance.showRecommendation(1)
-})
+/**
+ * Commands as a level of indirection so that declare doesn't intercept any registrations for the
+ * language server implementation.
+ *
+ * Otherwise you'll get:
+ *     "Unable to launch amazonq language server: Command "aws.amazonq.rejectCodeSuggestion" has already been declared by the Toolkit"
+ */
+function createCommands() {
+    // below commands override VS Code inline completion commands
+    const prevCommand = Commands.declare('editor.action.inlineSuggest.showPrevious', () => async () => {
+        await RecommendationHandler.instance.showRecommendation(-1)
+    })
+    const nextCommand = Commands.declare('editor.action.inlineSuggest.showNext', () => async () => {
+        await RecommendationHandler.instance.showRecommendation(1)
+    })
 
-const rejectCommand = Commands.declare('aws.amazonq.rejectCodeSuggestion', () => async () => {
-    RecommendationHandler.instance.reportUserDecisions(-1)
+    const rejectCommand = Commands.declare('aws.amazonq.rejectCodeSuggestion', () => async () => {
+        telemetry.record({
+            traceId: TelemetryHelper.instance.traceId,
+        })
 
-    await Commands.tryExecute('aws.amazonq.refreshAnnotation')
-})
+        await vscode.commands.executeCommand('editor.action.inlineSuggest.hide')
+        RecommendationHandler.instance.reportUserDecisions(-1)
+        await Commands.tryExecute('aws.amazonq.refreshAnnotation')
+    })
+
+    return {
+        prevCommand,
+        nextCommand,
+        rejectCommand,
+    }
+}
 
 const lock = new AsyncLock({ maxPending: 1 })
 
@@ -80,12 +100,13 @@ export class RecommendationHandler {
     private next: vscode.Disposable
     private prev: vscode.Disposable
     private _timer?: NodeJS.Timer
+    private languageClient?: BaseLanguageClient
     documentUri: vscode.Uri | undefined = undefined
 
     constructor() {
         this.requestId = ''
         this.nextToken = ''
-        this.lastInvocationTime = performance.now() - CodeWhispererConstants.invocationTimeIntervalThreshold * 1000
+        this.lastInvocationTime = Date.now() - CodeWhispererConstants.invocationTimeIntervalThreshold * 1000
         this.cancellationToken = new vscode.CancellationTokenSource()
         this.prev = new vscode.Disposable(() => {})
         this.next = new vscode.Disposable(() => {})
@@ -100,6 +121,10 @@ export class RecommendationHandler {
 
     isValidResponse(): boolean {
         return session.recommendations.some((r) => r.content.trim() !== '')
+    }
+
+    setLanguageClient(languageClient: BaseLanguageClient) {
+        this.languageClient = languageClient
     }
 
     async getServerResponse(
@@ -153,8 +178,7 @@ export class RecommendationHandler {
         autoTriggerType?: CodewhispererAutomatedTriggerType,
         pagination: boolean = true,
         page: number = 0,
-        isSM: boolean = isSageMaker(),
-        retry: boolean = false
+        generate: boolean = isIamConnection(AuthUtil.instance.conn)
     ): Promise<GetRecommendationsResponse> {
         let invocationResult: 'Succeeded' | 'Failed' = 'Failed'
         let errorMessage: string | undefined = undefined
@@ -181,12 +205,13 @@ export class RecommendationHandler {
         ).language
         session.taskType = await this.getTaskTypeFromEditorFileName(editor.document.fileName)
 
-        if (pagination && !isSM) {
+        if (pagination && !generate) {
             if (page === 0) {
                 session.requestContext = await EditorContext.buildListRecommendationRequest(
                     editor as vscode.TextEditor,
                     this.nextToken,
-                    config.isSuggestionsWithCodeReferencesEnabled
+                    config.isSuggestionsWithCodeReferencesEnabled,
+                    this.languageClient
                 )
             } else {
                 session.requestContext = {
@@ -202,6 +227,8 @@ export class RecommendationHandler {
             session.requestContext = await EditorContext.buildGenerateRecommendationRequest(editor as vscode.TextEditor)
         }
         const request = session.requestContext.request
+        // record preprocessing end time
+        TelemetryHelper.instance.setPreprocessEndTime()
 
         // set start pos for non pagination call or first pagination call
         if (!pagination || (pagination && page === 0)) {
@@ -215,10 +242,7 @@ export class RecommendationHandler {
              * Validate request
              */
             if (!EditorContext.validateRequest(request)) {
-                getLogger().verbose(
-                    'Invalid Request : ',
-                    JSON.stringify(request, undefined, EditorContext.getTabSize())
-                )
+                getLogger().verbose('Invalid Request: %O', request)
                 const languageName = request.fileContext.programmingLanguage.languageName
                 if (!runtimeLanguageContext.isLanguageSupported(languageName)) {
                     errorMessage = `${languageName} is currently not supported by Amazon Q inline suggestions`
@@ -232,14 +256,16 @@ export class RecommendationHandler {
         }
 
         try {
-            startTime = performance.now()
+            startTime = Date.now()
             this.lastInvocationTime = startTime
             const mappedReq = runtimeLanguageContext.mapToRuntimeLanguage(request)
             const codewhispererPromise =
-                pagination && !isSM ? client.listRecommendations(mappedReq) : client.generateRecommendations(mappedReq)
+                pagination && !generate
+                    ? client.listRecommendations(mappedReq)
+                    : client.generateRecommendations(mappedReq)
             const resp = await this.getServerResponse(triggerType, config.isManualTriggerEnabled, codewhispererPromise)
             TelemetryHelper.instance.setSdkApiCallEndTime()
-            latency = startTime !== 0 ? performance.now() - startTime : 0
+            latency = startTime !== 0 ? Date.now() - startTime : 0
             if ('recommendations' in resp) {
                 recommendations = (resp && resp.recommendations) || []
             } else {
@@ -251,7 +277,7 @@ export class RecommendationHandler {
             sessionId = resp?.$response?.httpResponse?.headers['x-amzn-sessionid']
             TelemetryHelper.instance.setFirstResponseRequestId(requestId)
             if (page === 0) {
-                TelemetryHelper.instance.setTimeToFirstRecommendation(performance.now())
+                session.setTimeToFirstRecommendation(Date.now())
             }
             if (nextToken === '') {
                 TelemetryHelper.instance.setAllPaginationEndTime()
@@ -261,17 +287,17 @@ export class RecommendationHandler {
                 shouldRecordServiceInvocation = false
             }
             if (latency === 0) {
-                latency = startTime !== 0 ? performance.now() - startTime : 0
+                latency = startTime !== 0 ? Date.now() - startTime : 0
             }
             getLogger().error('amazonq inline-suggest: Invocation Exception : %s', (error as Error).message)
-            if (isAwsError(error)) {
+            if (isServiceException(error)) {
                 errorMessage = error.message
-                requestId = error.requestId || ''
-                errorCode = error.code
-                reason = `CodeWhisperer Invocation Exception: ${error?.code ?? error?.name ?? 'unknown'}`
+                requestId = error.$metadata.requestId || ''
+                errorCode = error.name
+                reason = `CodeWhisperer Invocation Exception: ${error?.name ?? 'unknown'}`
                 await this.onThrottlingException(error, triggerType)
 
-                if (error?.code === 'AccessDeniedException' && errorMessage?.includes('no identity-based policy')) {
+                if (error?.name === 'AccessDeniedException' && errorMessage?.includes('no identity-based policy')) {
                     getLogger().error('amazonq inline-suggest: AccessDeniedException : %s', (error as Error).message)
                     void vscode.window
                         .showErrorMessage(`CodeWhisperer: ${error?.message}`, CodeWhispererConstants.settingsLearnMore)
@@ -305,13 +331,14 @@ export class RecommendationHandler {
                 4,
                 true
             ).trimStart()
-            recommendations.forEach((item, index) => {
+            for (const [index, item] of recommendations.entries()) {
                 msg += `\n    ${index.toString().padStart(2, '0')}: ${indent(item.content, 8, true).trim()}`
                 session.requestIdList.push(requestId)
-            })
+            }
             getLogger().debug(msg)
             if (invocationResult === 'Succeeded') {
                 CodeWhispererCodeCoverageTracker.getTracker(session.language)?.incrementServiceInvocationCount()
+                UserWrittenCodeTracker.instance.onQFeatureInvoked()
             } else {
                 if (
                     (errorMessage?.includes(invalidCustomizationMessage) && errorCode === 'AccessDeniedException') ||
@@ -364,7 +391,7 @@ export class RecommendationHandler {
             TelemetryHelper.instance.setTypeAheadLength(typedPrefix.length)
             // mark suggestions that does not match typeahead when arrival as Discard
             // these suggestions can be marked as Showed if typeahead can be removed with new inline API
-            recommendations.forEach((r, i) => {
+            for (const [i, r] of recommendations.entries()) {
                 const recommendationIndex = i + session.recommendations.length
                 if (
                     !r.content.startsWith(typedPrefix) &&
@@ -373,7 +400,7 @@ export class RecommendationHandler {
                     session.setSuggestionState(recommendationIndex, 'Discard')
                 }
                 session.setCompletionType(recommendationIndex, r)
-            })
+            }
             session.recommendations = pagination ? session.recommendations.concat(recommendations) : recommendations
             if (isInlineCompletionEnabled() && this.hasAtLeastOneValidSuggestion(typedPrefix)) {
                 this._onDidReceiveRecommendation.fire()
@@ -386,6 +413,7 @@ export class RecommendationHandler {
 
         // send Empty userDecision event if user receives no recommendations in this session at all.
         if (invocationResult === 'Succeeded' && nextToken === '') {
+            // case 1: empty list of suggestion []
             if (session.recommendations.length === 0) {
                 session.requestIdList.push(requestId)
                 // Received an empty list of recommendations
@@ -400,7 +428,8 @@ export class RecommendationHandler {
                     session.requestContext.supplementalMetadata
                 )
             }
-            if (!this.hasAtLeastOneValidSuggestion(typedPrefix)) {
+            // case 2: non empty list of suggestion but with (a) empty content or (b) non-matching typeahead
+            else if (!this.hasAtLeastOneValidSuggestion(typedPrefix)) {
                 this.reportUserDecisions(-1)
             }
         }
@@ -455,7 +484,6 @@ export class RecommendationHandler {
             this.clearRecommendations()
             this.disposeInlineCompletion()
             await vscode.commands.executeCommand('aws.amazonq.refreshStatusBar')
-            this.disposeCommandOverrides()
             // fix a regression that requires user to hit Esc twice to clear inline ghost text
             // because disposing a provider does not clear the UX
             if (isVscHavingRegressionInlineCompletionApi()) {
@@ -467,9 +495,9 @@ export class RecommendationHandler {
     }
 
     reportDiscardedUserDecisions() {
-        session.recommendations.forEach((r, i) => {
+        for (const [i, _] of session.recommendations.entries()) {
             session.setSuggestionState(i, 'Discard')
-        })
+        }
         this.reportUserDecisions(-1)
     }
 
@@ -490,9 +518,7 @@ export class RecommendationHandler {
             session.suggestionStates,
             session.requestContext.supplementalMetadata
         )
-        if (isCloud9('any')) {
-            this.clearRecommendations()
-        } else if (isInlineCompletionEnabled()) {
+        if (isInlineCompletionEnabled()) {
             this.clearInlineCompletionStates().catch((e) => {
                 getLogger().error('clearInlineCompletionStates failed: %s', (e as Error).message)
             })
@@ -521,9 +547,9 @@ export class RecommendationHandler {
         // do not show recommendation if cursor is before invocation position
         // also mark as Discard
         if (editor.selection.active.isBefore(session.startPos)) {
-            session.recommendations.forEach((r, i) => {
+            for (const [i, _] of session.recommendations.entries()) {
                 session.setSuggestionState(i, 'Discard')
-            })
+            }
             reject()
             return false
         }
@@ -539,18 +565,18 @@ export class RecommendationHandler {
             )
         )
         if (!session.recommendations[0].content.startsWith(typedPrefix.trimStart())) {
-            session.recommendations.forEach((r, i) => {
+            for (const [i, _] of session.recommendations.entries()) {
                 session.setSuggestionState(i, 'Discard')
-            })
+            }
             reject()
             return false
         }
         return true
     }
 
-    async onThrottlingException(awsError: AWSError, triggerType: CodewhispererTriggerType) {
+    async onThrottlingException(awsError: ServiceException, triggerType: CodewhispererTriggerType) {
         if (
-            awsError.code === 'ThrottlingException' &&
+            awsError.name === 'ThrottlingException' &&
             awsError.message.includes(CodeWhispererConstants.throttlingMessage)
         ) {
             if (triggerType === 'OnDemand') {
@@ -575,6 +601,7 @@ export class RecommendationHandler {
     // They are subscribed when suggestion starts and disposed when suggestion is accepted/rejected
     // to avoid impacting other plugins or user who uses this API
     private registerCommandOverrides() {
+        const { prevCommand, nextCommand, rejectCommand } = createCommands()
         this.prev = prevCommand.register()
         this.next = nextCommand.register()
         this.reject = rejectCommand.register()
@@ -656,22 +683,18 @@ export class RecommendationHandler {
             return
         }
         if (this.isSuggestionVisible()) {
-            // to force refresh the visual cue so that the total recommendation count can be updated
-            // const index = this.inlineCompletionProvider?.getActiveItemIndex
-            await this.showRecommendation(0, false)
+            // do not force refresh the tooltip to avoid suggestion "flashing"
             return
         }
         if (
             editor.selection.active.isBefore(session.startPos) ||
             editor.document.uri.fsPath !== this.documentUri?.fsPath
         ) {
-            session.recommendations.forEach((r, i) => {
+            for (const [i, _] of session.recommendations.entries()) {
                 session.setSuggestionState(i, 'Discard')
-            })
+            }
             this.reportUserDecisions(-1)
         } else if (session.recommendations.length > 0) {
-            this.subscribeSuggestionCommands()
-            // await this.startRejectionTimer(editor)
             await this.showRecommendation(0, true)
         }
     }
@@ -698,10 +721,9 @@ export class RecommendationHandler {
                 codewhispererCompletionType: session.getCompletionType(0),
                 codewhispererCustomizationArn: getSelectedCustomization().arn,
                 codewhispererLanguage: languageContext.language,
-                duration: performance.now() - this.lastInvocationTime,
+                duration: Date.now() - this.lastInvocationTime,
                 passive: true,
                 credentialStartUrl: AuthUtil.instance.startUrl,
-                codewhispererUserGroup: CodeWhispererUserGroupSettings.getUserGroup().toString(),
                 result: 'Succeeded',
             })
         }

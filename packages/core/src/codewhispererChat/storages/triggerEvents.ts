@@ -12,6 +12,7 @@ export type TriggerEventType =
     | 'follow_up'
     | 'onboarding_page_interaction'
     | 'quick_action'
+    | 'inline_chat'
 
 export interface TriggerEvent {
     readonly id: string
@@ -29,6 +30,7 @@ export class TriggerEventsStorage {
 
     public removeTabEvents(tabID: string) {
         const events = this.triggerEventsByTabID.get(tabID) ?? []
+        // eslint-disable-next-line unicorn/no-array-for-each
         events.forEach((event: TriggerEvent) => {
             this.triggerEvents.delete(event.id)
         })

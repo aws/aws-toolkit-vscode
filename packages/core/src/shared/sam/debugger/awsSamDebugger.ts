@@ -5,7 +5,6 @@
 
 import * as semver from 'semver'
 import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
 import * as nls from 'vscode-nls'
 import {
     getCodeRoot,
@@ -34,7 +33,7 @@ import * as tsDebug from './typescriptSamDebug'
 import * as goDebug from './goSamDebug'
 import { ExtContext } from '../../extensions'
 import { isInDirectory, makeTemporaryToolkitFolder } from '../../filesystemUtilities'
-import { getLogger } from '../../logger'
+import { getLogger } from '../../logger/logger'
 import { getStartPort } from '../../utilities/debuggerUtils'
 import * as pathutil from '../../utilities/pathUtils'
 import { tryGetAbsolutePath } from '../../utilities/workspaceUtils'
@@ -57,16 +56,18 @@ import { Credentials } from '@aws-sdk/types'
 import * as CloudFormation from '../../cloudformation/cloudformation'
 import { getSamCliContext, getSamCliVersion } from '../cli/samCliContext'
 import { minSamCliVersionForImageSupport, minSamCliVersionForGoSupport } from '../cli/samCliValidator'
-import { getIdeProperties, isCloud9 } from '../../extensionUtilities'
+import { getIdeProperties } from '../../extensionUtilities'
 import { resolve } from 'path'
 import globals from '../../extensionGlobals'
-import { Runtime, telemetry } from '../../telemetry/telemetry'
+import { telemetry, Runtime as TelemetryRuntime } from '../../telemetry/telemetry'
+import { Runtime } from '@aws-sdk/client-lambda'
 import { ErrorInformation, isUserCancelledError, ToolkitError } from '../../errors'
 import { openLaunchJsonFile } from './commands/addSamDebugConfiguration'
 import { Logging } from '../../logger/commands'
 import { credentialHelpUrl, samTroubleshootingUrl } from '../../constants'
 import { Auth } from '../../../auth/auth'
 import { openUrl } from '../../utilities/vsCodeUtils'
+import fs from '../../fs/fs'
 
 const localize = nls.loadMessageBundle()
 
@@ -205,11 +206,6 @@ export interface SamLaunchRequestArgs extends AwsSamDebuggerConfiguration {
      */
     parameterOverrides?: string[]
 
-    /**
-     * HACK: Forces use of `ikp3db` python debugger in Cloud9 (and in tests).
-     */
-    useIkpdb?: boolean
-
     //
     //  Invocation properties (for "execute" phase, after "config" phase).
     //  Non-serializable...
@@ -267,11 +263,11 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                         if (resource) {
                             // we do not know enough to populate the runtime field for Image-based Lambdas
                             const runtimeName = CloudFormation.isZipLambdaResource(resource?.Properties)
-                                ? CloudFormation.getStringForProperty(
+                                ? (CloudFormation.getStringForProperty(
                                       resource?.Properties,
                                       'Runtime',
                                       templateDatum.item
-                                  ) ?? ''
+                                  ) ?? '')
                                 : ''
                             configs.push(
                                 createTemplateAwsSamDebugConfig(
@@ -308,7 +304,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                     }
                 }
             }
-            getLogger().verbose(`provideDebugConfigurations: debugconfigs: ${JSON.stringify(configs)}`)
+            getLogger().verbose(`provideDebugConfigurations: debugconfigs: %O`, configs)
         }
 
         return configs
@@ -324,13 +320,9 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
     public async resolveDebugConfiguration(
         folder: vscode.WorkspaceFolder | undefined,
         config: AwsSamDebuggerConfiguration,
-        token?: vscode.CancellationToken
+        token?: vscode.CancellationToken,
+        source?: string
     ): Promise<AwsSamDebuggerConfiguration | undefined> {
-        if (isCloud9()) {
-            // TODO: remove when Cloud9 supports ${workspaceFolder}.
-            await this.makeAndInvokeConfig(folder, config, token)
-            return undefined
-        }
         return config
     }
 
@@ -348,9 +340,10 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
     public async resolveDebugConfigurationWithSubstitutedVariables(
         folder: vscode.WorkspaceFolder | undefined,
         config: AwsSamDebuggerConfiguration,
-        token?: vscode.CancellationToken
+        token?: vscode.CancellationToken,
+        source?: string
     ): Promise<undefined> {
-        await this.makeAndInvokeConfig(folder, config, token)
+        await this.makeAndInvokeConfig(folder, config, token, source)
         // TODO: return config here, and remove use of `startDebugging()` in `localLambdaRunner.ts`.
         return undefined
     }
@@ -358,7 +351,8 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
     private async makeAndInvokeConfig(
         folder: vscode.WorkspaceFolder | undefined,
         config: AwsSamDebuggerConfiguration,
-        token?: vscode.CancellationToken
+        token?: vscode.CancellationToken,
+        source?: string
     ): Promise<void> {
         try {
             if (config.invokeTarget.target === 'api') {
@@ -370,6 +364,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 })
             } else {
                 await telemetry.lambda_invokeLocal.run(async () => {
+                    telemetry.record({ source: source })
                     const resolved = await this.makeConfig(folder, config, token)
 
                     return this.invokeConfig(resolved)
@@ -445,7 +440,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             } else if (rv.message) {
                 void vscode.window.showInformationMessage(rv.message)
             }
-            getLogger().verbose(`SAM debug: config: ${JSON.stringify(config.name)}`)
+            getLogger().verbose(`SAM debug: config %s:`, config.name)
         }
 
         const editor = vscode.window.activeTextEditor
@@ -460,7 +455,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         const handlerName = await getHandlerName(folder, config)
 
         config.baseBuildDir = resolve(folder.uri.fsPath, config.sam?.buildDir ?? (await makeTemporaryToolkitFolder()))
-        await fs.ensureDir(config.baseBuildDir)
+        await fs.mkdir(config.baseBuildDir)
 
         if (templateInvoke?.templatePath) {
             // Normalize to absolute path.
@@ -477,8 +472,8 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         }
 
         const isZip = CloudFormation.isZipLambdaResource(templateResource?.Properties)
-        const runtime: string | undefined =
-            config.lambda?.runtime ??
+        const runtime: Runtime | undefined =
+            (config.lambda?.runtime as Runtime) ??
             (template && isZip
                 ? CloudFormation.getStringForProperty(templateResource?.Properties, 'Runtime', template)
                 : undefined) ??
@@ -533,6 +528,8 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
         }
 
         const runtimeFamily = getFamily(runtime)
+        // use region in debug config first, if not found, fall back to toolkit default region.
+        const region = config.aws?.region ?? this.ctx.awsContext.getCredentialDefaultRegion()
         const documentUri =
             vscode.window.activeTextEditor?.document.uri ??
             // XXX: don't know what URI to choose...
@@ -556,19 +553,15 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
             } else {
                 const credentialsId = config.aws.credentials
                 const getHelp = localize('AWS.generic.message.getHelp', 'Get Help...')
-                // TODO: getHelp page for Cloud9.
-                const extraButtons = isCloud9()
-                    ? []
-                    : [
-                          {
-                              label: getHelp,
-                              onClick: () => openUrl(vscode.Uri.parse(credentialHelpUrl)),
-                          },
-                      ]
 
                 throw new SamLaunchRequestError(`Invalid credentials found in launch configuration: ${credentialsId}`, {
                     code: 'InvalidCredentials',
-                    extraButtons,
+                    extraButtons: [
+                        {
+                            label: getHelp,
+                            onClick: () => openUrl(vscode.Uri.parse(credentialHelpUrl)),
+                        },
+                    ],
                 })
             }
         }
@@ -616,9 +609,9 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
                 timeoutSec: lambdaTimeout,
                 environmentVariables: { ...config.lambda?.environmentVariables },
             },
+            region: region,
             awsCredentials: awsCredentials,
             parameterOverrides: parameterOverrideArr,
-            useIkpdb: isCloud9() || !!(config as any).useIkpdb,
             architecture: architecture,
         }
 
@@ -698,7 +691,7 @@ export class SamDebugConfigProvider implements vscode.DebugConfigurationProvider
     public async invokeConfig(config: SamLaunchRequestArgs): Promise<SamLaunchRequestArgs> {
         telemetry.record({
             debug: !config.noDebug,
-            runtime: config.runtime as Runtime,
+            runtime: config.runtime as TelemetryRuntime,
             lambdaArchitecture: config.architecture,
             lambdaPackageType: (await isImageLambdaConfig(config)) ? 'Image' : 'Zip',
             version: await getSamCliVersion(getSamCliContext()),

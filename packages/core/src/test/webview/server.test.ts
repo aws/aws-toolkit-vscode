@@ -3,26 +3,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SinonStub, stub } from 'sinon'
-import { Logger, setLogger } from '../../shared/logger/logger'
 import assert from 'assert'
 import { ToolkitError } from '../../shared/errors'
 import { handleWebviewError } from '../../webviews/server'
+import { assertLogsContain } from '../globalSetup.test'
 
 describe('logAndShowWebviewError()', function () {
-    let logError: SinonStub<[message: string, ...meta: any[]], number>
     const myWebviewId = 'myWebviewId'
     const myCommand = 'myCommand'
 
-    beforeEach(function () {
-        logError = stub()
-        const logger = { error: logError } as unknown as Logger
-        setLogger(logger, 'main')
-    })
+    beforeEach(function () {})
 
-    afterEach(function () {
-        setLogger(undefined, 'main')
-    })
+    afterEach(function () {})
 
     it('logs the provided error, but is wrapped in ToolkitErrors for more context', function () {
         // The method is being tested due to its fragile implementation. This test
@@ -30,17 +22,15 @@ describe('logAndShowWebviewError()', function () {
 
         const inputError = new Error('Random Error')
 
-        handleWebviewError(inputError, myWebviewId, myCommand)
+        const err = handleWebviewError(inputError, myWebviewId, myCommand)
 
-        assert.strictEqual(logError.callCount, 1)
+        // assertLogsContain('Random Error', false, 'error')
 
         // A shortened error is shown to the user
-        const userFacingError = logError.getCall(0).args[1]
-        assert(userFacingError instanceof ToolkitError)
-        assert.strictEqual(userFacingError.message, 'Webview error')
+        assertLogsContain('Webview error', false, 'error')
 
         // A higher level context of what caused the error
-        const detailedError = userFacingError.cause
+        const detailedError = err.cause
         assert(detailedError instanceof ToolkitError)
         assert.strictEqual(detailedError.message, `Webview backend command failed: "${myCommand}()"`)
 

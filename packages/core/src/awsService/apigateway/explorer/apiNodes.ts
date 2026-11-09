@@ -5,7 +5,7 @@
 
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
-import { RestApi } from 'aws-sdk/clients/apigateway'
+import { RestApi } from '@aws-sdk/client-api-gateway'
 
 export class RestApiNode extends AWSTreeNodeBase implements AWSResourceNode {
     public override id!: string

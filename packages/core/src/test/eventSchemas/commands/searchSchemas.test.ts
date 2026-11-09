@@ -5,7 +5,7 @@
 
 import assert from 'assert'
 
-import { Schemas } from 'aws-sdk'
+import { DescribeSchemaResponse, SearchSchemaSummary, SearchSchemaVersionSummary } from '@aws-sdk/client-schemas'
 import * as sinon from 'sinon'
 import { SchemasNode } from '../../../eventSchemas/explorer/schemasNode'
 import { getTabSizeSetting } from '../../../shared/utilities/editorUtilities'
@@ -42,25 +42,25 @@ describe('Search Schemas', function () {
     const failRegistry = 'failRegistry'
     const failRegistry2 = 'failRegistry2'
 
-    const versionSummary1: Schemas.SearchSchemaVersionSummary = {
+    const versionSummary1: SearchSchemaVersionSummary = {
         SchemaVersion: '1',
     }
-    const versionSummary2: Schemas.SearchSchemaVersionSummary = {
+    const versionSummary2: SearchSchemaVersionSummary = {
         SchemaVersion: '2',
     }
-    const searchSummary1: Schemas.SearchSchemaSummary = {
+    const searchSummary1: SearchSchemaSummary = {
         RegistryName: testRegistry,
         SchemaName: 'testSchema1',
         SchemaVersions: [versionSummary1, versionSummary2],
     }
 
-    const searchSummary2: Schemas.SearchSchemaSummary = {
+    const searchSummary2: SearchSchemaSummary = {
         RegistryName: testRegistry,
         SchemaName: 'testSchema2',
         SchemaVersions: [versionSummary1],
     }
 
-    const searchSummary3: Schemas.SearchSchemaSummary = {
+    const searchSummary3: SearchSchemaSummary = {
         RegistryName: testRegistry2,
         SchemaName: 'testSchema3',
         SchemaVersions: [versionSummary1],
@@ -116,7 +116,7 @@ describe('Search Schemas', function () {
             const client = stub(DefaultSchemaClient, { regionCode: 'region-1' })
             const displayMessage = `Unable to search registry ${failRegistry}`
 
-            //make an api call with non existent registryName - should return empty results
+            // make an api call with non existent registryName - should return empty results
             const results = await getSearchListForSingleRegistry(client, failRegistry, 'randomText')
 
             assert.strictEqual(results.length, 0, 'should return 0 summaries')
@@ -145,7 +145,7 @@ describe('Search Schemas', function () {
 
             assert.strictEqual(results.length, 3, 'should return 3 summaries')
 
-            //results are unordered, sort for testing purposes
+            // results are unordered, sort for testing purposes
             results.sort(function (a, b) {
                 return a.RegistryName > b.RegistryName ? 1 : b.RegistryName > a.RegistryName ? -1 : 0
             })
@@ -165,7 +165,7 @@ describe('Search Schemas', function () {
             assert.strictEqual(results[1].VersionList.length, 1, 'second summary has 1 version')
             assert.strictEqual(results[2].VersionList.length, 1, 'third summary has 1 version')
 
-            //failed registries
+            // failed registries
             const errorMessages = getTestWindow().shownMessages.filter((m) => m.severity === SeverityLevel.Error)
             assert.strictEqual(errorMessages.length, 2, 'should display 2 error message, 1 per each failed registry')
             errorMessages[0].assertMessage(displayMessage)
@@ -178,7 +178,7 @@ describe('Search Schemas', function () {
         const multipleRegistryNames = [testRegistry, testRegistry2]
         const awsEventSchemaRaw =
             '{"openapi":"3.0.0","info":{"version":"1.0.0","title":"Event"},"paths":{},"components":{"schemas":{"Event":{"type":"object"}}}}'
-        const schemaResponse: Schemas.DescribeSchemaResponse = {
+        const schemaResponse: DescribeSchemaResponse = {
             Content: awsEventSchemaRaw,
         }
 

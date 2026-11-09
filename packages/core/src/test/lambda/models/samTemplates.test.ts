@@ -16,11 +16,11 @@ import {
     eventBridgeStarterAppTemplate,
     stepFunctionsSampleApp,
     typeScriptBackendTemplate,
-    lazyLoadSamTemplateStrings,
 } from '../../../lambda/models/samTemplates'
 import { Set } from 'immutable'
 
 import { samZipLambdaRuntimes } from '../../../lambda/models/samLambdaRuntime'
+import { Runtime } from '@aws-sdk/client-lambda'
 
 let validTemplateOptions: Set<SamTemplate>
 let validPythonTemplateOptions: Set<SamTemplate>
@@ -29,8 +29,6 @@ let validGoTemplateOptions: Set<SamTemplate>
 let defaultTemplateOptions: Set<SamTemplate>
 
 before(function () {
-    lazyLoadSamTemplateStrings()
-
     validTemplateOptions = Set([
         helloWorldTemplate,
         eventBridgeHelloWorldTemplate,
@@ -69,6 +67,8 @@ describe('getSamTemplateWizardOption', function () {
                 case 'python3.10':
                 case 'python3.11':
                 case 'python3.12':
+                case 'python3.13' as Runtime:
+                case 'python3.14' as Runtime:
                     assert.deepStrictEqual(
                         result,
                         validPythonTemplateOptions,
@@ -127,9 +127,9 @@ describe('getSamCliTemplateParameter', function () {
 
 describe('getTemplateDescription', async function () {
     it('all templates are handled', async function () {
-        validTemplateOptions.forEach((template) => {
+        for (const template of validTemplateOptions) {
             // Checking that call does not throw
             getTemplateDescription(template)
-        })
+        }
     })
 })

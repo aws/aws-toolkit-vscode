@@ -1,0 +1,14 @@
+{
+	"date": "2026-04-16",
+	"version": "4.1.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "Fix issue for IAM users who cannot see their Sagemaker Unified Studio spaces"
+		},
+		{
+			"type": "Feature",
+			"description": "EC2: Added \"Filter by Tag\" action to the EC2 explorer node, allowing users to filter instances by tag key=value pairs."
+		}
+	]
+}

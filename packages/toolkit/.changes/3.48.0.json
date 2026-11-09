@@ -1,0 +1,10 @@
+{
+	"date": "2025-02-27",
+	"version": "3.48.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "Step Functions: Expand data source and output options for Distributed Map in ASL language schema"
+		}
+	]
+}

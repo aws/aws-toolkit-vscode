@@ -25,3 +25,48 @@ export function fromQueryToParameters(query: vscode.Uri['query']): Map<string, s
     }
     return queryMap
 }
+
+/**
+ * Provide a schema for translating between an object and a vscode.Uri
+ * @param parse function to convert a vscode.Uri into an object, throw error if uri is invalid
+ * @param form function to convert an object into a vscode.Uri
+ */
+export class UriSchema<T> {
+    public constructor(
+        public parse: (uri: vscode.Uri) => T,
+        public form: (obj: T) => vscode.Uri
+    ) {}
+
+    public isValid(uri: vscode.Uri): boolean {
+        try {
+            this.parse(uri)
+            return true
+        } catch (e) {
+            return false
+        }
+    }
+}
+
+/**
+ * Converts a string path to a Uri, or returns the given Uri if it is already a Uri.
+ *
+ * A convenience function so you do not need to care about the type of path received.
+ */
+export function toUri(path: string | vscode.Uri): vscode.Uri {
+    if (path instanceof vscode.Uri) {
+        return path
+    }
+    return vscode.Uri.file(path)
+}
+
+export function isValidUrl(string: string): boolean {
+    try {
+        const url = new URL(string)
+        // handle case where, eg: 'https://test', would be considered valid. At a minimum
+        // we'll require a top-level domain, eg: 'https://test.com'.
+        const hostParts = url.hostname.split('.').filter((part) => !!part)
+        return hostParts.length > 1
+    } catch (err) {
+        return false
+    }
+}

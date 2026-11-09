@@ -4,8 +4,16 @@
  */
 
 import * as vscode from 'vscode'
-import { AggregatedCodeScanIssue, CodeScanIssue, CodeScansState, SuggestedFix } from '../models/model'
-export abstract class SecurityIssueProvider {
+import { AggregatedCodeScanIssue, CodeScanIssue, SuggestedFix } from '../models/model'
+import { randomUUID } from '../../shared/crypto'
+import { displayFindingsDetectorName } from '../models/constants'
+
+export class SecurityIssueProvider {
+    static #instance: SecurityIssueProvider
+    public static get instance() {
+        return (this.#instance ??= new this())
+    }
+
     private _issues: AggregatedCodeScanIssue[] = []
     public get issues() {
         return this._issues
@@ -13,6 +21,15 @@ export abstract class SecurityIssueProvider {
 
     public set issues(issues: AggregatedCodeScanIssue[]) {
         this._issues = issues
+    }
+
+    private _id: string = randomUUID()
+    public get id() {
+        return this._id
+    }
+
+    public set id(id: string) {
+        this._id = id
     }
 
     public handleDocumentChange(event: vscode.TextDocumentChangeEvent) {
@@ -43,16 +60,13 @@ export abstract class SecurityIssueProvider {
                     .filter((issue) => {
                         const range = new vscode.Range(
                             issue.startLine,
-                            event.document.lineAt(issue.startLine)?.range.start.character ?? 0,
-                            issue.endLine,
-                            event.document.lineAt(issue.endLine - 1)?.range.end.character ?? 0
+                            0,
+                            issue.startLine === issue.endLine ? issue.endLine + 1 : issue.endLine,
+                            0
                         )
+
                         const intersection = changedRange.intersection(range)
-                        return !(
-                            intersection &&
-                            (/\S/.test(changedText) || changedText === '') &&
-                            !CodeScansState.instance.isScansEnabled()
-                        )
+                        return !(intersection && (/\S/.test(changedText) || changedText === ''))
                     })
                     .map((issue) => {
                         if (issue.startLine < changedRange.end.line) {
@@ -80,7 +94,7 @@ export abstract class SecurityIssueProvider {
     private _offsetSuggestedFix(suggestedFix: SuggestedFix, lines: number): SuggestedFix {
         return {
             ...suggestedFix,
-            code: suggestedFix.code.replace(
+            code: suggestedFix.code?.replace(
                 /^(@@ -)(\d+)(,\d+ \+)(\d+)(,\d+ @@)/,
                 function (_fullMatch, ...groups: string[]) {
                     return (
@@ -92,6 +106,15 @@ export abstract class SecurityIssueProvider {
                     )
                 }
             ),
+            references:
+                suggestedFix.references?.map((ref) => ({
+                    ...ref,
+                    recommendationContentSpan: {
+                        ...ref.recommendationContentSpan,
+                        start: Number(ref.recommendationContentSpan?.start) + lines,
+                        end: Number(ref.recommendationContentSpan?.end) + lines,
+                    },
+                })) ?? [],
         }
     }
 
@@ -105,5 +128,69 @@ export abstract class SecurityIssueProvider {
                 issues: group.issues.filter((i) => i.findingId !== issue.findingId),
             }
         })
+    }
+
+    public updateIssue(issue: CodeScanIssue, filePath?: string) {
+        this._issues = this._issues.map((group) => {
+            if (filePath && group.filePath !== filePath) {
+                return group
+            }
+            return {
+                ...group,
+                issues: group.issues.map((i) => (i.findingId === issue.findingId ? issue : i)),
+            }
+        })
+    }
+
+    public mergeIssues(newIssues: AggregatedCodeScanIssue) {
+        const existingGroup = this._issues.find((group) => group.filePath === newIssues.filePath)
+        if (!existingGroup) {
+            this._issues.push(newIssues)
+            return
+        }
+
+        this._issues = this._issues.map((group) =>
+            group.filePath !== newIssues.filePath
+                ? group
+                : {
+                      ...group,
+                      issues: [
+                          ...group.issues,
+                          ...newIssues.issues.filter((issue) => !this.isExistingIssue(issue, newIssues.filePath)),
+                      ],
+                  }
+        )
+    }
+
+    public mergeIssuesDisplayFindings(newIssues: AggregatedCodeScanIssue, fromQCA: boolean) {
+        const existingGroup = this._issues.find((group) => group.filePath === newIssues.filePath)
+        if (!existingGroup) {
+            this._issues.push(newIssues)
+            return
+        }
+
+        this._issues = this._issues.map((group) =>
+            group.filePath !== newIssues.filePath
+                ? group
+                : {
+                      ...group,
+                      issues: [
+                          ...group.issues.filter(
+                              // if the incoming findings are from QCA review, then keep only existing findings from displayFindings
+                              // if the incoming findings are not from QCA review, then keep only the existing QCA findings
+                              (issue) => fromQCA === (issue.detectorName === displayFindingsDetectorName)
+                          ),
+                          ...newIssues.issues,
+                      ],
+                  }
+        )
+    }
+
+    private isExistingIssue(issue: CodeScanIssue, filePath: string) {
+        return this._issues
+            .find((group) => group.filePath === filePath)
+            ?.issues.find(
+                (i) => i.title === issue.title && i.startLine === issue.startLine && i.endLine === issue.endLine
+            )
     }
 }

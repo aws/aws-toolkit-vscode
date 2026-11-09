@@ -65,9 +65,7 @@ function failIf(cond: boolean, message?: string): void {
 export async function createWizardTester<T extends Partial<T>>(wizard: Wizard<T> | WizardForm<T>): Promise<Tester<T>> {
     if (wizard instanceof Wizard && wizard.init) {
         // Ensure that init() was called. Needed because createWizardTester() does not call run().
-        ;(wizard as any)._ready = true
         await wizard.init()
-        delete wizard.init
     }
 
     const form = wizard instanceof Wizard ? wizard.boundForm : wizard
@@ -156,8 +154,11 @@ export async function createWizardTester<T extends Partial<T>>(wizard: Wizard<T>
                                     `No properties of "${propPath}" would be shown`
                                 )
                         case NOT_ASSERT_SHOW:
-                            return () =>
-                                failIf(form.canShowProperty(propPath, state), `Property "${propPath}" would be shown`)
+                            return async () =>
+                                failIf(
+                                    await form.canShowProperty(propPath, state),
+                                    `Property "${propPath}" would be shown`
+                                )
                         case NOT_ASSERT_SHOW_ANY:
                             return assertShowNone(propPath)
                         case ASSERT_VALUE:

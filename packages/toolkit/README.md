@@ -25,19 +25,31 @@ Threat Composer for the AWS Toolkit for Visual Studio Code allows you to create,
 
 ![Threat Composer](https://raw.githubusercontent.com/aws/aws-toolkit-vscode/HEAD/docs/marketplace/vscode/threatComposer.gif)
 
-## [Application Composer](https://aws.amazon.com/application-composer/)
+## [Infrastructure Composer](https://aws.amazon.com/application-composer/)
 
-AWS Application Composer maintains a real-time visual representation of your application architecture in sync with your IaC. Changes to the architecture—such as adding new resources or changing service configuration—are reflected in the IaC artifacts, and vice versa.
+AWS Infrastructure Composer maintains a real-time visual representation of your application architecture in sync with your IaC. Changes to the architecture—such as adding new resources or changing service configuration—are reflected in the IaC artifacts, and vice versa.
 
 -   Visually compose modern applications from 1,000+ AWS CloudFormation resources with little guesswork.
 -   Use the right tool for the task, including visual, code, or generative AI powered code suggestions in your IDE.
 -   Integrate with Workflow Studio to visually orchestrate over 220 AWS services or public http endpoints with Step Functions workflows.
 
-![Application Composer](https://raw.githubusercontent.com/aws/aws-toolkit-vscode/HEAD/docs/marketplace/vscode/appComposer.gif)
+![Infrastructure Composer](https://raw.githubusercontent.com/aws/aws-toolkit-vscode/HEAD/docs/marketplace/vscode/infraComposer.webp)
 
 ## [Amazon CodeCatalyst](https://codecatalyst.aws/explore)
 
 Unified software development service to quickly build and deliver applications on AWS.
+
+## [Step Functions](https://aws.amazon.com/step-functions/)
+
+Step Functions Workflow Studio provides a dynamic, visual representation of your state machine definition. Any changes you make, such as adding new resources or adjusting service configurations, are automatically reflected in your state machine definition.
+
+With Workflow Studio integrated with VS Code, you can do the following:
+
+-   Design state machines visually from within VS Code
+-   Seamlessly use both text and visual editing
+-   Test and debug your workflow states
+
+![Step Functions](https://raw.githubusercontent.com/aws/aws-toolkit-vscode/HEAD/docs/marketplace/vscode/stepFunctions.gif)
 
 **Dev Environments** - launch VS Code in a cloud development environment, available on-demand in the cloud and automatically created with branch code and consistent project settings, providing faster setup, development, and testing
 
@@ -71,8 +83,8 @@ Unified software development service to quickly build and deliver applications o
 
 ## More features
 
+-   **EC2** - `Connect VS Code` or `Open Terminal` to EC2 instances
 -   **Redshift** - view database objects and run SQL queries in a notebook interface
--   **Step Functions** - work with asl files and render state machine visuals
 -   **CloudFormation** - view CloudFormation stacks
 -   **API Gateway** - invoke an API gateway endpoint
 -   **S3** - view and create S3 folders and buckets, download and upload files, and edit supported files

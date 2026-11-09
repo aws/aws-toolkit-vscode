@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { DevSettings } from '../settings'
 import { isReleaseVersion } from '../vscode/env'
 import { MetricDatum, MetadataEntry } from './clienttelemetry'
@@ -20,7 +20,8 @@ export interface MetricQuery {
     readonly excludeKeys?: string[]
 }
 
-interface Metadata {
+/** Telemetry metadata in the form of a javscript Object. */
+export interface MetadataObj {
     [key: string]: string | undefined
 }
 
@@ -39,7 +40,7 @@ function isValidEntry(datum: MetadataEntry): datum is Required<MetadataEntry> {
  * ```
  */
 export const mapMetadata = (excludeKeys: string[]) => (metadata: Required<MetricDatum>['Metadata']) => {
-    const result: Metadata = {}
+    const result: MetadataObj = {}
     return metadata
         .filter(isValidEntry)
         .filter((a) => !excludeKeys.includes(a.Key))
@@ -105,7 +106,7 @@ export class TelemetryLogger {
      *
      * **All metadata values are casted to strings by the telemetry client**
      */
-    public query(query: MetricQuery): Metadata[] {
+    public query(query: MetricQuery): MetadataObj[] {
         return this.queryFull(query)
             .map((m) => m.Metadata ?? [])
             .map(mapMetadata(query.excludeKeys ?? []))
@@ -116,5 +117,12 @@ export class TelemetryLogger {
      */
     public queryFull(query: MetricQuery): MetricDatum[] {
         return this._metrics.filter((m) => m.MetricName === query.metricName)
+    }
+
+    /**
+     * Queries telemetry for metrics with metadata key or value matching the given regex.
+     */
+    public queryRegex(re: RegExp | string): MetricDatum[] {
+        return this._metrics.filter((m) => m.Metadata?.some((md) => md.Value?.match(re) || md.Key?.match(re)))
     }
 }

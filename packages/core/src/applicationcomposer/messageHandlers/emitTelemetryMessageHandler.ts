@@ -20,7 +20,7 @@ import {
     AppcomposerInitializeProject,
     telemetry,
 } from '../../shared/telemetry/telemetry'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 
 export function emitTelemetryMessageHandler(message: EmitTelemetryMessage) {
     try {
@@ -67,7 +67,7 @@ export function emitTelemetryMessageHandler(message: EmitTelemetryMessage) {
                 return
         }
     } catch (e) {
-        getLogger().error('Could not log telemetry for App Composer', e)
+        getLogger().error('Could not log telemetry for App Composer %O', e)
     }
 }
 

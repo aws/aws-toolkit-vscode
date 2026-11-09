@@ -7,8 +7,9 @@ import { ExtensionMessage } from '../../../amazonq/webview/ui/commands'
 import { AuthController } from '../../../amazonq/auth/controller'
 import { ChatControllerMessagePublishers } from '../../controllers/chat/controller'
 import { ReferenceLogController } from './referenceLogController'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { openSettingsId } from '../../../shared/settings'
+import { Database } from '../../../shared/db/chatDb/chatDb'
 
 export interface UIMessageListenerProps {
     readonly chatControllerMessagePublishers: ChatControllerMessagePublishers
@@ -63,6 +64,12 @@ export class UIMessageListener {
                     })
                 }
                 break
+            case 'accept_diff':
+                this.processAcceptDiff(msg)
+                break
+            case 'view_diff':
+                this.processViewDiff(msg)
+                break
             case 'code_was_copied_to_clipboard':
                 this.processCodeWasCopiedToClipboard(msg)
                 break
@@ -97,7 +104,97 @@ export class UIMessageListener {
                 break
             case 'open-settings':
                 this.processOpenSettings(msg)
+                break
+            case 'ui-is-ready':
+                this.processUIIsReady()
+                break
+            case 'quick-command-group-action-click':
+                this.quickCommandGroupActionClicked(msg)
+                break
+            case 'form-action-click':
+                this.processCustomFormAction(msg)
+                break
+            case 'context-selected':
+                this.processContextSelected(msg)
+                break
+            case 'file-click':
+                this.fileClick(msg)
+                break
+            case 'tab-restored':
+                this.tabRestored(msg)
+                break
+            case 'tab-bar-button-clicked':
+                this.tabBarButtonClicked(msg)
+                break
+            case 'save-chat':
+                this.saveChat(msg)
+                break
+            case 'detailed-list-filter-change':
+                this.processDetailedListFilterChange(msg)
+                break
+            case 'detailed-list-item-select':
+                this.processDetailedListItemSelect(msg)
+                break
+            case 'detailed-list-action-click':
+                this.processDetailedListActionClick(msg)
+                break
         }
+    }
+
+    private processDetailedListFilterChange(msg: any) {
+        this.chatControllerMessagePublishers.processDetailedListFilterChangeMessage.publish(msg)
+    }
+    private processDetailedListItemSelect(msg: any) {
+        this.chatControllerMessagePublishers.processDetailedListItemSelectMessage.publish(msg)
+    }
+    private processDetailedListActionClick(msg: any) {
+        this.chatControllerMessagePublishers.processDetailedListActionClickMessage.publish(msg)
+    }
+
+    private tabRestored(msg: any) {
+        const chatHistoryDb = Database.getInstance()
+        chatHistoryDb.setHistoryIdMapping(msg.newTabId, msg.historyId)
+        if (msg.exportTab) {
+            this.chatControllerMessagePublishers.processTabBarButtonClick.publish({
+                tabID: msg.newTabId,
+                buttonId: 'export_chat',
+            })
+        }
+        chatHistoryDb.updateTabOpenState(msg.newTabId, true)
+    }
+
+    private saveChat(msg: any) {
+        this.chatControllerMessagePublishers.processSaveChat.publish({
+            uri: msg.uri,
+            serializedChat: msg.serializedChat,
+        })
+    }
+
+    private tabBarButtonClicked(msg: any) {
+        this.chatControllerMessagePublishers.processTabBarButtonClick.publish({
+            tabID: msg.tabID,
+            buttonId: msg.buttonId,
+        })
+    }
+
+    private processUIIsReady() {
+        this.chatControllerMessagePublishers.processContextCommandUpdateMessage.publish()
+    }
+
+    private processCustomFormAction(msg: any) {
+        this.chatControllerMessagePublishers.processCustomFormAction.publish({ tabID: msg.tabID, ...msg })
+    }
+
+    private processContextSelected(msg: any) {
+        this.chatControllerMessagePublishers.processContextSelected.publish({ tabID: msg.tabID, ...msg })
+    }
+
+    private quickCommandGroupActionClicked(msg: any) {
+        this.chatControllerMessagePublishers.processQuickCommandGroupActionClicked.publish({
+            tabID: msg.tabID,
+            actionId: msg.actionId,
+            command: 'quick-command-group-action-click',
+        })
     }
 
     private processOpenSettings(msg: any) {
@@ -152,12 +249,30 @@ export class UIMessageListener {
             command: msg.command,
             tabID: msg.tabID,
             messageId: msg.messageId,
+            userIntent: msg.userIntent,
             code: msg.code,
             insertionTargetType: msg.insertionTargetType,
             codeReference: msg.codeReference,
             eventId: msg.eventId,
             codeBlockIndex: msg.codeBlockIndex,
             totalCodeBlocks: msg.totalCodeBlocks,
+            codeBlockLanguage: msg.codeBlockLanguage,
+        })
+    }
+
+    private processAcceptDiff(msg: any) {
+        this.chatControllerMessagePublishers.processAcceptDiff.publish({
+            command: msg.command,
+            tabID: msg.tabID || msg.tabId,
+            ...msg,
+        })
+    }
+
+    private processViewDiff(msg: any) {
+        this.chatControllerMessagePublishers.processViewDiff.publish({
+            command: msg.command,
+            tabID: msg.tabID || msg.tabId,
+            ...msg,
         })
     }
 
@@ -166,12 +281,14 @@ export class UIMessageListener {
             command: msg.command,
             tabID: msg.tabID,
             messageId: msg.messageId,
+            userIntent: msg.userIntent,
             code: msg.code,
             insertionTargetType: msg.insertionTargetType,
             codeReference: msg.codeReference,
             eventId: msg.eventId,
             codeBlockIndex: msg.codeBlockIndex,
             totalCodeBlocks: msg.totalCodeBlocks,
+            codeBlockLanguage: msg.codeBlockLanguage,
         })
     }
 
@@ -202,6 +319,7 @@ export class UIMessageListener {
             tabID: msg.tabID,
             messageId: msg.messageId,
             userIntent: msg.userIntent !== '' ? msg.userIntent : undefined,
+            context: msg.chatContext,
         })
     }
 
@@ -227,6 +345,15 @@ export class UIMessageListener {
             command: msg.command,
             selectedOption: msg.selectedOption,
             comment: msg.comment,
+        })
+    }
+
+    private fileClick(msg: any) {
+        this.chatControllerMessagePublishers.processFileClick.publish({
+            messageId: msg.messageId,
+            tabID: msg.tabID,
+            command: msg.command,
+            filePath: msg.filePath,
         })
     }
 }

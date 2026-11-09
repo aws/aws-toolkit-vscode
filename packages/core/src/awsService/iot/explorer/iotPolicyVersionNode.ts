@@ -3,14 +3,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Iot } from 'aws-sdk'
+import { PolicyVersion } from '@aws-sdk/client-iot'
 import { IotClient, IotPolicy } from '../../../shared/clients/iotClient'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { inspect } from 'util'
 import { IotPolicyWithVersionsNode } from './iotPolicyNode'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
-import { formatLocalized } from '../../../shared/utilities/textUtilities'
+import { formatLocalized } from '../../../shared/datetime'
 
 /**
  * Represents an IoT Policy that may have either a Certificate Node or the
@@ -19,7 +19,7 @@ import { formatLocalized } from '../../../shared/utilities/textUtilities'
 export class IotPolicyVersionNode extends AWSTreeNodeBase implements AWSResourceNode {
     public constructor(
         public policy: IotPolicy,
-        public version: Iot.PolicyVersion,
+        public version: PolicyVersion,
         public isDefault: boolean,
         public readonly parent: IotPolicyWithVersionsNode,
         public readonly iot: IotClient
@@ -35,7 +35,7 @@ export class IotPolicyVersionNode extends AWSTreeNodeBase implements AWSResource
         this.update(version)
     }
 
-    public update(version: Iot.PolicyVersion): void {
+    public update(version: PolicyVersion): void {
         this.version = version
         this.isDefault = version.isDefaultVersion ?? false
         this.tooltip = localize(

@@ -11,7 +11,7 @@ import {
 import { asyncGenerator } from '../../../../shared/utilities/collectionUtils'
 import { ApiGatewayNode } from '../../../../awsService/apigateway/explorer/apiGatewayNodes'
 import { RestApiNode } from '../../../../awsService/apigateway/explorer/apiNodes'
-import { DefaultApiGatewayClient } from '../../../../shared/clients/apiGatewayClient'
+import { ApiGatewayClient } from '../../../../shared/clients/apiGateway'
 import { stub } from '../../../utilities/stubber'
 
 const fakePartitionId = 'aws'
@@ -37,7 +37,7 @@ describe('ApiGatewayNode', function () {
     let apiNames: { name: string; id: string }[]
 
     function createClient() {
-        const client = stub(DefaultApiGatewayClient, { regionCode: fakeRegionCode })
+        const client = stub(ApiGatewayClient, { regionCode: fakeRegionCode })
         client.listApis.callsFake(() => asyncGenerator(apiNames))
 
         return client
@@ -65,7 +65,9 @@ describe('ApiGatewayNode', function () {
 
         assert.strictEqual(childNodes.length, apiNames.length, 'Unexpected child count')
 
-        childNodes.forEach((node) => assert.ok(node instanceof RestApiNode, 'Expected child node to be RestApiNode'))
+        for (const node of childNodes) {
+            assert.ok(node instanceof RestApiNode, 'Expected child node to be RestApiNode')
+        }
     })
 
     it('sorts child nodes', async function () {

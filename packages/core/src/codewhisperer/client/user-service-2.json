@@ -29,6 +29,23 @@
             "documentation": "<p>Creates a pre-signed, S3 write URL for uploading a repository zip archive.</p>",
             "idempotent": true
         },
+        "CreateSubscriptionToken": {
+            "name": "CreateSubscriptionToken",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": { "shape": "CreateSubscriptionTokenRequest" },
+            "output": { "shape": "CreateSubscriptionTokenResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "InternalServerException" },
+                { "shape": "ValidationException" },
+                { "shape": "AccessDeniedException" }
+            ],
+            "idempotent": true
+        },
         "CreateTaskAssistConversation": {
             "name": "CreateTaskAssistConversation",
             "http": {
@@ -39,6 +56,7 @@
             "output": { "shape": "CreateTaskAssistConversationResponse" },
             "errors": [
                 { "shape": "ThrottlingException" },
+                { "shape": "ServiceQuotaExceededException" },
                 { "shape": "InternalServerException" },
                 { "shape": "ValidationException" },
                 { "shape": "AccessDeniedException" }
@@ -56,6 +74,7 @@
             "errors": [
                 { "shape": "ThrottlingException" },
                 { "shape": "ConflictException" },
+                { "shape": "ServiceQuotaExceededException" },
                 { "shape": "ResourceNotFoundException" },
                 { "shape": "InternalServerException" },
                 { "shape": "ValidationException" },
@@ -63,6 +82,43 @@
             ],
             "documentation": "<p>Creates a pre-signed, S3 write URL for uploading a repository zip archive.</p>",
             "idempotent": true
+        },
+        "CreateUserMemoryEntry": {
+            "name": "CreateUserMemoryEntry",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": { "shape": "CreateUserMemoryEntryInput" },
+            "output": { "shape": "CreateUserMemoryEntryOutput" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ServiceQuotaExceededException" },
+                { "shape": "ResourceNotFoundException" },
+                { "shape": "InternalServerException" },
+                { "shape": "ValidationException" },
+                { "shape": "AccessDeniedException" }
+            ],
+            "documentation": "<p>API to create a single user memory entry</p>",
+            "idempotent": true
+        },
+        "CreateWorkspace": {
+            "name": "CreateWorkspace",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": { "shape": "CreateWorkspaceRequest" },
+            "output": { "shape": "CreateWorkspaceResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "ServiceQuotaExceededException" },
+                { "shape": "InternalServerException" },
+                { "shape": "ValidationException" },
+                { "shape": "AccessDeniedException" }
+            ],
+            "documentation": "<p>Create a workspace based on a workspace root</p>"
         },
         "DeleteTaskAssistConversation": {
             "name": "DeleteTaskAssistConversation",
@@ -80,6 +136,40 @@
                 { "shape": "AccessDeniedException" }
             ],
             "documentation": "<p>API to delete task assist conversation.</p>"
+        },
+        "DeleteUserMemoryEntry": {
+            "name": "DeleteUserMemoryEntry",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": { "shape": "DeleteUserMemoryEntryInput" },
+            "output": { "shape": "DeleteUserMemoryEntryOutput" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ResourceNotFoundException" },
+                { "shape": "InternalServerException" },
+                { "shape": "ValidationException" },
+                { "shape": "AccessDeniedException" }
+            ],
+            "documentation": "<p>API to delete a single user memory entry</p>",
+            "idempotent": true
+        },
+        "DeleteWorkspace": {
+            "name": "DeleteWorkspace",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": { "shape": "DeleteWorkspaceRequest" },
+            "output": { "shape": "DeleteWorkspaceResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "InternalServerException" },
+                { "shape": "ValidationException" },
+                { "shape": "AccessDeniedException" }
+            ],
+            "documentation": "<p>Delete a workspace based on a workspaceId</p>"
         },
         "GenerateCompletions": {
             "name": "GenerateCompletions",
@@ -114,6 +204,22 @@
             ],
             "documentation": "<p>Gets the metadata of a code analysis job.</p>"
         },
+        "GetCodeFixJob": {
+            "name": "GetCodeFixJob",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": { "shape": "GetCodeFixJobRequest" },
+            "output": { "shape": "GetCodeFixJobResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ResourceNotFoundException" },
+                { "shape": "InternalServerException" },
+                { "shape": "ValidationException" },
+                { "shape": "AccessDeniedException" }
+            ]
+        },
         "GetTaskAssistCodeGeneration": {
             "name": "GetTaskAssistCodeGeneration",
             "http": {
@@ -131,6 +237,22 @@
                 { "shape": "AccessDeniedException" }
             ],
             "documentation": "<p>API to get status of task assist code generation.</p>"
+        },
+        "GetTestGeneration": {
+            "name": "GetTestGeneration",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": { "shape": "GetTestGenerationRequest" },
+            "output": { "shape": "GetTestGenerationResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "InternalServerException" },
+                { "shape": "ValidationException" },
+                { "shape": "AccessDeniedException" }
+            ],
+            "documentation": "<p>API to get test generation job.</p>"
         },
         "GetTransformation": {
             "name": "GetTransformation",
@@ -166,6 +288,22 @@
             ],
             "documentation": "<p>API to get code transformation status.</p>"
         },
+        "GetUsageLimits": {
+            "name": "GetUsageLimits",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": { "shape": "GetUsageLimitsRequest" },
+            "output": { "shape": "GetUsageLimitsResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "InternalServerException" },
+                { "shape": "ValidationException" },
+                { "shape": "AccessDeniedException" }
+            ],
+            "documentation": "<p>API to get current usage limits</p>"
+        },
         "ListAvailableCustomizations": {
             "name": "ListAvailableCustomizations",
             "http": {
@@ -174,6 +312,36 @@
             },
             "input": { "shape": "ListAvailableCustomizationsRequest" },
             "output": { "shape": "ListAvailableCustomizationsResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "InternalServerException" },
+                { "shape": "ValidationException" },
+                { "shape": "AccessDeniedException" }
+            ]
+        },
+        "ListAvailableModels": {
+            "name": "ListAvailableModels",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": { "shape": "ListAvailableModelsRequest" },
+            "output": { "shape": "ListAvailableModelsResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "InternalServerException" },
+                { "shape": "ValidationException" },
+                { "shape": "AccessDeniedException" }
+            ]
+        },
+        "ListAvailableProfiles": {
+            "name": "ListAvailableProfiles",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": { "shape": "ListAvailableProfilesRequest" },
+            "output": { "shape": "ListAvailableProfilesResponse" },
             "errors": [
                 { "shape": "ThrottlingException" },
                 { "shape": "InternalServerException" },
@@ -198,6 +366,22 @@
             ],
             "documentation": "<p>Lists the findings from a particular code analysis job.</p>"
         },
+        "ListEvents": {
+            "name": "ListEvents",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": { "shape": "ListEventsRequest" },
+            "output": { "shape": "ListEventsResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "InternalServerException" },
+                { "shape": "ValidationException" },
+                { "shape": "AccessDeniedException" }
+            ],
+            "documentation": "<p>List events for agent activity</p>"
+        },
         "ListFeatureEvaluations": {
             "name": "ListFeatureEvaluations",
             "http": {
@@ -213,6 +397,56 @@
                 { "shape": "AccessDeniedException" }
             ],
             "documentation": "<p>Return configruations for each feature that has been setup for A/B testing.</p>"
+        },
+        "ListUserMemoryEntries": {
+            "name": "ListUserMemoryEntries",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": { "shape": "ListUserMemoryEntriesInput" },
+            "output": { "shape": "ListUserMemoryEntriesOutput" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ResourceNotFoundException" },
+                { "shape": "InternalServerException" },
+                { "shape": "ValidationException" },
+                { "shape": "AccessDeniedException" }
+            ],
+            "documentation": "<p>API to list user memories</p>"
+        },
+        "ListWorkspaceMetadata": {
+            "name": "ListWorkspaceMetadata",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": { "shape": "ListWorkspaceMetadataRequest" },
+            "output": { "shape": "ListWorkspaceMetadataResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "InternalServerException" },
+                { "shape": "ValidationException" },
+                { "shape": "AccessDeniedException" }
+            ],
+            "documentation": "<p>List workspace metadata based on a workspace root</p>"
+        },
+        "PushTelemetryEvent": {
+            "name": "PushTelemetryEvent",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": { "shape": "PushTelemetryEventRequest" },
+            "output": { "shape": "PushTelemetryEventResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "InternalServerException" },
+                { "shape": "ValidationException" },
+                { "shape": "AccessDeniedException" }
+            ],
+            "documentation": "<p>API to push telemetry events to CloudWatch, DataHub and EventBridge.</p>",
+            "idempotent": true
         },
         "ResumeTransformation": {
             "name": "ResumeTransformation",
@@ -267,6 +501,21 @@
             "documentation": "<p>Starts a code analysis job</p>",
             "idempotent": true
         },
+        "StartCodeFixJob": {
+            "name": "StartCodeFixJob",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": { "shape": "StartCodeFixJobRequest" },
+            "output": { "shape": "StartCodeFixJobResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "InternalServerException" },
+                { "shape": "ValidationException" },
+                { "shape": "AccessDeniedException" }
+            ]
+        },
         "StartTaskAssistCodeGeneration": {
             "name": "StartTaskAssistCodeGeneration",
             "http": {
@@ -278,12 +527,31 @@
             "errors": [
                 { "shape": "ThrottlingException" },
                 { "shape": "ConflictException" },
+                { "shape": "ServiceQuotaExceededException" },
                 { "shape": "ResourceNotFoundException" },
                 { "shape": "InternalServerException" },
                 { "shape": "ValidationException" },
                 { "shape": "AccessDeniedException" }
             ],
             "documentation": "<p>API to start task assist code generation.</p>"
+        },
+        "StartTestGeneration": {
+            "name": "StartTestGeneration",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": { "shape": "StartTestGenerationRequest" },
+            "output": { "shape": "StartTestGenerationResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "ConflictException" },
+                { "shape": "InternalServerException" },
+                { "shape": "ValidationException" },
+                { "shape": "AccessDeniedException" }
+            ],
+            "documentation": "<p>API to start test generation.</p>",
+            "idempotent": true
         },
         "StartTransformation": {
             "name": "StartTransformation",
@@ -318,6 +586,23 @@
                 { "shape": "AccessDeniedException" }
             ],
             "documentation": "<p>API to stop code transformation status.</p>"
+        },
+        "UpdateUsageLimits": {
+            "name": "UpdateUsageLimits",
+            "http": {
+                "method": "POST",
+                "requestUri": "/"
+            },
+            "input": { "shape": "UpdateUsageLimitsRequest" },
+            "output": { "shape": "UpdateUsageLimitsResponse" },
+            "errors": [
+                { "shape": "ThrottlingException" },
+                { "shape": "InternalServerException" },
+                { "shape": "ValidationException" },
+                { "shape": "AccessDeniedException" },
+                { "shape": "UpdateUsageLimitQuotaExceededException" }
+            ],
+            "documentation": "<p>API to update usage limits for enterprise customers</p>"
         }
     },
     "shapes": {
@@ -334,7 +619,138 @@
         "AccessDeniedExceptionReason": {
             "type": "string",
             "documentation": "<p>Reason for AccessDeniedException</p>",
-            "enum": ["UNAUTHORIZED_CUSTOMIZATION_RESOURCE_ACCESS"]
+            "enum": [
+                "UNAUTHORIZED_CUSTOMIZATION_RESOURCE_ACCESS",
+                "UNAUTHORIZED_WORKSPACE_CONTEXT_FEATURE_ACCESS",
+                "TEMPORARILY_SUSPENDED",
+                "FEATURE_NOT_SUPPORTED"
+            ]
+        },
+        "ActivationToken": {
+            "type": "string",
+            "max": 11,
+            "min": 11
+        },
+        "ActiveFunctionalityList": {
+            "type": "list",
+            "member": { "shape": "FunctionalityName" },
+            "max": 10,
+            "min": 0
+        },
+        "AdditionalContentEntry": {
+            "type": "structure",
+            "required": ["name", "description"],
+            "members": {
+                "name": {
+                    "shape": "AdditionalContentEntryNameString",
+                    "documentation": "<p>The name/identifier for this context entry</p>"
+                },
+                "description": {
+                    "shape": "AdditionalContentEntryDescriptionString",
+                    "documentation": "<p>A description of what this context entry represents</p>"
+                },
+                "innerContext": {
+                    "shape": "AdditionalContentEntryInnerContextString",
+                    "documentation": "<p>The actual contextual content</p>"
+                }
+            },
+            "documentation": "<p>Structure representing a single entry of additional contextual content</p>"
+        },
+        "AdditionalContentEntryDescriptionString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1,
+            "sensitive": true
+        },
+        "AdditionalContentEntryInnerContextString": {
+            "type": "string",
+            "max": 8192,
+            "min": 1,
+            "sensitive": true
+        },
+        "AdditionalContentEntryNameString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1,
+            "pattern": "[a-z]+(?:-[a-z0-9]+)*",
+            "sensitive": true
+        },
+        "AdditionalContentList": {
+            "type": "list",
+            "member": { "shape": "AdditionalContentEntry" },
+            "documentation": "<p>A list of additional content entries, limited to 20 items</p>",
+            "max": 20,
+            "min": 0
+        },
+        "AgentTaskType": {
+            "type": "string",
+            "documentation": "<p>Type of agent task</p>",
+            "enum": ["vibe", "spectask"]
+        },
+        "AgenticChatEventStatus": {
+            "type": "string",
+            "enum": ["SUCCEEDED", "CANCELLED", "FAILED"]
+        },
+        "AppStudioState": {
+            "type": "structure",
+            "required": ["namespace", "propertyName", "propertyContext"],
+            "members": {
+                "namespace": {
+                    "shape": "AppStudioStateNamespaceString",
+                    "documentation": "<p>The namespace of the context. Examples: 'ui.Button', 'ui.Table.DataSource', 'ui.Table.RowActions.Button', 'logic.invokeAWS', 'logic.JavaScript'</p>"
+                },
+                "propertyName": {
+                    "shape": "AppStudioStatePropertyNameString",
+                    "documentation": "<p>The name of the property. Examples: 'visibility', 'disability', 'value', 'code'</p>"
+                },
+                "propertyValue": {
+                    "shape": "AppStudioStatePropertyValueString",
+                    "documentation": "<p>The value of the property.</p>"
+                },
+                "propertyContext": {
+                    "shape": "AppStudioStatePropertyContextString",
+                    "documentation": "<p>Context about how the property is used</p>"
+                }
+            },
+            "documentation": "<p>Description of a user's context when they are calling Q Chat from AppStudio</p>"
+        },
+        "AppStudioStateNamespaceString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1,
+            "sensitive": true
+        },
+        "AppStudioStatePropertyContextString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1,
+            "sensitive": true
+        },
+        "AppStudioStatePropertyNameString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1,
+            "sensitive": true
+        },
+        "AppStudioStatePropertyValueString": {
+            "type": "string",
+            "max": 10240,
+            "min": 0,
+            "sensitive": true
+        },
+        "ApplicationProperties": {
+            "type": "structure",
+            "required": ["tenantId", "applicationArn", "tenantUrl", "applicationType"],
+            "members": {
+                "tenantId": { "shape": "TenantId" },
+                "applicationArn": { "shape": "ResourceArn" },
+                "tenantUrl": { "shape": "Url" },
+                "applicationType": { "shape": "FunctionalityName" }
+            }
+        },
+        "ApplicationPropertiesList": {
+            "type": "list",
+            "member": { "shape": "ApplicationProperties" }
         },
         "ArtifactId": {
             "type": "string",
@@ -373,15 +789,37 @@
                 "followupPrompt": {
                     "shape": "FollowupPrompt",
                     "documentation": "<p>Followup Prompt</p>"
+                },
+                "toolUses": {
+                    "shape": "ToolUses",
+                    "documentation": "<p>ToolUse Request</p>"
+                },
+                "cachePoint": {
+                    "shape": "CachePoint",
+                    "documentation": "<p>Indicates whether this message is a cache point</p>"
+                },
+                "reasoningContent": {
+                    "shape": "ReasoningContent",
+                    "documentation": "<p>Model's internal reasoning process, either as readable text or redacted binary content</p>"
                 }
             },
             "documentation": "<p>Markdown text message.</p>"
         },
         "AssistantResponseMessageContentString": {
             "type": "string",
-            "max": 4096,
             "min": 0,
             "sensitive": true
+        },
+        "AttributesMap": {
+            "type": "map",
+            "key": { "shape": "AttributesMapKeyString" },
+            "value": { "shape": "StringList" },
+            "documentation": "<p>Attributes is a map of key-value pairs</p>"
+        },
+        "AttributesMapKeyString": {
+            "type": "string",
+            "max": 128,
+            "min": 1
         },
         "Base64EncodedPaginationToken": {
             "type": "string",
@@ -389,9 +827,40 @@
             "min": 1,
             "pattern": "(?:[A-Za-z0-9\\+/]{4})*(?:[A-Za-z0-9\\+/]{2}\\=\\=|[A-Za-z0-9\\+/]{3}\\=)?"
         },
+        "Blob": { "type": "blob" },
         "Boolean": {
             "type": "boolean",
             "box": true
+        },
+        "ByUserAnalytics": {
+            "type": "structure",
+            "required": ["toggle"],
+            "members": {
+                "s3Uri": { "shape": "S3Uri" },
+                "toggle": { "shape": "OptInFeatureToggle" }
+            }
+        },
+        "CachePoint": {
+            "type": "structure",
+            "required": ["type"],
+            "members": {
+                "type": { "shape": "CachePointType" }
+            }
+        },
+        "CachePointType": {
+            "type": "string",
+            "enum": ["default"]
+        },
+        "ChangeLogGranularityType": {
+            "type": "string",
+            "enum": ["STANDARD", "BUSINESS"]
+        },
+        "ChangeLogOptions": {
+            "type": "structure",
+            "required": ["granularity"],
+            "members": {
+                "granularity": { "shape": "ChangeLogGranularityType" }
+            }
         },
         "ChatAddMessageEvent": {
             "type": "structure",
@@ -399,6 +868,7 @@
             "members": {
                 "conversationId": { "shape": "ConversationId" },
                 "messageId": { "shape": "MessageId" },
+                "customizationArn": { "shape": "CustomizationArn" },
                 "userIntent": { "shape": "UserIntent" },
                 "hasCodeSnippet": { "shape": "Boolean" },
                 "programmingLanguage": { "shape": "ProgrammingLanguage" },
@@ -409,14 +879,14 @@
                 "requestLength": { "shape": "Integer" },
                 "responseLength": { "shape": "Integer" },
                 "numberOfCodeBlocks": { "shape": "Integer" },
-                "hasProjectLevelContext": { "shape": "Boolean" }
+                "hasProjectLevelContext": { "shape": "Boolean" },
+                "result": { "shape": "AgenticChatEventStatus" }
             }
         },
         "ChatHistory": {
             "type": "list",
             "member": { "shape": "ChatMessage" },
             "documentation": "<p>Indicates Participant in Chat conversation</p>",
-            "max": 10,
             "min": 0
         },
         "ChatInteractWithMessageEvent": {
@@ -425,12 +895,16 @@
             "members": {
                 "conversationId": { "shape": "ConversationId" },
                 "messageId": { "shape": "MessageId" },
+                "customizationArn": { "shape": "CustomizationArn" },
                 "interactionType": { "shape": "ChatMessageInteractionType" },
                 "interactionTarget": { "shape": "ChatInteractWithMessageEventInteractionTargetString" },
                 "acceptedCharacterCount": { "shape": "Integer" },
                 "acceptedLineCount": { "shape": "Integer" },
                 "acceptedSnippetHasReference": { "shape": "Boolean" },
-                "hasProjectLevelContext": { "shape": "Boolean" }
+                "hasProjectLevelContext": { "shape": "Boolean" },
+                "userIntent": { "shape": "UserIntent" },
+                "addedIdeDiagnostics": { "shape": "IdeDiagnosticList" },
+                "removedIdeDiagnostics": { "shape": "IdeDiagnosticList" }
             }
         },
         "ChatInteractWithMessageEventInteractionTargetString": {
@@ -458,24 +932,37 @@
                 "CLICK_FOLLOW_UP",
                 "HOVER_REFERENCE",
                 "UPVOTE",
-                "DOWNVOTE"
+                "DOWNVOTE",
+                "AGENTIC_CODE_ACCEPTED"
             ]
         },
         "ChatTriggerType": {
             "type": "string",
             "documentation": "<p>Trigger Reason for Chat</p>",
-            "enum": ["MANUAL", "DIAGNOSTIC"]
+            "enum": ["MANUAL", "DIAGNOSTIC", "INLINE_CHAT"]
         },
         "ChatUserModificationEvent": {
             "type": "structure",
             "required": ["conversationId", "messageId", "modificationPercentage"],
             "members": {
                 "conversationId": { "shape": "ConversationId" },
+                "customizationArn": { "shape": "CustomizationArn" },
                 "messageId": { "shape": "MessageId" },
                 "programmingLanguage": { "shape": "ProgrammingLanguage" },
                 "modificationPercentage": { "shape": "Double" },
                 "hasProjectLevelContext": { "shape": "Boolean" }
             }
+        },
+        "ClientCacheConfig": {
+            "type": "structure",
+            "members": {
+                "useClientCachingOnly": { "shape": "Boolean" }
+            }
+        },
+        "ClientId": {
+            "type": "string",
+            "max": 255,
+            "min": 1
         },
         "CodeAnalysisFindingsSchema": {
             "type": "string",
@@ -483,7 +970,7 @@
         },
         "CodeAnalysisScope": {
             "type": "string",
-            "enum": ["FILE", "PROJECT"]
+            "enum": ["FILE", "PROJECT", "AGENTIC"]
         },
         "CodeAnalysisStatus": {
             "type": "string",
@@ -505,7 +992,85 @@
                 "acceptedCharacterCount": { "shape": "PrimitiveInteger" },
                 "totalCharacterCount": { "shape": "PrimitiveInteger" },
                 "timestamp": { "shape": "Timestamp" },
-                "unmodifiedAcceptedCharacterCount": { "shape": "PrimitiveInteger" }
+                "unmodifiedAcceptedCharacterCount": { "shape": "PrimitiveInteger" },
+                "totalNewCodeCharacterCount": { "shape": "PrimitiveInteger" },
+                "totalNewCodeLineCount": { "shape": "PrimitiveInteger" },
+                "userWrittenCodeCharacterCount": { "shape": "CodeCoverageEventUserWrittenCodeCharacterCountInteger" },
+                "userWrittenCodeLineCount": { "shape": "CodeCoverageEventUserWrittenCodeLineCountInteger" },
+                "addedCharacterCount": { "shape": "CodeCoverageEventAddedCharacterCountInteger" }
+            }
+        },
+        "CodeCoverageEventAddedCharacterCountInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "CodeCoverageEventUserWrittenCodeCharacterCountInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "CodeCoverageEventUserWrittenCodeLineCountInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "CodeDescription": {
+            "type": "structure",
+            "required": ["href"],
+            "members": {
+                "href": {
+                    "shape": "CodeDescriptionHrefString",
+                    "documentation": "<p>An URI to open with more information about the diagnostic error.</p>"
+                }
+            },
+            "documentation": "<p>Structure to capture a description for an error code.</p>"
+        },
+        "CodeDescriptionHrefString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1,
+            "sensitive": true
+        },
+        "CodeFixAcceptanceEvent": {
+            "type": "structure",
+            "required": ["jobId"],
+            "members": {
+                "jobId": { "shape": "String" },
+                "ruleId": { "shape": "String" },
+                "detectorId": { "shape": "String" },
+                "findingId": { "shape": "String" },
+                "programmingLanguage": { "shape": "ProgrammingLanguage" },
+                "linesOfCodeAccepted": { "shape": "Integer" },
+                "charsOfCodeAccepted": { "shape": "Integer" }
+            }
+        },
+        "CodeFixGenerationEvent": {
+            "type": "structure",
+            "required": ["jobId"],
+            "members": {
+                "jobId": { "shape": "String" },
+                "ruleId": { "shape": "String" },
+                "detectorId": { "shape": "String" },
+                "findingId": { "shape": "String" },
+                "programmingLanguage": { "shape": "ProgrammingLanguage" },
+                "linesOfCodeGenerated": { "shape": "Integer" },
+                "charsOfCodeGenerated": { "shape": "Integer" }
+            }
+        },
+        "CodeFixJobStatus": {
+            "type": "string",
+            "enum": ["Succeeded", "InProgress", "Failed"]
+        },
+        "CodeFixName": {
+            "type": "string",
+            "documentation": "<p>Code fix name</p>",
+            "max": 128,
+            "min": 1,
+            "pattern": "[a-zA-Z0-9-_$:.]*"
+        },
+        "CodeFixUploadContext": {
+            "type": "structure",
+            "required": ["codeFixName"],
+            "members": {
+                "codeFixName": { "shape": "CodeFixName" }
             }
         },
         "CodeGenerationId": {
@@ -541,8 +1106,21 @@
             "members": {
                 "programmingLanguage": { "shape": "ProgrammingLanguage" },
                 "codeScanJobId": { "shape": "CodeScanJobId" },
-                "timestamp": { "shape": "Timestamp" }
-            }
+                "timestamp": { "shape": "Timestamp" },
+                "codeAnalysisScope": { "shape": "CodeAnalysisScope" }
+            },
+            "documentation": "<p>Published when a security scan or code review starts</p>"
+        },
+        "CodeScanFailedEvent": {
+            "type": "structure",
+            "required": ["programmingLanguage", "codeScanJobId", "timestamp"],
+            "members": {
+                "programmingLanguage": { "shape": "ProgrammingLanguage" },
+                "codeScanJobId": { "shape": "CodeScanJobId" },
+                "timestamp": { "shape": "Timestamp" },
+                "codeAnalysisScope": { "shape": "CodeAnalysisScope" }
+            },
+            "documentation": "<p>Published when a security scan or code review fails</p>"
         },
         "CodeScanJobId": {
             "type": "string",
@@ -575,6 +1153,18 @@
             "documentation": "<p>Code Scan Remediations Interaction Type</p>",
             "enum": ["CODESCAN_ISSUE_HOVER", "CODESCAN_ISSUE_APPLY_FIX", "CODESCAN_ISSUE_VIEW_DETAILS"]
         },
+        "CodeScanSucceededEvent": {
+            "type": "structure",
+            "required": ["programmingLanguage", "codeScanJobId", "timestamp", "numberOfFindings"],
+            "members": {
+                "programmingLanguage": { "shape": "ProgrammingLanguage" },
+                "codeScanJobId": { "shape": "CodeScanJobId" },
+                "timestamp": { "shape": "Timestamp" },
+                "numberOfFindings": { "shape": "PrimitiveInteger" },
+                "codeAnalysisScope": { "shape": "CodeAnalysisScope" }
+            },
+            "documentation": "<p>Published when a security scan or code review completes successfully</p>"
+        },
         "Completion": {
             "type": "structure",
             "required": ["content"],
@@ -604,14 +1194,37 @@
             "type": "structure",
             "required": ["message"],
             "members": {
-                "message": { "shape": "String" }
+                "message": { "shape": "String" },
+                "reason": { "shape": "ConflictExceptionReason" }
             },
             "documentation": "<p>This exception is thrown when the action to perform could not be completed because the resource is in a conflicting state.</p>",
             "exception": true
         },
+        "ConflictExceptionReason": {
+            "type": "string",
+            "documentation": "<p>Reason for ConflictException</p>",
+            "enum": ["CUSTOMER_KMS_KEY_INVALID_KEY_POLICY", "CUSTOMER_KMS_KEY_DISABLED", "MISMATCHED_KMS_KEY"]
+        },
+        "ConsoleState": {
+            "type": "structure",
+            "members": {
+                "region": { "shape": "String" },
+                "consoleUrl": { "shape": "SensitiveString" },
+                "serviceId": { "shape": "String" },
+                "serviceConsolePage": { "shape": "String" },
+                "serviceSubconsolePage": { "shape": "String" },
+                "taskName": { "shape": "SensitiveString" }
+            },
+            "documentation": "<p>Information about the state of the AWS management console page from which the user is calling</p>"
+        },
         "ContentChecksumType": {
             "type": "string",
             "enum": ["SHA_256"]
+        },
+        "ContentType": {
+            "type": "string",
+            "documentation": "<p>The type of content</p>",
+            "enum": ["FILE", "PROMPT", "CODE", "WORKSPACE"]
         },
         "ContextTruncationScheme": {
             "type": "string",
@@ -632,6 +1245,10 @@
                     "shape": "ConversationId",
                     "documentation": "<p>Unique identifier for the chat conversation stream</p>"
                 },
+                "workspaceId": {
+                    "shape": "UUID",
+                    "documentation": "<p>Unique identifier for remote workspace</p>"
+                },
                 "history": {
                     "shape": "ChatHistory",
                     "documentation": "<p>Holds the history of chat messages.</p>"
@@ -644,13 +1261,39 @@
                     "shape": "ChatTriggerType",
                     "documentation": "<p>Trigger Reason for Chat</p>"
                 },
-                "customizationArn": { "shape": "ResourceArn" }
+                "customizationArn": { "shape": "ResourceArn" },
+                "agentContinuationId": {
+                    "shape": "UUID",
+                    "documentation": "<p>Unique identifier for the agent task execution</p>"
+                },
+                "agentTaskType": { "shape": "AgentTaskType" }
             },
             "documentation": "<p>Structure to represent the current state of a chat conversation.</p>"
         },
+        "CreateSubscriptionTokenRequest": {
+            "type": "structure",
+            "members": {
+                "clientToken": {
+                    "shape": "IdempotencyToken",
+                    "idempotencyToken": true
+                },
+                "statusOnly": { "shape": "Boolean" }
+            }
+        },
+        "CreateSubscriptionTokenResponse": {
+            "type": "structure",
+            "required": ["status"],
+            "members": {
+                "encodedVerificationUrl": { "shape": "EncodedVerificationUrl" },
+                "token": { "shape": "ActivationToken" },
+                "status": { "shape": "SubscriptionStatus" }
+            }
+        },
         "CreateTaskAssistConversationRequest": {
             "type": "structure",
-            "members": {},
+            "members": {
+                "profileArn": { "shape": "ProfileArn" }
+            },
             "documentation": "<p>Structure to represent bootstrap conversation request.</p>"
         },
         "CreateTaskAssistConversationResponse": {
@@ -670,7 +1313,9 @@
                 "contentLength": { "shape": "CreateUploadUrlRequestContentLengthLong" },
                 "artifactType": { "shape": "ArtifactType" },
                 "uploadIntent": { "shape": "UploadIntent" },
-                "uploadContext": { "shape": "UploadContext" }
+                "uploadContext": { "shape": "UploadContext" },
+                "uploadId": { "shape": "UploadId" },
+                "profileArn": { "shape": "ProfileArn" }
             }
         },
         "CreateUploadUrlRequestContentChecksumString": {
@@ -697,9 +1342,62 @@
                 "uploadId": { "shape": "UploadId" },
                 "uploadUrl": { "shape": "PreSignedUrl" },
                 "kmsKeyArn": { "shape": "ResourceArn" },
-                "requestHeaders": {
-                    "shape": "RequestHeaders"
+                "requestHeaders": { "shape": "RequestHeaders" }
+            }
+        },
+        "CreateUserMemoryEntryInput": {
+            "type": "structure",
+            "required": ["memoryEntryString", "origin"],
+            "members": {
+                "memoryEntryString": { "shape": "CreateUserMemoryEntryInputMemoryEntryStringString" },
+                "origin": { "shape": "Origin" },
+                "profileArn": {
+                    "shape": "CreateUserMemoryEntryInputProfileArnString",
+                    "documentation": "<p>ProfileArn for the managing Q Profile</p>"
+                },
+                "clientToken": {
+                    "shape": "IdempotencyToken",
+                    "idempotencyToken": true
                 }
+            }
+        },
+        "CreateUserMemoryEntryInputMemoryEntryStringString": {
+            "type": "string",
+            "max": 500,
+            "min": 1,
+            "sensitive": true
+        },
+        "CreateUserMemoryEntryInputProfileArnString": {
+            "type": "string",
+            "min": 1,
+            "pattern": "arn:aws:(codewhisperer|transform):[-.a-z0-9]{1,63}:\\d{12}:profile/([a-zA-Z0-9]){12}"
+        },
+        "CreateUserMemoryEntryOutput": {
+            "type": "structure",
+            "required": ["memoryEntry"],
+            "members": {
+                "memoryEntry": { "shape": "MemoryEntry" }
+            }
+        },
+        "CreateWorkspaceRequest": {
+            "type": "structure",
+            "required": ["workspaceRoot"],
+            "members": {
+                "workspaceRoot": { "shape": "CreateWorkspaceRequestWorkspaceRootString" },
+                "profileArn": { "shape": "ProfileArn" }
+            }
+        },
+        "CreateWorkspaceRequestWorkspaceRootString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1,
+            "sensitive": true
+        },
+        "CreateWorkspaceResponse": {
+            "type": "structure",
+            "required": ["workspace"],
+            "members": {
+                "workspace": { "shape": "WorkspaceMetadata" }
             }
         },
         "CursorState": {
@@ -723,7 +1421,8 @@
             "members": {
                 "arn": { "shape": "CustomizationArn" },
                 "name": { "shape": "CustomizationName" },
-                "description": { "shape": "Description" }
+                "description": { "shape": "Description" },
+                "modelId": { "shape": "ModelId" }
             }
         },
         "CustomizationArn": {
@@ -742,11 +1441,19 @@
             "type": "list",
             "member": { "shape": "Customization" }
         },
+        "DashboardAnalytics": {
+            "type": "structure",
+            "required": ["toggle"],
+            "members": {
+                "toggle": { "shape": "OptInFeatureToggle" }
+            }
+        },
         "DeleteTaskAssistConversationRequest": {
             "type": "structure",
             "required": ["conversationId"],
             "members": {
-                "conversationId": { "shape": "ConversationId" }
+                "conversationId": { "shape": "ConversationId" },
+                "profileArn": { "shape": "ProfileArn" }
             },
             "documentation": "<p>Structure to represent bootstrap conversation request.</p>"
         },
@@ -757,6 +1464,44 @@
                 "conversationId": { "shape": "ConversationId" }
             },
             "documentation": "<p>Structure to represent bootstrap conversation response.</p>"
+        },
+        "DeleteUserMemoryEntryInput": {
+            "type": "structure",
+            "required": ["id"],
+            "members": {
+                "id": { "shape": "DeleteUserMemoryEntryInputIdString" },
+                "profileArn": {
+                    "shape": "DeleteUserMemoryEntryInputProfileArnString",
+                    "documentation": "<p>ProfileArn for the managing Q Profile</p>"
+                }
+            }
+        },
+        "DeleteUserMemoryEntryInputIdString": {
+            "type": "string",
+            "max": 36,
+            "min": 36,
+            "pattern": "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+        },
+        "DeleteUserMemoryEntryInputProfileArnString": {
+            "type": "string",
+            "min": 1,
+            "pattern": "arn:aws:(codewhisperer|transform):[-.a-z0-9]{1,63}:\\d{12}:profile/([a-zA-Z0-9]){12}"
+        },
+        "DeleteUserMemoryEntryOutput": {
+            "type": "structure",
+            "members": {}
+        },
+        "DeleteWorkspaceRequest": {
+            "type": "structure",
+            "required": ["workspaceId"],
+            "members": {
+                "workspaceId": { "shape": "UUID" },
+                "profileArn": { "shape": "ProfileArn" }
+            }
+        },
+        "DeleteWorkspaceResponse": {
+            "type": "structure",
+            "members": {}
         },
         "Description": {
             "type": "string",
@@ -779,10 +1524,65 @@
             "documentation": "<p>Represents a Diagnostic message</p>",
             "union": true
         },
+        "DiagnosticLocation": {
+            "type": "structure",
+            "required": ["uri", "range"],
+            "members": {
+                "uri": { "shape": "DiagnosticLocationUriString" },
+                "range": { "shape": "Range" }
+            },
+            "documentation": "<p>Represents a location inside a resource, such as a line inside a text file.</p>"
+        },
+        "DiagnosticLocationUriString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1,
+            "sensitive": true
+        },
+        "DiagnosticRelatedInformation": {
+            "type": "structure",
+            "required": ["location", "message"],
+            "members": {
+                "location": {
+                    "shape": "DiagnosticLocation",
+                    "documentation": "<p>The location of this related diagnostic information.</p>"
+                },
+                "message": {
+                    "shape": "DiagnosticRelatedInformationMessageString",
+                    "documentation": "<p>The message of this related diagnostic information.</p>"
+                }
+            },
+            "documentation": "<p>Represents a related message and source code location for a diagnostic.</p>"
+        },
+        "DiagnosticRelatedInformationList": {
+            "type": "list",
+            "member": { "shape": "DiagnosticRelatedInformation" },
+            "documentation": "<p>List of DiagnosticRelatedInformation</p>",
+            "max": 1024,
+            "min": 0
+        },
+        "DiagnosticRelatedInformationMessageString": {
+            "type": "string",
+            "max": 1024,
+            "min": 0,
+            "sensitive": true
+        },
         "DiagnosticSeverity": {
             "type": "string",
             "documentation": "<p>Diagnostic Error types</p>",
             "enum": ["ERROR", "WARNING", "INFORMATION", "HINT"]
+        },
+        "DiagnosticTag": {
+            "type": "string",
+            "documentation": "<p>The diagnostic tags.</p>",
+            "enum": ["UNNECESSARY", "DEPRECATED"]
+        },
+        "DiagnosticTagList": {
+            "type": "list",
+            "member": { "shape": "DiagnosticTag" },
+            "documentation": "<p>List of DiagnosticTag</p>",
+            "max": 1024,
+            "min": 0
         },
         "Dimension": {
             "type": "structure",
@@ -808,6 +1608,116 @@
             "max": 1024,
             "min": 1,
             "pattern": "[-a-zA-Z0-9._]*"
+        },
+        "DocFolderLevel": {
+            "type": "string",
+            "documentation": "<p>Specifies the folder depth level where the document should be generated</p>",
+            "enum": ["SUB_FOLDER", "ENTIRE_WORKSPACE"]
+        },
+        "DocGenerationEvent": {
+            "type": "structure",
+            "required": ["conversationId"],
+            "members": {
+                "conversationId": { "shape": "ConversationId" },
+                "numberOfAddChars": { "shape": "PrimitiveInteger" },
+                "numberOfAddLines": { "shape": "PrimitiveInteger" },
+                "numberOfAddFiles": { "shape": "PrimitiveInteger" },
+                "userDecision": { "shape": "DocUserDecision" },
+                "interactionType": { "shape": "DocInteractionType" },
+                "userIdentity": { "shape": "String" },
+                "numberOfNavigation": { "shape": "PrimitiveInteger" },
+                "folderLevel": { "shape": "DocFolderLevel" }
+            },
+            "documentation": "<p>Deprecated: use DocV2AcceptanceEvent for tracking acceptance and DocV2GenerationEvent for tracking generation</p>"
+        },
+        "DocInteractionType": {
+            "type": "string",
+            "documentation": "<p>Tracks whether user chose to generate a new document, update an existing one, or edit document</p>",
+            "enum": ["GENERATE_README", "UPDATE_README", "EDIT_README"]
+        },
+        "DocUserDecision": {
+            "type": "string",
+            "enum": ["ACCEPT", "REJECT"]
+        },
+        "DocV2AcceptanceEvent": {
+            "type": "structure",
+            "required": [
+                "conversationId",
+                "numberOfAddedChars",
+                "numberOfAddedLines",
+                "numberOfAddedFiles",
+                "userDecision",
+                "interactionType",
+                "numberOfNavigations",
+                "folderLevel"
+            ],
+            "members": {
+                "conversationId": { "shape": "ConversationId" },
+                "numberOfAddedChars": { "shape": "DocV2AcceptanceEventNumberOfAddedCharsInteger" },
+                "numberOfAddedLines": { "shape": "DocV2AcceptanceEventNumberOfAddedLinesInteger" },
+                "numberOfAddedFiles": { "shape": "DocV2AcceptanceEventNumberOfAddedFilesInteger" },
+                "userDecision": { "shape": "DocUserDecision" },
+                "interactionType": { "shape": "DocInteractionType" },
+                "numberOfNavigations": { "shape": "DocV2AcceptanceEventNumberOfNavigationsInteger" },
+                "folderLevel": { "shape": "DocFolderLevel" }
+            },
+            "documentation": "<p>Interaction event for /doc, emitted when user accepts or rejects the generated content</p>"
+        },
+        "DocV2AcceptanceEventNumberOfAddedCharsInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "DocV2AcceptanceEventNumberOfAddedFilesInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "DocV2AcceptanceEventNumberOfAddedLinesInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "DocV2AcceptanceEventNumberOfNavigationsInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "DocV2GenerationEvent": {
+            "type": "structure",
+            "required": [
+                "conversationId",
+                "numberOfGeneratedChars",
+                "numberOfGeneratedLines",
+                "numberOfGeneratedFiles"
+            ],
+            "members": {
+                "conversationId": { "shape": "ConversationId" },
+                "numberOfGeneratedChars": { "shape": "DocV2GenerationEventNumberOfGeneratedCharsInteger" },
+                "numberOfGeneratedLines": { "shape": "DocV2GenerationEventNumberOfGeneratedLinesInteger" },
+                "numberOfGeneratedFiles": { "shape": "DocV2GenerationEventNumberOfGeneratedFilesInteger" },
+                "interactionType": { "shape": "DocInteractionType" },
+                "numberOfNavigations": { "shape": "DocV2GenerationEventNumberOfNavigationsInteger" },
+                "folderLevel": { "shape": "DocFolderLevel" }
+            },
+            "documentation": "<p>Generation event for /doc, emitted when user requests document generation</p>"
+        },
+        "DocV2GenerationEventNumberOfGeneratedCharsInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "DocV2GenerationEventNumberOfGeneratedFilesInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "DocV2GenerationEventNumberOfGeneratedLinesInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "DocV2GenerationEventNumberOfNavigationsInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "Document": {
+            "type": "structure",
+            "members": {},
+            "document": true
         },
         "DocumentSymbol": {
             "type": "structure",
@@ -843,9 +1753,42 @@
             "max": 1000,
             "min": 0
         },
+        "DocumentationIntentContext": {
+            "type": "structure",
+            "required": ["type"],
+            "members": {
+                "scope": { "shape": "DocumentationIntentContextScopeString" },
+                "type": { "shape": "DocumentationType" },
+                "changeLogOptions": { "shape": "ChangeLogOptions" }
+            }
+        },
+        "DocumentationIntentContextScopeString": {
+            "type": "string",
+            "max": 4096,
+            "min": 1,
+            "sensitive": true
+        },
+        "DocumentationType": {
+            "type": "string",
+            "enum": ["README", "CHANGE_LOG"]
+        },
         "Double": {
             "type": "double",
             "box": true
+        },
+        "Edit": {
+            "type": "structure",
+            "required": ["content"],
+            "members": {
+                "content": { "shape": "EditContentString" },
+                "references": { "shape": "References" }
+            }
+        },
+        "EditContentString": {
+            "type": "string",
+            "max": 5120,
+            "min": 1,
+            "sensitive": true
         },
         "EditorState": {
             "type": "structure",
@@ -857,9 +1800,26 @@
                 "cursorState": {
                     "shape": "CursorState",
                     "documentation": "<p>Position of the cursor</p>"
+                },
+                "relevantDocuments": {
+                    "shape": "RelevantDocumentList",
+                    "documentation": "<p>Represents IDE provided relevant files</p>"
+                },
+                "useRelevantDocuments": {
+                    "shape": "Boolean",
+                    "documentation": "<p>Whether service should use relevant document in prompt</p>"
+                },
+                "workspaceFolders": {
+                    "shape": "WorkspaceFolderList",
+                    "documentation": "<p>Represents IDE provided list of workspace folders</p>"
                 }
             },
             "documentation": "<p>Represents the state of an Editor</p>"
+        },
+        "EncodedVerificationUrl": {
+            "type": "string",
+            "max": 8192,
+            "min": 1
         },
         "EnvState": {
             "type": "structure",
@@ -875,6 +1835,10 @@
                 "environmentVariables": {
                     "shape": "EnvironmentVariables",
                     "documentation": "<p>The environment variables set in the current environment</p>"
+                },
+                "timezoneOffset": {
+                    "shape": "EnvStateTimezoneOffsetInteger",
+                    "documentation": "<p>Local timezone offset of the client. For more information, see documentation https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getTimezoneOffset</p>"
                 }
             },
             "documentation": "<p>State related to the user's environment</p>"
@@ -890,6 +1854,12 @@
             "max": 32,
             "min": 1,
             "pattern": "(macos|linux|windows)"
+        },
+        "EnvStateTimezoneOffsetInteger": {
+            "type": "integer",
+            "box": true,
+            "max": 1440,
+            "min": -1440
         },
         "EnvironmentVariable": {
             "type": "structure",
@@ -923,6 +1893,92 @@
             "documentation": "<p>A list of environment variables</p>",
             "max": 100,
             "min": 0
+        },
+        "ErrorDetails": {
+            "type": "string",
+            "max": 2048,
+            "min": 0
+        },
+        "Event": {
+            "type": "structure",
+            "required": ["eventId", "generationId", "eventTimestamp", "eventType", "eventBlob"],
+            "members": {
+                "eventId": { "shape": "UUID" },
+                "generationId": { "shape": "UUID" },
+                "eventTimestamp": { "shape": "SyntheticTimestamp_date_time" },
+                "eventType": { "shape": "EventType" },
+                "eventBlob": { "shape": "EventBlob" }
+            }
+        },
+        "EventBlob": {
+            "type": "blob",
+            "max": 400000,
+            "min": 1,
+            "sensitive": true
+        },
+        "EventList": {
+            "type": "list",
+            "member": { "shape": "Event" },
+            "max": 10,
+            "min": 1
+        },
+        "EventType": {
+            "type": "string",
+            "max": 100,
+            "min": 1
+        },
+        "ExternalIdentityDetails": {
+            "type": "structure",
+            "members": {
+                "issuerUrl": { "shape": "IssuerUrl" },
+                "clientId": { "shape": "ClientId" },
+                "scimEndpoint": { "shape": "String" }
+            }
+        },
+        "FeatureDevCodeAcceptanceEvent": {
+            "type": "structure",
+            "required": ["conversationId", "linesOfCodeAccepted", "charactersOfCodeAccepted"],
+            "members": {
+                "conversationId": { "shape": "ConversationId" },
+                "linesOfCodeAccepted": { "shape": "FeatureDevCodeAcceptanceEventLinesOfCodeAcceptedInteger" },
+                "charactersOfCodeAccepted": { "shape": "FeatureDevCodeAcceptanceEventCharactersOfCodeAcceptedInteger" },
+                "programmingLanguage": { "shape": "ProgrammingLanguage" }
+            }
+        },
+        "FeatureDevCodeAcceptanceEventCharactersOfCodeAcceptedInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "FeatureDevCodeAcceptanceEventLinesOfCodeAcceptedInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "FeatureDevCodeGenerationEvent": {
+            "type": "structure",
+            "required": ["conversationId", "linesOfCodeGenerated", "charactersOfCodeGenerated"],
+            "members": {
+                "conversationId": { "shape": "ConversationId" },
+                "linesOfCodeGenerated": { "shape": "FeatureDevCodeGenerationEventLinesOfCodeGeneratedInteger" },
+                "charactersOfCodeGenerated": {
+                    "shape": "FeatureDevCodeGenerationEventCharactersOfCodeGeneratedInteger"
+                },
+                "programmingLanguage": { "shape": "ProgrammingLanguage" }
+            }
+        },
+        "FeatureDevCodeGenerationEventCharactersOfCodeGeneratedInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "FeatureDevCodeGenerationEventLinesOfCodeGeneratedInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "FeatureDevEvent": {
+            "type": "structure",
+            "required": ["conversationId"],
+            "members": {
+                "conversationId": { "shape": "ConversationId" }
+            }
         },
         "FeatureEvaluation": {
             "type": "structure",
@@ -973,8 +2029,15 @@
                 "leftFileContent": { "shape": "FileContextLeftFileContentString" },
                 "rightFileContent": { "shape": "FileContextRightFileContentString" },
                 "filename": { "shape": "FileContextFilenameString" },
+                "fileUri": { "shape": "FileContextFileUriString" },
                 "programmingLanguage": { "shape": "ProgrammingLanguage" }
             }
+        },
+        "FileContextFileUriString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1,
+            "sensitive": true
         },
         "FileContextFilenameString": {
             "type": "string",
@@ -1015,18 +2078,38 @@
             "min": 0,
             "sensitive": true
         },
+        "FunctionalityName": {
+            "type": "string",
+            "enum": [
+                "COMPLETIONS",
+                "ANALYSIS",
+                "CONVERSATIONS",
+                "TASK_ASSIST",
+                "TRANSFORMATIONS",
+                "CHAT_CUSTOMIZATION",
+                "TRANSFORMATIONS_WEBAPP",
+                "FEATURE_DEVELOPMENT"
+            ],
+            "max": 64,
+            "min": 1
+        },
         "GenerateCompletionsRequest": {
             "type": "structure",
             "required": ["fileContext"],
             "members": {
                 "fileContext": { "shape": "FileContext" },
+                "editorState": { "shape": "EditorState" },
                 "maxResults": { "shape": "GenerateCompletionsRequestMaxResultsInteger" },
+                "predictionTypes": { "shape": "PredictionTypes" },
                 "nextToken": { "shape": "GenerateCompletionsRequestNextTokenString" },
                 "referenceTrackerConfiguration": { "shape": "ReferenceTrackerConfiguration" },
                 "supplementalContexts": { "shape": "SupplementalContextList" },
                 "customizationArn": { "shape": "CustomizationArn" },
                 "optOutPreference": { "shape": "OptOutPreference" },
-                "userContext": { "shape": "UserContext" }
+                "userContext": { "shape": "UserContext" },
+                "profileArn": { "shape": "ProfileArn" },
+                "workspaceId": { "shape": "UUID" },
+                "modelId": { "shape": "ModelId" }
             }
         },
         "GenerateCompletionsRequestMaxResultsInteger": {
@@ -1045,15 +2128,18 @@
         "GenerateCompletionsResponse": {
             "type": "structure",
             "members": {
+                "predictions": { "shape": "Predictions" },
                 "completions": { "shape": "Completions" },
-                "nextToken": { "shape": "SensitiveString" }
+                "nextToken": { "shape": "SensitiveString" },
+                "modelId": { "shape": "ModelId" }
             }
         },
         "GetCodeAnalysisRequest": {
             "type": "structure",
             "required": ["jobId"],
             "members": {
-                "jobId": { "shape": "GetCodeAnalysisRequestJobIdString" }
+                "jobId": { "shape": "GetCodeAnalysisRequestJobIdString" },
+                "profileArn": { "shape": "ProfileArn" }
             }
         },
         "GetCodeAnalysisRequestJobIdString": {
@@ -1069,12 +2155,34 @@
                 "errorMessage": { "shape": "SensitiveString" }
             }
         },
+        "GetCodeFixJobRequest": {
+            "type": "structure",
+            "required": ["jobId"],
+            "members": {
+                "jobId": { "shape": "GetCodeFixJobRequestJobIdString" },
+                "profileArn": { "shape": "ProfileArn" }
+            }
+        },
+        "GetCodeFixJobRequestJobIdString": {
+            "type": "string",
+            "max": 256,
+            "min": 1,
+            "pattern": ".*[A-Za-z0-9-:]+.*"
+        },
+        "GetCodeFixJobResponse": {
+            "type": "structure",
+            "members": {
+                "jobStatus": { "shape": "CodeFixJobStatus" },
+                "suggestedFix": { "shape": "SuggestedFix" }
+            }
+        },
         "GetTaskAssistCodeGenerationRequest": {
             "type": "structure",
             "required": ["conversationId", "codeGenerationId"],
             "members": {
                 "conversationId": { "shape": "ConversationId" },
-                "codeGenerationId": { "shape": "CodeGenerationId" }
+                "codeGenerationId": { "shape": "CodeGenerationId" },
+                "profileArn": { "shape": "ProfileArn" }
             },
             "documentation": "<p>Request for getting task assist code generation.</p>"
         },
@@ -1090,11 +2198,29 @@
             },
             "documentation": "<p>Response for getting task assist code generation status.</p>"
         },
+        "GetTestGenerationRequest": {
+            "type": "structure",
+            "required": ["testGenerationJobGroupName", "testGenerationJobId"],
+            "members": {
+                "testGenerationJobGroupName": { "shape": "TestGenerationJobGroupName" },
+                "testGenerationJobId": { "shape": "UUID" },
+                "profileArn": { "shape": "ProfileArn" }
+            },
+            "documentation": "<p>Structure to represent get test generation request.</p>"
+        },
+        "GetTestGenerationResponse": {
+            "type": "structure",
+            "members": {
+                "testGenerationJob": { "shape": "TestGenerationJob" }
+            },
+            "documentation": "<p>Structure to represent get test generation response.</p>"
+        },
         "GetTransformationPlanRequest": {
             "type": "structure",
             "required": ["transformationJobId"],
             "members": {
-                "transformationJobId": { "shape": "TransformationJobId" }
+                "transformationJobId": { "shape": "TransformationJobId" },
+                "profileArn": { "shape": "ProfileArn" }
             },
             "documentation": "<p>Structure to represent get code transformation plan request.</p>"
         },
@@ -1110,7 +2236,8 @@
             "type": "structure",
             "required": ["transformationJobId"],
             "members": {
-                "transformationJobId": { "shape": "TransformationJobId" }
+                "transformationJobId": { "shape": "TransformationJobId" },
+                "profileArn": { "shape": "ProfileArn" }
             },
             "documentation": "<p>Structure to represent get code transformation request.</p>"
         },
@@ -1121,6 +2248,26 @@
                 "transformationJob": { "shape": "TransformationJob" }
             },
             "documentation": "<p>Structure to represent get code transformation response.</p>"
+        },
+        "GetUsageLimitsRequest": {
+            "type": "structure",
+            "members": {
+                "profileArn": {
+                    "shape": "ProfileArn",
+                    "documentation": "<p>The ARN of the Q Developer profile. Required for enterprise customers, optional for Builder ID users.</p>"
+                }
+            }
+        },
+        "GetUsageLimitsResponse": {
+            "type": "structure",
+            "required": ["limits", "daysUntilReset"],
+            "members": {
+                "limits": { "shape": "UsageLimits" },
+                "daysUntilReset": {
+                    "shape": "Integer",
+                    "documentation": "<p>Number of days remaining until the usage metrics reset</p>"
+                }
+            }
         },
         "GitState": {
             "type": "structure",
@@ -1140,13 +2287,94 @@
         },
         "IdeCategory": {
             "type": "string",
-            "enum": ["JETBRAINS", "VSCODE", "CLI"],
+            "enum": ["JETBRAINS", "VSCODE", "CLI", "JUPYTER_MD", "JUPYTER_SM", "ECLIPSE", "VISUAL_STUDIO"],
             "max": 64,
             "min": 1
+        },
+        "IdeDiagnostic": {
+            "type": "structure",
+            "required": ["ideDiagnosticType"],
+            "members": {
+                "range": {
+                    "shape": "Range",
+                    "documentation": "<p>The range at which the message applies.</p>"
+                },
+                "source": {
+                    "shape": "IdeDiagnosticSourceString",
+                    "documentation": "<p>A human-readable string describing the source of the diagnostic</p>"
+                },
+                "severity": {
+                    "shape": "DiagnosticSeverity",
+                    "documentation": "<p>Diagnostic Error type</p>"
+                },
+                "ideDiagnosticType": {
+                    "shape": "IdeDiagnosticType",
+                    "documentation": "<p>Type of the diagnostic</p>"
+                }
+            },
+            "documentation": "<p>Structure to represent metadata about a Diagnostic from user local IDE</p>"
+        },
+        "IdeDiagnosticList": {
+            "type": "list",
+            "member": { "shape": "IdeDiagnostic" },
+            "documentation": "<p>List of IDE Diagnostics</p>",
+            "max": 1024,
+            "min": 0
+        },
+        "IdeDiagnosticSourceString": {
+            "type": "string",
+            "max": 1024,
+            "min": 0,
+            "sensitive": true
+        },
+        "IdeDiagnosticType": {
+            "type": "string",
+            "enum": ["SYNTAX_ERROR", "TYPE_ERROR", "REFERENCE_ERROR", "BEST_PRACTICE", "SECURITY", "OTHER"]
         },
         "IdempotencyToken": {
             "type": "string",
             "max": 256,
+            "min": 1
+        },
+        "IdentityDetails": {
+            "type": "structure",
+            "members": {
+                "ssoIdentityDetails": { "shape": "SSOIdentityDetails" },
+                "externalIdentityDetails": { "shape": "ExternalIdentityDetails" }
+            },
+            "union": true
+        },
+        "ImageBlock": {
+            "type": "structure",
+            "required": ["format", "source"],
+            "members": {
+                "format": { "shape": "ImageFormat" },
+                "source": { "shape": "ImageSource" }
+            },
+            "documentation": "<p>Represents the image source itself and the format of the image.</p>"
+        },
+        "ImageBlocks": {
+            "type": "list",
+            "member": { "shape": "ImageBlock" },
+            "max": 10,
+            "min": 0
+        },
+        "ImageFormat": {
+            "type": "string",
+            "enum": ["png", "jpeg", "gif", "webp"]
+        },
+        "ImageSource": {
+            "type": "structure",
+            "members": {
+                "bytes": { "shape": "ImageSourceBytesBlob" }
+            },
+            "documentation": "<p>Image bytes</p>",
+            "sensitive": true,
+            "union": true
+        },
+        "ImageSourceBytesBlob": {
+            "type": "blob",
+            "max": 10000000,
             "min": 1
         },
         "Import": {
@@ -1167,26 +2395,81 @@
             "max": 10,
             "min": 0
         },
+        "InlineChatEvent": {
+            "type": "structure",
+            "required": ["requestId", "timestamp"],
+            "members": {
+                "requestId": { "shape": "UUID" },
+                "timestamp": { "shape": "Timestamp" },
+                "inputLength": { "shape": "PrimitiveInteger" },
+                "numSelectedLines": { "shape": "PrimitiveInteger" },
+                "numSuggestionAddChars": { "shape": "PrimitiveInteger" },
+                "numSuggestionAddLines": { "shape": "PrimitiveInteger" },
+                "numSuggestionDelChars": { "shape": "PrimitiveInteger" },
+                "numSuggestionDelLines": { "shape": "PrimitiveInteger" },
+                "codeIntent": { "shape": "Boolean" },
+                "userDecision": { "shape": "InlineChatUserDecision" },
+                "responseStartLatency": { "shape": "Double" },
+                "responseEndLatency": { "shape": "Double" },
+                "programmingLanguage": { "shape": "ProgrammingLanguage" }
+            }
+        },
+        "InlineChatUserDecision": {
+            "type": "string",
+            "enum": ["ACCEPT", "REJECT", "DISMISS"]
+        },
+        "InputType": {
+            "type": "string",
+            "documentation": "<p>Types of input that can be processed by the model</p>",
+            "enum": ["IMAGE", "TEXT"]
+        },
         "Integer": {
             "type": "integer",
             "box": true
+        },
+        "Intent": {
+            "type": "string",
+            "enum": ["DEV", "DOC"]
+        },
+        "IntentContext": {
+            "type": "structure",
+            "members": {
+                "documentation": { "shape": "DocumentationIntentContext" }
+            },
+            "union": true
         },
         "InternalServerException": {
             "type": "structure",
             "required": ["message"],
             "members": {
-                "message": { "shape": "String" }
+                "message": { "shape": "String" },
+                "reason": { "shape": "InternalServerExceptionReason" }
             },
             "documentation": "<p>This exception is thrown when an unexpected error occurred during the processing of a request.</p>",
             "exception": true,
             "fault": true,
             "retryable": { "throttling": false }
         },
+        "InternalServerExceptionReason": {
+            "type": "string",
+            "documentation": "<p>Reason for InternalServerException</p>",
+            "enum": ["MODEL_TEMPORARILY_UNAVAILABLE"]
+        },
+        "IssuerUrl": {
+            "type": "string",
+            "max": 255,
+            "min": 1
+        },
+        "LineRangeList": {
+            "type": "list",
+            "member": { "shape": "Range" }
+        },
         "ListAvailableCustomizationsRequest": {
             "type": "structure",
             "members": {
                 "maxResults": { "shape": "ListAvailableCustomizationsRequestMaxResultsInteger" },
-                "nextToken": { "shape": "Base64EncodedPaginationToken" }
+                "nextToken": { "shape": "Base64EncodedPaginationToken" },
+                "profileArn": { "shape": "ProfileArn" }
             }
         },
         "ListAvailableCustomizationsRequestMaxResultsInteger": {
@@ -1203,13 +2486,81 @@
                 "nextToken": { "shape": "Base64EncodedPaginationToken" }
             }
         },
+        "ListAvailableModelsRequest": {
+            "type": "structure",
+            "required": ["origin"],
+            "members": {
+                "origin": {
+                    "shape": "Origin",
+                    "documentation": "<p>The origin context for which to list available models</p>"
+                },
+                "maxResults": {
+                    "shape": "ListAvailableModelsRequestMaxResultsInteger",
+                    "documentation": "<p>Maximum number of models to return in a single response</p>"
+                },
+                "nextToken": {
+                    "shape": "Base64EncodedPaginationToken",
+                    "documentation": "<p>Token for retrieving the next page of results</p>"
+                },
+                "profileArn": {
+                    "shape": "ProfileArn",
+                    "documentation": "<p>ARN of the profile to use for model filtering</p>"
+                },
+                "modelProvider": {
+                    "shape": "ModelProvider",
+                    "documentation": "<p>Provider of AI models</p>"
+                }
+            }
+        },
+        "ListAvailableModelsRequestMaxResultsInteger": {
+            "type": "integer",
+            "box": true,
+            "max": 100,
+            "min": 1
+        },
+        "ListAvailableModelsResponse": {
+            "type": "structure",
+            "required": ["models"],
+            "members": {
+                "models": {
+                    "shape": "Models",
+                    "documentation": "<p>List of available models</p>"
+                },
+                "nextToken": {
+                    "shape": "Base64EncodedPaginationToken",
+                    "documentation": "<p>Token for retrieving the next page of results</p>"
+                }
+            }
+        },
+        "ListAvailableProfilesRequest": {
+            "type": "structure",
+            "members": {
+                "maxResults": { "shape": "ListAvailableProfilesRequestMaxResultsInteger" },
+                "nextToken": { "shape": "Base64EncodedPaginationToken" }
+            }
+        },
+        "ListAvailableProfilesRequestMaxResultsInteger": {
+            "type": "integer",
+            "box": true,
+            "max": 10,
+            "min": 1
+        },
+        "ListAvailableProfilesResponse": {
+            "type": "structure",
+            "required": ["profiles"],
+            "members": {
+                "profiles": { "shape": "ProfileList" },
+                "nextToken": { "shape": "Base64EncodedPaginationToken" }
+            }
+        },
         "ListCodeAnalysisFindingsRequest": {
             "type": "structure",
             "required": ["jobId", "codeAnalysisFindingsSchema"],
             "members": {
                 "jobId": { "shape": "ListCodeAnalysisFindingsRequestJobIdString" },
                 "nextToken": { "shape": "PaginationToken" },
-                "codeAnalysisFindingsSchema": { "shape": "CodeAnalysisFindingsSchema" }
+                "codeAnalysisFindingsSchema": { "shape": "CodeAnalysisFindingsSchema" },
+                "profileArn": { "shape": "ProfileArn" }
             }
         },
         "ListCodeAnalysisFindingsRequestJobIdString": {
@@ -1225,11 +2576,36 @@
                 "codeAnalysisFindings": { "shape": "SensitiveString" }
             }
         },
+        "ListEventsRequest": {
+            "type": "structure",
+            "required": ["conversationId"],
+            "members": {
+                "conversationId": { "shape": "UUID" },
+                "maxResults": { "shape": "ListEventsRequestMaxResultsInteger" },
+                "nextToken": { "shape": "NextToken" }
+            }
+        },
+        "ListEventsRequestMaxResultsInteger": {
+            "type": "integer",
+            "box": true,
+            "max": 50,
+            "min": 1
+        },
+        "ListEventsResponse": {
+            "type": "structure",
+            "required": ["conversationId", "events"],
+            "members": {
+                "conversationId": { "shape": "UUID" },
+                "events": { "shape": "EventList" },
+                "nextToken": { "shape": "NextToken" }
+            }
+        },
         "ListFeatureEvaluationsRequest": {
             "type": "structure",
             "required": ["userContext"],
             "members": {
-                "userContext": { "shape": "UserContext" }
+                "userContext": { "shape": "UserContext" },
+                "profileArn": { "shape": "ProfileArn" }
             }
         },
         "ListFeatureEvaluationsResponse": {
@@ -1239,9 +2615,119 @@
                 "featureEvaluations": { "shape": "FeatureEvaluationsList" }
             }
         },
+        "ListUserMemoryEntriesInput": {
+            "type": "structure",
+            "members": {
+                "maxResults": { "shape": "ListUserMemoryEntriesInputMaxResultsInteger" },
+                "profileArn": {
+                    "shape": "ListUserMemoryEntriesInputProfileArnString",
+                    "documentation": "<p>ProfileArn for the managing Q Profile</p>"
+                },
+                "nextToken": { "shape": "ListUserMemoryEntriesInputNextTokenString" }
+            }
+        },
+        "ListUserMemoryEntriesInputMaxResultsInteger": {
+            "type": "integer",
+            "box": true,
+            "max": 100,
+            "min": 1
+        },
+        "ListUserMemoryEntriesInputNextTokenString": {
+            "type": "string",
+            "min": 1,
+            "pattern": "[A-Za-z0-9_-]+"
+        },
+        "ListUserMemoryEntriesInputProfileArnString": {
+            "type": "string",
+            "min": 1,
+            "pattern": "arn:aws:(codewhisperer|transform):[-.a-z0-9]{1,63}:\\d{12}:profile/([a-zA-Z0-9]){12}"
+        },
+        "ListUserMemoryEntriesOutput": {
+            "type": "structure",
+            "required": ["memoryEntries"],
+            "members": {
+                "memoryEntries": { "shape": "MemoryEntryList" },
+                "nextToken": { "shape": "ListUserMemoryEntriesOutputNextTokenString" }
+            }
+        },
+        "ListUserMemoryEntriesOutputNextTokenString": {
+            "type": "string",
+            "min": 1,
+            "pattern": "[A-Za-z0-9_-]+"
+        },
+        "ListWorkspaceMetadataRequest": {
+            "type": "structure",
+            "members": {
+                "workspaceRoot": { "shape": "ListWorkspaceMetadataRequestWorkspaceRootString" },
+                "nextToken": { "shape": "String" },
+                "maxResults": { "shape": "Integer" },
+                "profileArn": { "shape": "ProfileArn" }
+            }
+        },
+        "ListWorkspaceMetadataRequestWorkspaceRootString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1,
+            "sensitive": true
+        },
+        "ListWorkspaceMetadataResponse": {
+            "type": "structure",
+            "required": ["workspaces"],
+            "members": {
+                "workspaces": { "shape": "WorkspaceList" },
+                "nextToken": { "shape": "String" }
+            }
+        },
         "Long": {
             "type": "long",
             "box": true
+        },
+        "MemoryEntry": {
+            "type": "structure",
+            "required": ["id", "memoryEntryString", "metadata"],
+            "members": {
+                "id": {
+                    "shape": "MemoryEntryIdString",
+                    "documentation": "<p>A unique identifier for a single memory entry</p>"
+                },
+                "memoryEntryString": { "shape": "MemoryEntryMemoryEntryStringString" },
+                "metadata": { "shape": "MemoryEntryMetadata" }
+            },
+            "documentation": "<p>MemoryEntry corresponds to a single user memory</p>"
+        },
+        "MemoryEntryIdString": {
+            "type": "string",
+            "max": 36,
+            "min": 36,
+            "pattern": "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+        },
+        "MemoryEntryList": {
+            "type": "list",
+            "member": { "shape": "MemoryEntry" },
+            "documentation": "<p>List of user memories</p>"
+        },
+        "MemoryEntryMemoryEntryStringString": {
+            "type": "string",
+            "max": 500,
+            "min": 1,
+            "sensitive": true
+        },
+        "MemoryEntryMetadata": {
+            "type": "structure",
+            "required": ["origin", "createdAt", "updatedAt"],
+            "members": {
+                "origin": { "shape": "Origin" },
+                "attributes": { "shape": "AttributesMap" },
+                "createdAt": { "shape": "Timestamp" },
+                "updatedAt": { "shape": "Timestamp" },
+                "memoryStatus": { "shape": "MemoryStatus" }
+            },
+            "documentation": "<p>Metadata for a single memory entry</p>"
+        },
+        "MemoryStatus": {
+            "type": "string",
+            "documentation": "<p>Status of user memory</p>",
+            "enum": ["DECRYPTION_FAILURE", "VALID"]
         },
         "MessageId": {
             "type": "string",
@@ -1272,15 +2758,185 @@
             "min": 1,
             "pattern": "[-a-zA-Z0-9._]*"
         },
+        "Model": {
+            "type": "structure",
+            "required": ["modelId"],
+            "members": {
+                "modelId": {
+                    "shape": "ModelId",
+                    "documentation": "<p>Unique identifier for the model</p>"
+                },
+                "modelName": {
+                    "shape": "ModelName",
+                    "documentation": "<p>User-facing display name</p>"
+                },
+                "description": {
+                    "shape": "ModelDescription",
+                    "documentation": "<p>Description of the model</p>"
+                },
+                "rateMultiplier": {
+                    "shape": "ModelRateMultiplierDouble",
+                    "documentation": "<p>Rate multiplier of the model</p>"
+                },
+                "rateUnit": {
+                    "shape": "ModelRateUnitString",
+                    "documentation": "<p>Unit for the rate multiplier</p>"
+                },
+                "tokenLimits": {
+                    "shape": "TokenLimits",
+                    "documentation": "<p>Limits on token usage for this model</p>"
+                },
+                "supportedInputTypes": {
+                    "shape": "SupportedInputTypesList",
+                    "documentation": "<p>List of input types supported by this model</p>"
+                },
+                "supportsPromptCache": {
+                    "shape": "Boolean",
+                    "documentation": "<p>Whether the model supports prompt caching</p>"
+                }
+            }
+        },
+        "ModelDescription": {
+            "type": "string",
+            "max": 256,
+            "min": 0,
+            "pattern": "[\\sa-zA-Z0-9_.-]*"
+        },
+        "ModelId": {
+            "type": "string",
+            "documentation": "<p>Unique identifier for the model</p>",
+            "max": 1024,
+            "min": 1,
+            "pattern": "[a-zA-Z0-9_:.-]+"
+        },
+        "ModelName": {
+            "type": "string",
+            "documentation": "<p>Identifier for the model Name</p>",
+            "max": 1024,
+            "min": 1,
+            "pattern": "[a-zA-Z0-9-_. ]+"
+        },
+        "ModelProvider": {
+            "type": "string",
+            "documentation": "<p>Provider of AI models</p>",
+            "enum": ["DEFAULT"]
+        },
+        "ModelRateMultiplierDouble": {
+            "type": "double",
+            "box": true,
+            "max": 100.0,
+            "min": 0
+        },
+        "ModelRateUnitString": {
+            "type": "string",
+            "max": 100,
+            "min": 0
+        },
+        "Models": {
+            "type": "list",
+            "member": { "shape": "Model" }
+        },
+        "NextToken": {
+            "type": "string",
+            "max": 1000,
+            "min": 0
+        },
+        "Notifications": {
+            "type": "list",
+            "member": { "shape": "NotificationsFeature" },
+            "max": 10,
+            "min": 0
+        },
+        "NotificationsFeature": {
+            "type": "structure",
+            "required": ["feature", "toggle"],
+            "members": {
+                "feature": { "shape": "FeatureName" },
+                "toggle": { "shape": "OptInFeatureToggle" }
+            }
+        },
         "OperatingSystem": {
             "type": "string",
             "enum": ["MAC", "WINDOWS", "LINUX"],
             "max": 64,
             "min": 1
         },
+        "OptInFeatureToggle": {
+            "type": "string",
+            "enum": ["ON", "OFF"]
+        },
+        "OptInFeatures": {
+            "type": "structure",
+            "members": {
+                "promptLogging": { "shape": "PromptLogging" },
+                "byUserAnalytics": { "shape": "ByUserAnalytics" },
+                "dashboardAnalytics": { "shape": "DashboardAnalytics" },
+                "notifications": { "shape": "Notifications" },
+                "workspaceContext": { "shape": "WorkspaceContext" }
+            }
+        },
         "OptOutPreference": {
             "type": "string",
             "enum": ["OPTIN", "OPTOUT"]
+        },
+        "Origin": {
+            "type": "string",
+            "documentation": "<p>Enum to represent the origin application conversing with Sidekick.</p>",
+            "enum": [
+                "CHATBOT",
+                "CONSOLE",
+                "DOCUMENTATION",
+                "MARKETING",
+                "MOBILE",
+                "SERVICE_INTERNAL",
+                "UNIFIED_SEARCH",
+                "UNKNOWN",
+                "MD",
+                "IDE",
+                "SAGE_MAKER",
+                "CLI",
+                "AI_EDITOR",
+                "OPENSEARCH_DASHBOARD",
+                "GITLAB",
+                "Q_DEV_BEXT",
+                "MD_IDE",
+                "MD_CE",
+                "SM_AI_STUDIO_IDE",
+                "INLINE_CHAT"
+            ]
+        },
+        "PackageInfo": {
+            "type": "structure",
+            "members": {
+                "executionCommand": { "shape": "SensitiveString" },
+                "buildCommand": { "shape": "SensitiveString" },
+                "buildOrder": { "shape": "PackageInfoBuildOrderInteger" },
+                "testFramework": { "shape": "String" },
+                "packageSummary": { "shape": "PackageInfoPackageSummaryString" },
+                "packagePlan": { "shape": "PackageInfoPackagePlanString" },
+                "targetFileInfoList": { "shape": "TargetFileInfoList" }
+            }
+        },
+        "PackageInfoBuildOrderInteger": {
+            "type": "integer",
+            "box": true,
+            "min": 0
+        },
+        "PackageInfoList": {
+            "type": "list",
+            "member": { "shape": "PackageInfo" }
+        },
+        "PackageInfoPackagePlanString": {
+            "type": "string",
+            "max": 30720,
+            "min": 0,
+            "sensitive": true
+        },
+        "PackageInfoPackageSummaryString": {
+            "type": "string",
+            "max": 30720,
+            "min": 0,
+            "sensitive": true
         },
         "PaginationToken": {
             "type": "string",
@@ -1309,7 +2965,86 @@
             "min": 1,
             "sensitive": true
         },
+        "Prediction": {
+            "type": "structure",
+            "members": {
+                "completion": { "shape": "Completion" },
+                "edit": { "shape": "Edit" }
+            },
+            "union": true
+        },
+        "PredictionType": {
+            "type": "string",
+            "enum": ["COMPLETIONS", "EDITS"]
+        },
+        "PredictionTypes": {
+            "type": "list",
+            "member": { "shape": "PredictionType" }
+        },
+        "Predictions": {
+            "type": "list",
+            "member": { "shape": "Prediction" },
+            "max": 10,
+            "min": 0
+        },
+        "PreviousEditorStateMetadata": {
+            "type": "structure",
+            "required": ["timeOffset"],
+            "members": {
+                "timeOffset": { "shape": "Integer" }
+            }
+        },
         "PrimitiveInteger": { "type": "integer" },
+        "Profile": {
+            "type": "structure",
+            "required": ["arn", "profileName"],
+            "members": {
+                "arn": { "shape": "ProfileArn" },
+                "identityDetails": { "shape": "IdentityDetails" },
+                "profileName": { "shape": "ProfileName" },
+                "description": { "shape": "ProfileDescription" },
+                "referenceTrackerConfiguration": { "shape": "ReferenceTrackerConfiguration" },
+                "kmsKeyArn": { "shape": "ResourceArn" },
+                "activeFunctionalities": { "shape": "ActiveFunctionalityList" },
+                "status": { "shape": "ProfileStatus" },
+                "errorDetails": { "shape": "ErrorDetails" },
+                "resourcePolicy": { "shape": "ResourcePolicy" },
+                "profileType": { "shape": "ProfileType" },
+                "optInFeatures": { "shape": "OptInFeatures" },
+                "permissionUpdateRequired": { "shape": "Boolean" },
+                "applicationProperties": { "shape": "ApplicationPropertiesList" }
+            }
+        },
+        "ProfileArn": {
+            "type": "string",
+            "max": 950,
+            "min": 0,
+            "pattern": "arn:aws:(codewhisperer|transform):[-.a-z0-9]{1,63}:\\d{12}:profile/([a-zA-Z0-9]){12}"
+        },
+        "ProfileDescription": {
+            "type": "string",
+            "max": 256,
+            "min": 1,
+            "pattern": "[\\sa-zA-Z0-9_-]*"
+        },
+        "ProfileList": {
+            "type": "list",
+            "member": { "shape": "Profile" }
+        },
+        "ProfileName": {
+            "type": "string",
+            "max": 100,
+            "min": 1,
+            "pattern": "[a-zA-Z][a-zA-Z0-9_-]*"
+        },
+        "ProfileStatus": {
+            "type": "string",
+            "enum": ["ACTIVE", "CREATING", "CREATE_FAILED", "UPDATING", "UPDATE_FAILED", "DELETING", "DELETE_FAILED"]
+        },
+        "ProfileType": {
+            "type": "string",
+            "enum": ["Q_DEVELOPER", "CODEWHISPERER"]
+        },
         "ProgrammingLanguage": {
             "type": "structure",
             "required": ["languageName"],
@@ -1322,11 +3057,35 @@
             "type": "string",
             "max": 128,
             "min": 1,
-            "pattern": "(python|javascript|java|csharp|typescript|c|cpp|go|kotlin|php|ruby|rust|scala|shell|sql|json|yaml|vue|tf|tsx|jsx)"
+            "pattern": "(python|javascript|java|csharp|typescript|c|cpp|go|kotlin|php|ruby|rust|scala|shell|sql|json|yaml|vue|tf|tsx|jsx|plaintext|systemverilog|dart|lua|swift|hcl|powershell|r|abap)"
         },
         "ProgressUpdates": {
             "type": "list",
             "member": { "shape": "TransformationProgressUpdate" }
+        },
+        "PromptLogging": {
+            "type": "structure",
+            "required": ["s3Uri", "toggle"],
+            "members": {
+                "s3Uri": { "shape": "S3Uri" },
+                "toggle": { "shape": "OptInFeatureToggle" }
+            }
+        },
+        "PushTelemetryEventRequest": {
+            "type": "structure",
+            "required": ["eventType", "event"],
+            "members": {
+                "clientToken": {
+                    "shape": "IdempotencyToken",
+                    "idempotencyToken": true
+                },
+                "eventType": { "shape": "String" },
+                "event": { "shape": "Document" }
+            }
+        },
+        "PushTelemetryEventResponse": {
+            "type": "structure",
+            "members": {}
         },
         "Range": {
             "type": "structure",
@@ -1342,6 +3101,31 @@
                 }
             },
             "documentation": "<p>Indicates Range / Span in a Text Document</p>"
+        },
+        "ReasoningContent": {
+            "type": "structure",
+            "members": {
+                "reasoningText": { "shape": "ReasoningText" },
+                "redactedContent": {
+                    "shape": "Blob",
+                    "documentation": "<p>Reasoning content that was encrypted by the model provider</p>"
+                }
+            },
+            "documentation": "<p>The entire reasoning content that the model used to return the output</p>",
+            "sensitive": true,
+            "union": true
+        },
+        "ReasoningText": {
+            "type": "structure",
+            "required": ["text"],
+            "members": {
+                "text": { "shape": "SensitiveString" },
+                "signature": {
+                    "shape": "SensitiveString",
+                    "documentation": "<p>A token that verifies that the reasoning text was generated by the model</p>"
+                }
+            },
+            "sensitive": true
         },
         "RecommendationsWithReferencesPreference": {
             "type": "string",
@@ -1398,11 +3182,50 @@
             "max": 10,
             "min": 0
         },
-        "ResourceArn": {
+        "RelevantDocumentList": {
+            "type": "list",
+            "member": { "shape": "RelevantTextDocument" },
+            "max": 100,
+            "min": 0
+        },
+        "RelevantTextDocument": {
+            "type": "structure",
+            "required": ["relativeFilePath"],
+            "members": {
+                "relativeFilePath": {
+                    "shape": "RelevantTextDocumentRelativeFilePathString",
+                    "documentation": "<p>Filepath relative to the root of the workspace</p>"
+                },
+                "programmingLanguage": {
+                    "shape": "ProgrammingLanguage",
+                    "documentation": "<p>The text document's language identifier.</p>"
+                },
+                "text": {
+                    "shape": "RelevantTextDocumentTextString",
+                    "documentation": "<p>Content of the text document</p>"
+                },
+                "documentSymbols": {
+                    "shape": "DocumentSymbols",
+                    "documentation": "<p>DocumentSymbols parsed from a text document</p>"
+                },
+                "type": {
+                    "shape": "ContentType",
+                    "documentation": "<p>The type of content(file, prompt, symbol, or workspace)</p>"
+                }
+            },
+            "documentation": "<p>Represents an IDE retrieved relevant Text Document / File</p>"
+        },
+        "RelevantTextDocumentRelativeFilePathString": {
             "type": "string",
-            "max": 1224,
+            "max": 4096,
+            "min": 1,
+            "sensitive": true
+        },
+        "RelevantTextDocumentTextString": {
+            "type": "string",
+            "max": 40960,
             "min": 0,
-            "pattern": "arn:([-.a-z0-9]{1,63}:){2}([-.a-z0-9]{0,63}:){2}([a-zA-Z0-9-_:/]){1,1023}"
+            "sensitive": true
         },
         "RequestHeaderKey": {
             "type": "string",
@@ -1416,14 +3239,17 @@
         },
         "RequestHeaders": {
             "type": "map",
-            "key": {
-                "shape": "RequestHeaderKey"
-            },
-            "value": {
-                "shape": "RequestHeaderValue"
-            },
+            "key": { "shape": "RequestHeaderKey" },
+            "value": { "shape": "RequestHeaderValue" },
             "max": 16,
-            "min": 1
+            "min": 1,
+            "sensitive": true
+        },
+        "ResourceArn": {
+            "type": "string",
+            "max": 1224,
+            "min": 0,
+            "pattern": "arn:([-.a-z0-9]{1,63}:){2}([-.a-z0-9]{0,63}:){2}([a-zA-Z0-9-_:/]){1,1023}"
         },
         "ResourceNotFoundException": {
             "type": "structure",
@@ -1434,12 +3260,24 @@
             "documentation": "<p>This exception is thrown when describing a resource that does not exist.</p>",
             "exception": true
         },
+        "ResourcePolicy": {
+            "type": "structure",
+            "required": ["effect"],
+            "members": {
+                "effect": { "shape": "ResourcePolicyEffect" }
+            }
+        },
+        "ResourcePolicyEffect": {
+            "type": "string",
+            "enum": ["ALLOW", "DENY"]
+        },
         "ResumeTransformationRequest": {
             "type": "structure",
             "required": ["transformationJobId"],
             "members": {
                 "transformationJobId": { "shape": "TransformationJobId" },
-                "userActionStatus": { "shape": "TransformationUserActionStatus" }
+                "userActionStatus": { "shape": "TransformationUserActionStatus" },
+                "profileArn": { "shape": "ProfileArn" }
             },
             "documentation": "<p>Structure to represent stop code transformation request.</p>"
         },
@@ -1482,6 +3320,27 @@
             "min": 0,
             "sensitive": true
         },
+        "S3Uri": {
+            "type": "string",
+            "max": 1024,
+            "min": 1,
+            "pattern": "s3://((?!xn--)[a-z0-9](?![^/]*[.]{2})[a-z0-9-.]{1,61}[a-z0-9](?<!-s3alias)(?<!--ol-s3)(?<!([0-9]{1,3}\\.)([0-9]{1,3}\\.)([0-9]{1,3}\\.)([0-9]{1,3})))/(.{0,1024})"
+        },
+        "SSOIdentityDetails": {
+            "type": "structure",
+            "required": ["instanceArn", "oidcClientId"],
+            "members": {
+                "instanceArn": { "shape": "ResourceArn" },
+                "oidcClientId": { "shape": "String" },
+                "ssoRegion": { "shape": "SSORegion" }
+            }
+        },
+        "SSORegion": {
+            "type": "string",
+            "max": 63,
+            "min": 1,
+            "pattern": "[-a-z0-9]{1,63}"
+        },
         "SendTelemetryEventRequest": {
             "type": "structure",
             "required": ["telemetryEvent"],
@@ -1492,16 +3351,39 @@
                 },
                 "telemetryEvent": { "shape": "TelemetryEvent" },
                 "optOutPreference": { "shape": "OptOutPreference" },
-                "userContext": { "shape": "UserContext" }
+                "userContext": { "shape": "UserContext" },
+                "profileArn": { "shape": "ProfileArn" },
+                "modelId": { "shape": "ModelId" }
             }
         },
         "SendTelemetryEventResponse": {
             "type": "structure",
             "members": {}
         },
+        "SensitiveDocument": {
+            "type": "structure",
+            "members": {},
+            "document": true,
+            "sensitive": true
+        },
         "SensitiveString": {
             "type": "string",
             "sensitive": true
+        },
+        "ServiceQuotaExceededException": {
+            "type": "structure",
+            "required": ["message"],
+            "members": {
+                "message": { "shape": "String" },
+                "reason": { "shape": "ServiceQuotaExceededExceptionReason" }
+            },
+            "documentation": "<p>This exception is thrown when request was denied due to caller exceeding their usage limits</p>",
+            "exception": true
+        },
+        "ServiceQuotaExceededExceptionReason": {
+            "type": "string",
+            "documentation": "<p>Reason for ServiceQuotaExceededException</p>",
+            "enum": ["CONVERSATION_LIMIT_EXCEEDED", "MONTHLY_REQUEST_COUNT", "OVERAGE_REQUEST_LIMIT_EXCEEDED"]
         },
         "ShellHistory": {
             "type": "list",
@@ -1588,7 +3470,7 @@
                 "start": { "shape": "SpanStartInteger" },
                 "end": { "shape": "SpanEndInteger" }
             },
-            "documentation": "<p>Represents span in a text</p>"
+            "documentation": "<p>Represents span in a text.</p>"
         },
         "SpanEndInteger": {
             "type": "integer",
@@ -1606,12 +3488,13 @@
             "members": {
                 "artifacts": { "shape": "ArtifactMap" },
                 "programmingLanguage": { "shape": "ProgrammingLanguage" },
-                "scope": { "shape": "CodeAnalysisScope" },
                 "clientToken": {
                     "shape": "StartCodeAnalysisRequestClientTokenString",
                     "idempotencyToken": true
                 },
-                "codeScanName": { "shape": "CodeScanName" }
+                "scope": { "shape": "CodeAnalysisScope" },
+                "codeScanName": { "shape": "CodeScanName" },
+                "profileArn": { "shape": "ProfileArn" }
             }
         },
         "StartCodeAnalysisRequestClientTokenString": {
@@ -1633,12 +3516,56 @@
             "max": 256,
             "min": 1
         },
+        "StartCodeFixJobRequest": {
+            "type": "structure",
+            "required": ["snippetRange", "uploadId"],
+            "members": {
+                "snippetRange": { "shape": "Range" },
+                "uploadId": { "shape": "UploadId" },
+                "description": { "shape": "StartCodeFixJobRequestDescriptionString" },
+                "ruleId": { "shape": "StartCodeFixJobRequestRuleIdString" },
+                "codeFixName": { "shape": "CodeFixName" },
+                "referenceTrackerConfiguration": { "shape": "ReferenceTrackerConfiguration" },
+                "profileArn": { "shape": "ProfileArn" }
+            }
+        },
+        "StartCodeFixJobRequestDescriptionString": {
+            "type": "string",
+            "max": 5000,
+            "min": 1,
+            "sensitive": true
+        },
+        "StartCodeFixJobRequestRuleIdString": {
+            "type": "string",
+            "max": 256,
+            "min": 1,
+            "pattern": ".*[A-Za-z0-9-]+.*"
+        },
+        "StartCodeFixJobResponse": {
+            "type": "structure",
+            "members": {
+                "jobId": { "shape": "StartCodeFixJobResponseJobIdString" },
+                "status": { "shape": "CodeFixJobStatus" }
+            }
+        },
+        "StartCodeFixJobResponseJobIdString": {
+            "type": "string",
+            "max": 256,
+            "min": 1,
+            "pattern": ".*[A-Za-z0-9-:]+.*"
+        },
         "StartTaskAssistCodeGenerationRequest": {
             "type": "structure",
             "required": ["conversationState", "workspaceState"],
             "members": {
                 "conversationState": { "shape": "ConversationState" },
-                "workspaceState": { "shape": "WorkspaceState" }
+                "workspaceState": { "shape": "WorkspaceState" },
+                "taskAssistPlan": { "shape": "TaskAssistPlan" },
+                "codeGenerationId": { "shape": "CodeGenerationId" },
+                "currentCodeGenerationId": { "shape": "CodeGenerationId" },
+                "intent": { "shape": "Intent" },
+                "intentContext": { "shape": "IntentContext" },
+                "profileArn": { "shape": "ProfileArn" }
             },
             "documentation": "<p>Structure to represent start code generation request.</p>"
         },
@@ -1651,12 +3578,51 @@
             },
             "documentation": "<p>Structure to represent start code generation response.</p>"
         },
+        "StartTestGenerationRequest": {
+            "type": "structure",
+            "required": ["uploadId", "targetCodeList", "userInput"],
+            "members": {
+                "uploadId": { "shape": "UploadId" },
+                "targetCodeList": { "shape": "TargetCodeList" },
+                "userInput": {
+                    "shape": "StartTestGenerationRequestUserInputString",
+                    "documentation": "<p>The content of user input.</p>"
+                },
+                "testGenerationJobGroupName": { "shape": "TestGenerationJobGroupName" },
+                "clientToken": {
+                    "shape": "StartTestGenerationRequestClientTokenString",
+                    "idempotencyToken": true
+                },
+                "profileArn": { "shape": "ProfileArn" },
+                "referenceTrackerConfiguration": { "shape": "ReferenceTrackerConfiguration" }
+            },
+            "documentation": "<p>Structure to represent test generation request.</p>"
+        },
+        "StartTestGenerationRequestClientTokenString": {
+            "type": "string",
+            "max": 256,
+            "min": 1
+        },
+        "StartTestGenerationRequestUserInputString": {
+            "type": "string",
+            "max": 4096,
+            "min": 0,
+            "sensitive": true
+        },
+        "StartTestGenerationResponse": {
+            "type": "structure",
+            "members": {
+                "testGenerationJob": { "shape": "TestGenerationJob" }
+            },
+            "documentation": "<p>Structure to represent code transformation response.</p>"
+        },
         "StartTransformationRequest": {
             "type": "structure",
             "required": ["workspaceState", "transformationSpec"],
             "members": {
                 "workspaceState": { "shape": "WorkspaceState" },
-                "transformationSpec": { "shape": "TransformationSpec" }
+                "transformationSpec": { "shape": "TransformationSpec" },
+                "profileArn": { "shape": "ProfileArn" }
             },
             "documentation": "<p>Structure to represent code transformation request.</p>"
         },
@@ -1677,7 +3643,8 @@
             "type": "structure",
             "required": ["transformationJobId"],
             "members": {
-                "transformationJobId": { "shape": "TransformationJobId" }
+                "transformationJobId": { "shape": "TransformationJobId" },
+                "profileArn": { "shape": "ProfileArn" }
             },
             "documentation": "<p>Structure to represent stop code transformation request.</p>"
         },
@@ -1690,16 +3657,59 @@
             "documentation": "<p>Structure to represent stop code transformation response.</p>"
         },
         "String": { "type": "string" },
+        "StringList": {
+            "type": "list",
+            "member": { "shape": "StringListMemberString" },
+            "documentation": "<p>A list of strings</p>",
+            "max": 50,
+            "min": 0
+        },
+        "StringListMemberString": {
+            "type": "string",
+            "max": 256,
+            "min": 1,
+            "sensitive": true
+        },
+        "SubscriptionStatus": {
+            "type": "string",
+            "enum": ["INACTIVE", "ACTIVE"]
+        },
+        "SuggestedFix": {
+            "type": "structure",
+            "members": {
+                "codeDiff": { "shape": "SuggestedFixCodeDiffString" },
+                "description": { "shape": "SuggestedFixDescriptionString" },
+                "references": { "shape": "References" }
+            }
+        },
+        "SuggestedFixCodeDiffString": {
+            "type": "string",
+            "max": 200000,
+            "min": 0,
+            "sensitive": true
+        },
+        "SuggestedFixDescriptionString": {
+            "type": "string",
+            "max": 2000,
+            "min": 1,
+            "sensitive": true
+        },
         "SuggestionState": {
             "type": "string",
-            "enum": ["ACCEPT", "REJECT", "DISCARD", "EMPTY"]
+            "enum": ["ACCEPT", "REJECT", "DISCARD", "EMPTY", "MERGE"]
+        },
+        "SuggestionType": {
+            "type": "string",
+            "enum": ["COMPLETIONS", "EDITS"]
         },
         "SupplementalContext": {
             "type": "structure",
             "required": ["filePath", "content"],
             "members": {
                 "filePath": { "shape": "SupplementalContextFilePathString" },
-                "content": { "shape": "SupplementalContextContentString" }
+                "content": { "shape": "SupplementalContextContentString" },
+                "type": { "shape": "SupplementalContextType" },
+                "metadata": { "shape": "SupplementalContextMetadata" }
             }
         },
         "SupplementalContextContentString": {
@@ -1717,8 +3727,19 @@
         "SupplementalContextList": {
             "type": "list",
             "member": { "shape": "SupplementalContext" },
-            "max": 5,
+            "max": 20,
             "min": 0
+        },
+        "SupplementalContextMetadata": {
+            "type": "structure",
+            "members": {
+                "previousEditorStateMetadata": { "shape": "PreviousEditorStateMetadata" }
+            },
+            "union": true
+        },
+        "SupplementalContextType": {
+            "type": "string",
+            "enum": ["PreviousEditorState", "WorkspaceContext"]
         },
         "SupplementaryWebLink": {
             "type": "structure",
@@ -1726,15 +3747,15 @@
             "members": {
                 "url": {
                     "shape": "SupplementaryWebLinkUrlString",
-                    "documentation": "<p>URL of the web reference link</p>"
+                    "documentation": "<p>URL of the web reference link.</p>"
                 },
                 "title": {
                     "shape": "SupplementaryWebLinkTitleString",
-                    "documentation": "<p>Title of the web reference link</p>"
+                    "documentation": "<p>Title of the web reference link.</p>"
                 },
                 "snippet": {
                     "shape": "SupplementaryWebLinkSnippetString",
-                    "documentation": "<p>Relevant text snippet from the link</p>"
+                    "documentation": "<p>Relevant text snippet from the link.</p>"
                 }
             },
             "documentation": "<p>Represents an additional reference link retured with the Chat message</p>"
@@ -1753,7 +3774,7 @@
         },
         "SupplementaryWebLinkUrlString": {
             "type": "string",
-            "max": 1024,
+            "max": 2048,
             "min": 1,
             "sensitive": true
         },
@@ -1763,9 +3784,136 @@
             "max": 10,
             "min": 0
         },
+        "SupportedInputTypesList": {
+            "type": "list",
+            "member": { "shape": "InputType" },
+            "documentation": "<p>List of supported input types for the model</p>"
+        },
         "SymbolType": {
             "type": "string",
             "enum": ["DECLARATION", "USAGE"]
+        },
+        "SyntheticTimestamp_date_time": {
+            "type": "timestamp",
+            "timestampFormat": "iso8601"
+        },
+        "TargetCode": {
+            "type": "structure",
+            "required": ["relativeTargetPath"],
+            "members": {
+                "relativeTargetPath": {
+                    "shape": "TargetCodeRelativeTargetPathString",
+                    "documentation": "<p>The file path relative to the root of the workspace, could be a single file or a folder.</p>"
+                },
+                "targetLineRangeList": { "shape": "LineRangeList" }
+            }
+        },
+        "TargetCodeList": {
+            "type": "list",
+            "member": { "shape": "TargetCode" },
+            "min": 1
+        },
+        "TargetCodeRelativeTargetPathString": {
+            "type": "string",
+            "max": 4096,
+            "min": 1,
+            "sensitive": true
+        },
+        "TargetFileInfo": {
+            "type": "structure",
+            "members": {
+                "filePath": { "shape": "SensitiveString" },
+                "testFilePath": { "shape": "SensitiveString" },
+                "testCoverage": { "shape": "TargetFileInfoTestCoverageInteger" },
+                "fileSummary": { "shape": "TargetFileInfoFileSummaryString" },
+                "filePlan": { "shape": "TargetFileInfoFilePlanString" },
+                "codeReferences": { "shape": "References" },
+                "numberOfTestMethods": { "shape": "TargetFileInfoNumberOfTestMethodsInteger" }
+            }
+        },
+        "TargetFileInfoFilePlanString": {
+            "type": "string",
+            "max": 30720,
+            "min": 0,
+            "sensitive": true
+        },
+        "TargetFileInfoFileSummaryString": {
+            "type": "string",
+            "max": 30720,
+            "min": 0,
+            "sensitive": true
+        },
+        "TargetFileInfoList": {
+            "type": "list",
+            "member": { "shape": "TargetFileInfo" }
+        },
+        "TargetFileInfoNumberOfTestMethodsInteger": {
+            "type": "integer",
+            "box": true,
+            "min": 0
+        },
+        "TargetFileInfoTestCoverageInteger": {
+            "type": "integer",
+            "box": true,
+            "max": 100,
+            "min": 0
+        },
+        "TaskAssistPlan": {
+            "type": "list",
+            "member": { "shape": "TaskAssistPlanStep" },
+            "min": 0
+        },
+        "TaskAssistPlanStep": {
+            "type": "structure",
+            "required": ["filePath", "description"],
+            "members": {
+                "filePath": {
+                    "shape": "TaskAssistPlanStepFilePathString",
+                    "documentation": "<p>File path on which the step is working on.</p>"
+                },
+                "description": {
+                    "shape": "TaskAssistPlanStepDescriptionString",
+                    "documentation": "<p>Description on the step.</p>"
+                },
+                "startLine": {
+                    "shape": "TaskAssistPlanStepStartLineInteger",
+                    "documentation": "<p>Start line number of the related changes.</p>"
+                },
+                "endLine": {
+                    "shape": "TaskAssistPlanStepEndLineInteger",
+                    "documentation": "<p>End line number of the related changes.</p>"
+                },
+                "action": {
+                    "shape": "TaskAssistPlanStepAction",
+                    "documentation": "<p>Type of the action.</p>"
+                }
+            },
+            "documentation": "<p>Structured plan step for a task assist plan.</p>"
+        },
+        "TaskAssistPlanStepAction": {
+            "type": "string",
+            "documentation": "<p>Action for task assist plan step</p>",
+            "enum": ["MODIFY", "CREATE", "DELETE", "UNKNOWN"]
+        },
+        "TaskAssistPlanStepDescriptionString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1
+        },
+        "TaskAssistPlanStepEndLineInteger": {
+            "type": "integer",
+            "box": true,
+            "min": 0
+        },
+        "TaskAssistPlanStepFilePathString": {
+            "type": "string",
+            "max": 1024,
+            "min": 1
+        },
+        "TaskAssistPlanStepStartLineInteger": {
+            "type": "integer",
+            "box": true,
+            "min": 0
         },
         "TaskAssistPlanningUploadContext": {
             "type": "structure",
@@ -1781,14 +3929,32 @@
                 "codeCoverageEvent": { "shape": "CodeCoverageEvent" },
                 "userModificationEvent": { "shape": "UserModificationEvent" },
                 "codeScanEvent": { "shape": "CodeScanEvent" },
+                "codeScanSucceededEvent": { "shape": "CodeScanSucceededEvent" },
+                "codeScanFailedEvent": { "shape": "CodeScanFailedEvent" },
                 "codeScanRemediationsEvent": { "shape": "CodeScanRemediationsEvent" },
+                "codeFixGenerationEvent": { "shape": "CodeFixGenerationEvent" },
+                "codeFixAcceptanceEvent": { "shape": "CodeFixAcceptanceEvent" },
                 "metricData": { "shape": "MetricData" },
                 "chatAddMessageEvent": { "shape": "ChatAddMessageEvent" },
                 "chatInteractWithMessageEvent": { "shape": "ChatInteractWithMessageEvent" },
                 "chatUserModificationEvent": { "shape": "ChatUserModificationEvent" },
-                "terminalUserInteractionEvent": { "shape": "TerminalUserInteractionEvent" }
+                "terminalUserInteractionEvent": { "shape": "TerminalUserInteractionEvent" },
+                "featureDevEvent": { "shape": "FeatureDevEvent" },
+                "featureDevCodeGenerationEvent": { "shape": "FeatureDevCodeGenerationEvent" },
+                "featureDevCodeAcceptanceEvent": { "shape": "FeatureDevCodeAcceptanceEvent" },
+                "inlineChatEvent": { "shape": "InlineChatEvent" },
+                "transformEvent": { "shape": "TransformEvent" },
+                "docGenerationEvent": { "shape": "DocGenerationEvent" },
+                "docV2GenerationEvent": { "shape": "DocV2GenerationEvent" },
+                "docV2AcceptanceEvent": { "shape": "DocV2AcceptanceEvent" },
+                "testGenerationEvent": { "shape": "TestGenerationEvent" }
             },
             "union": true
+        },
+        "TenantId": {
+            "type": "string",
+            "max": 1024,
+            "min": 1
         },
         "TerminalUserInteractionEvent": {
             "type": "structure",
@@ -1808,6 +3974,69 @@
             "type": "string",
             "documentation": "<p>CodeWhisperer terminal Interaction Type</p>",
             "enum": ["CODEWHISPERER_TERMINAL_TRANSLATION_ACTION", "CODEWHISPERER_TERMINAL_COMPLETION_INSERTED"]
+        },
+        "TestGenerationEvent": {
+            "type": "structure",
+            "required": ["jobId", "groupName"],
+            "members": {
+                "jobId": { "shape": "UUID" },
+                "groupName": { "shape": "TestGenerationJobGroupName" },
+                "timestamp": { "shape": "Timestamp" },
+                "ideCategory": { "shape": "IdeCategory" },
+                "programmingLanguage": { "shape": "ProgrammingLanguage" },
+                "numberOfUnitTestCasesGenerated": { "shape": "Integer" },
+                "numberOfUnitTestCasesAccepted": { "shape": "Integer" },
+                "linesOfCodeGenerated": { "shape": "Integer" },
+                "linesOfCodeAccepted": { "shape": "Integer" },
+                "charsOfCodeGenerated": { "shape": "Integer" },
+                "charsOfCodeAccepted": { "shape": "Integer" }
+            }
+        },
+        "TestGenerationJob": {
+            "type": "structure",
+            "required": ["testGenerationJobId", "testGenerationJobGroupName", "status", "creationTime"],
+            "members": {
+                "testGenerationJobId": { "shape": "UUID" },
+                "testGenerationJobGroupName": { "shape": "TestGenerationJobGroupName" },
+                "status": { "shape": "TestGenerationJobStatus" },
+                "shortAnswer": { "shape": "SensitiveString" },
+                "creationTime": { "shape": "Timestamp" },
+                "progressRate": { "shape": "TestGenerationJobProgressRateInteger" },
+                "jobStatusReason": { "shape": "String" },
+                "jobSummary": { "shape": "TestGenerationJobJobSummaryString" },
+                "jobPlan": { "shape": "TestGenerationJobJobPlanString" },
+                "packageInfoList": { "shape": "PackageInfoList" }
+            },
+            "documentation": "<p>Represents a test generation job</p>"
+        },
+        "TestGenerationJobGroupName": {
+            "type": "string",
+            "documentation": "<p>Test generation job group name</p>",
+            "max": 128,
+            "min": 1,
+            "pattern": "[a-zA-Z0-9-_]+"
+        },
+        "TestGenerationJobJobPlanString": {
+            "type": "string",
+            "max": 30720,
+            "min": 0,
+            "sensitive": true
+        },
+        "TestGenerationJobJobSummaryString": {
+            "type": "string",
+            "max": 30720,
+            "min": 0,
+            "sensitive": true
+        },
+        "TestGenerationJobProgressRateInteger": {
+            "type": "integer",
+            "box": true,
+            "max": 100,
+            "min": 0
+        },
+        "TestGenerationJobStatus": {
+            "type": "string",
+            "enum": ["IN_PROGRESS", "FAILED", "COMPLETED"]
         },
         "TextDocument": {
             "type": "structure",
@@ -1855,9 +4084,41 @@
                 "message": {
                     "shape": "TextDocumentDiagnosticMessageString",
                     "documentation": "<p>The diagnostic's message.</p>"
+                },
+                "code": {
+                    "shape": "TextDocumentDiagnosticCodeString",
+                    "documentation": "<p>The diagnostic's code, which might appear in the user interface.</p>"
+                },
+                "codeDescription": {
+                    "shape": "CodeDescription",
+                    "documentation": "<p>An optional property to describe the error code.</p>"
+                },
+                "tags": {
+                    "shape": "DiagnosticTagList",
+                    "documentation": "<p>Additional metadata about the diagnostic.</p>"
+                },
+                "relatedInformation": {
+                    "shape": "DiagnosticRelatedInformationList",
+                    "documentation": "<p>an array of related diagnostic information, e.g. when symbol-names within a scope collide all definitions can be marked via this property.</p>"
+                },
+                "data": {
+                    "shape": "TextDocumentDiagnosticDataString",
+                    "documentation": "<p>A data entry field that is preserved between a <code>textDocument/publishDiagnostics</code> notification and <code>textDocument/codeAction</code> request.</p>"
                 }
             },
             "documentation": "<p>Structure to represent metadata about a TextDocument Diagnostic</p>"
+        },
+        "TextDocumentDiagnosticCodeString": {
+            "type": "string",
+            "max": 1024,
+            "min": 0,
+            "sensitive": true
+        },
+        "TextDocumentDiagnosticDataString": {
+            "type": "string",
+            "max": 4096,
+            "min": 0,
+            "sensitive": true
         },
         "TextDocumentDiagnosticMessageString": {
             "type": "string",
@@ -1873,7 +4134,7 @@
         },
         "TextDocumentTextString": {
             "type": "string",
-            "max": 10240,
+            "max": 40000,
             "min": 0,
             "sensitive": true
         },
@@ -1881,41 +4142,173 @@
             "type": "structure",
             "required": ["message"],
             "members": {
-                "message": { "shape": "String" }
+                "message": { "shape": "String" },
+                "reason": { "shape": "ThrottlingExceptionReason" }
             },
             "documentation": "<p>This exception is thrown when request was denied due to request throttling.</p>",
             "exception": true,
             "retryable": { "throttling": true }
         },
+        "ThrottlingExceptionReason": {
+            "type": "string",
+            "documentation": "<p>Reason for ThrottlingException</p>",
+            "enum": ["DAILY_REQUEST_COUNT", "MONTHLY_REQUEST_COUNT", "INSUFFICIENT_MODEL_CAPACITY"]
+        },
         "Timestamp": { "type": "timestamp" },
+        "TokenLimits": {
+            "type": "structure",
+            "members": {
+                "maxInputTokens": {
+                    "shape": "TokenLimitsMaxInputTokensInteger",
+                    "documentation": "<p>Maximum number of input tokens the model can process</p>"
+                },
+                "maxOutputTokens": {
+                    "shape": "TokenLimitsMaxOutputTokensInteger",
+                    "documentation": "<p>Maximum number of output tokens the model can produce</p>"
+                }
+            }
+        },
+        "TokenLimitsMaxInputTokensInteger": {
+            "type": "integer",
+            "box": true,
+            "min": 1
+        },
+        "TokenLimitsMaxOutputTokensInteger": {
+            "type": "integer",
+            "box": true,
+            "min": 1
+        },
+        "Tool": {
+            "type": "structure",
+            "members": {
+                "toolSpecification": { "shape": "ToolSpecification" },
+                "cachePoint": { "shape": "CachePoint" }
+            },
+            "documentation": "<p>Information about a tool that can be used.</p>",
+            "union": true
+        },
+        "ToolDescription": {
+            "type": "string",
+            "documentation": "<p>The description for the tool.</p>",
+            "max": 10240,
+            "min": 1,
+            "sensitive": true
+        },
+        "ToolInputSchema": {
+            "type": "structure",
+            "members": {
+                "json": { "shape": "SensitiveDocument" }
+            },
+            "documentation": "<p>The input schema for the tool in JSON format.</p>"
+        },
+        "ToolName": {
+            "type": "string",
+            "documentation": "<p>The name for the tool.</p>",
+            "max": 64,
+            "min": 0,
+            "pattern": "[a-zA-Z0-9_-]+",
+            "sensitive": true
+        },
+        "ToolResult": {
+            "type": "structure",
+            "required": ["toolUseId", "content"],
+            "members": {
+                "toolUseId": { "shape": "ToolUseId" },
+                "content": {
+                    "shape": "ToolResultContent",
+                    "documentation": "<p>Content of the tool result.</p>"
+                },
+                "status": { "shape": "ToolResultStatus" }
+            },
+            "documentation": "<p>A tool result that contains the results for a tool request that was previously made.</p>"
+        },
+        "ToolResultContent": {
+            "type": "list",
+            "member": { "shape": "ToolResultContentBlock" }
+        },
+        "ToolResultContentBlock": {
+            "type": "structure",
+            "members": {
+                "text": {
+                    "shape": "ToolResultContentBlockTextString",
+                    "documentation": "<p>A tool result that is text.</p>"
+                },
+                "json": {
+                    "shape": "SensitiveDocument",
+                    "documentation": "<p>A tool result that is JSON format data.</p>"
+                }
+            },
+            "union": true
+        },
+        "ToolResultContentBlockTextString": {
+            "type": "string",
+            "max": 10000000,
+            "min": 0,
+            "sensitive": true
+        },
+        "ToolResultStatus": {
+            "type": "string",
+            "documentation": "<p>Status of the tools result.</p>",
+            "enum": ["success", "error"]
+        },
+        "ToolResults": {
+            "type": "list",
+            "member": { "shape": "ToolResult" }
+        },
+        "ToolSpecification": {
+            "type": "structure",
+            "required": ["inputSchema", "name"],
+            "members": {
+                "inputSchema": { "shape": "ToolInputSchema" },
+                "name": { "shape": "ToolName" },
+                "description": { "shape": "ToolDescription" }
+            },
+            "documentation": "<p>The specification for the tool.</p>"
+        },
+        "ToolUse": {
+            "type": "structure",
+            "required": ["toolUseId", "name", "input"],
+            "members": {
+                "toolUseId": { "shape": "ToolUseId" },
+                "name": { "shape": "ToolName" },
+                "input": {
+                    "shape": "SensitiveDocument",
+                    "documentation": "<p>The input to pass to the tool.</p>"
+                }
+            },
+            "documentation": "<p>Contains information about a tool that the model is requesting be run. The model uses the result from the tool to generate a response.</p>"
+        },
+        "ToolUseId": {
+            "type": "string",
+            "documentation": "<p>The ID for the tool request.</p>",
+            "max": 64,
+            "min": 0,
+            "pattern": "[a-zA-Z0-9_-]+"
+        },
+        "ToolUses": {
+            "type": "list",
+            "member": { "shape": "ToolUse" }
+        },
+        "Tools": {
+            "type": "list",
+            "member": { "shape": "Tool" }
+        },
+        "TransformEvent": {
+            "type": "structure",
+            "required": ["jobId"],
+            "members": {
+                "jobId": { "shape": "TransformationJobId" },
+                "timestamp": { "shape": "Timestamp" },
+                "ideCategory": { "shape": "IdeCategory" },
+                "programmingLanguage": { "shape": "ProgrammingLanguage" },
+                "linesOfCodeChanged": { "shape": "Integer" },
+                "charsOfCodeChanged": { "shape": "Integer" },
+                "linesOfCodeSubmitted": { "shape": "Integer" }
+            }
+        },
         "TransformationDotNetRuntimeEnv": {
             "type": "string",
-            "enum": [
-                "NET_FRAMEWORK_V_3_5",
-                "NET_FRAMEWORK_V_4_0",
-                "NET_FRAMEWORK_V_4_5",
-                "NET_FRAMEWORK_V_4_5_1",
-                "NET_FRAMEWORK_V_4_5_2",
-                "NET_FRAMEWORK_V_4_6",
-                "NET_FRAMEWORK_V_4_6_1",
-                "NET_FRAMEWORK_V_4_6_2",
-                "NET_FRAMEWORK_V_4_7",
-                "NET_FRAMEWORK_V_4_7_1",
-                "NET_FRAMEWORK_V_4_7_2",
-                "NET_FRAMEWORK_V_4_8",
-                "NET_FRAMEWORK_V_4_8_1",
-                "NET_CORE_APP_1_0",
-                "NET_CORE_APP_1_1",
-                "NET_CORE_APP_2_0",
-                "NET_CORE_APP_2_1",
-                "NET_CORE_APP_2_2",
-                "NET_CORE_APP_3_0",
-                "NET_CORE_APP_3_1",
-                "NET_5_0",
-                "NET_6_0",
-                "NET_7_0",
-                "NET_8_0"
-            ]
+            "enum": ["NET_5_0", "NET_6_0", "NET_7_0", "NET_8_0", "NET_9_0", "NET_STANDARD_2_0"]
         },
         "TransformationDownloadArtifact": {
             "type": "structure",
@@ -1926,7 +4319,7 @@
         },
         "TransformationDownloadArtifactType": {
             "type": "string",
-            "enum": ["ClientInstructions", "Logs"]
+            "enum": ["ClientInstructions", "Logs", "GeneratedCode"]
         },
         "TransformationDownloadArtifacts": {
             "type": "list",
@@ -1936,7 +4329,7 @@
         },
         "TransformationJavaRuntimeEnv": {
             "type": "string",
-            "enum": ["JVM_8", "JVM_11", "JVM_17"]
+            "enum": ["JVM_8", "JVM_11", "JVM_17", "JVM_21"]
         },
         "TransformationJob": {
             "type": "structure",
@@ -1959,7 +4352,15 @@
         },
         "TransformationLanguage": {
             "type": "string",
-            "enum": ["JAVA_8", "JAVA_11", "JAVA_17", "C_SHARP"]
+            "enum": ["JAVA_8", "JAVA_11", "JAVA_17", "JAVA_21", "C_SHARP", "COBOL", "PL_I", "JCL"]
+        },
+        "TransformationLanguages": {
+            "type": "list",
+            "member": { "shape": "TransformationLanguage" }
+        },
+        "TransformationMainframeRuntimeEnv": {
+            "type": "string",
+            "enum": ["MAINFRAME"]
         },
         "TransformationOperatingSystemFamily": {
             "type": "string",
@@ -1992,23 +4393,39 @@
         },
         "TransformationProgressUpdateStatus": {
             "type": "string",
-            "enum": ["IN_PROGRESS", "COMPLETED", "FAILED", "PAUSED"]
+            "enum": ["IN_PROGRESS", "COMPLETED", "FAILED", "PAUSED", "AWAITING_CLIENT_ACTION", "SKIPPED"]
+        },
+        "TransformationProjectArtifactDescriptor": {
+            "type": "structure",
+            "members": {
+                "sourceCodeArtifact": { "shape": "TransformationSourceCodeArtifactDescriptor" }
+            },
+            "union": true
         },
         "TransformationProjectState": {
             "type": "structure",
             "members": {
                 "language": { "shape": "TransformationLanguage" },
                 "runtimeEnv": { "shape": "TransformationRuntimeEnv" },
-                "platformConfig": { "shape": "TransformationPlatformConfig" }
+                "platformConfig": { "shape": "TransformationPlatformConfig" },
+                "projectArtifact": { "shape": "TransformationProjectArtifactDescriptor" }
             }
         },
         "TransformationRuntimeEnv": {
             "type": "structure",
             "members": {
                 "java": { "shape": "TransformationJavaRuntimeEnv" },
-                "dotNet": { "shape": "TransformationDotNetRuntimeEnv" }
+                "dotNet": { "shape": "TransformationDotNetRuntimeEnv" },
+                "mainframe": { "shape": "TransformationMainframeRuntimeEnv" }
             },
             "union": true
+        },
+        "TransformationSourceCodeArtifactDescriptor": {
+            "type": "structure",
+            "members": {
+                "languages": { "shape": "TransformationLanguages" },
+                "runtimeEnv": { "shape": "TransformationRuntimeEnv" }
+            }
         },
         "TransformationSpec": {
             "type": "structure",
@@ -2055,7 +4472,7 @@
         },
         "TransformationStepStatus": {
             "type": "string",
-            "enum": ["CREATED", "COMPLETED", "PARTIALLY_COMPLETED", "STOPPED", "FAILED", "PAUSED"]
+            "enum": ["CREATED", "COMPLETED", "PARTIALLY_COMPLETED", "STOPPED", "FAILED", "PAUSED", "SKIPPED"]
         },
         "TransformationSteps": {
             "type": "list",
@@ -2063,11 +4480,11 @@
         },
         "TransformationType": {
             "type": "string",
-            "enum": ["LANGUAGE_UPGRADE"]
+            "enum": ["LANGUAGE_UPGRADE", "DOCUMENT_GENERATION"]
         },
         "TransformationUploadArtifactType": {
             "type": "string",
-            "enum": ["Dependencies"]
+            "enum": ["Dependencies", "ClientBuildResult"]
         },
         "TransformationUploadContext": {
             "type": "structure",
@@ -2086,12 +4503,43 @@
             "max": 36,
             "min": 36
         },
+        "UpdateUsageLimitQuotaExceededException": {
+            "type": "structure",
+            "required": ["message"],
+            "members": {
+                "message": { "shape": "String" }
+            },
+            "documentation": "<p>Exception thrown when the number of usage limit update requests exceeds the monthly quota (default 3 requests per month)</p>",
+            "exception": true
+        },
+        "UpdateUsageLimitsRequest": {
+            "type": "structure",
+            "required": ["accountId", "featureType", "requestedLimit"],
+            "members": {
+                "accountId": { "shape": "String" },
+                "accountlessUserId": { "shape": "String" },
+                "featureType": { "shape": "UsageLimitType" },
+                "requestedLimit": { "shape": "Long" },
+                "justification": { "shape": "String" }
+            }
+        },
+        "UpdateUsageLimitsResponse": {
+            "type": "structure",
+            "required": ["status"],
+            "members": {
+                "status": { "shape": "UsageLimitUpdateRequestStatus" },
+                "approvedLimit": { "shape": "Long" },
+                "remainingRequestsThisMonth": { "shape": "Integer" }
+            }
+        },
         "UploadContext": {
             "type": "structure",
             "members": {
                 "taskAssistPlanningUploadContext": { "shape": "TaskAssistPlanningUploadContext" },
                 "transformationUploadContext": { "shape": "TransformationUploadContext" },
-                "codeAnalysisUploadContext": { "shape": "CodeAnalysisUploadContext" }
+                "codeAnalysisUploadContext": { "shape": "CodeAnalysisUploadContext" },
+                "codeFixUploadContext": { "shape": "CodeFixUploadContext" },
+                "workspaceContextUploadContext": { "shape": "WorkspaceContextUploadContext" }
             },
             "union": true
         },
@@ -2108,8 +4556,41 @@
                 "TRANSFORMATION",
                 "TASK_ASSIST_PLANNING",
                 "AUTOMATIC_FILE_SECURITY_SCAN",
-                "FULL_PROJECT_SECURITY_SCAN"
+                "FULL_PROJECT_SECURITY_SCAN",
+                "UNIT_TESTS_GENERATION",
+                "CODE_FIX_GENERATION",
+                "WORKSPACE_CONTEXT",
+                "AGENTIC_CODE_REVIEW"
             ]
+        },
+        "Url": {
+            "type": "string",
+            "max": 1024,
+            "min": 1
+        },
+        "UsageLimitList": {
+            "type": "structure",
+            "required": ["type", "currentUsageLimit", "totalUsageLimit"],
+            "members": {
+                "type": { "shape": "UsageLimitType" },
+                "currentUsageLimit": { "shape": "Long" },
+                "totalUsageLimit": { "shape": "Long" },
+                "percentUsed": { "shape": "Double" }
+            }
+        },
+        "UsageLimitType": {
+            "type": "string",
+            "enum": ["CODE_COMPLETIONS", "AGENTIC_REQUEST", "AI_EDITOR", "TRANSFORM"]
+        },
+        "UsageLimitUpdateRequestStatus": {
+            "type": "string",
+            "enum": ["APPROVED", "PENDING_REVIEW", "REJECTED"]
+        },
+        "UsageLimits": {
+            "type": "list",
+            "member": { "shape": "UsageLimitList" },
+            "max": 10,
+            "min": 0
         },
         "UserContext": {
             "type": "structure",
@@ -2119,8 +4600,20 @@
                 "operatingSystem": { "shape": "OperatingSystem" },
                 "product": { "shape": "UserContextProductString" },
                 "clientId": { "shape": "UUID" },
-                "ideVersion": { "shape": "String" }
+                "ideVersion": { "shape": "String" },
+                "pluginVersion": { "shape": "UserContextPluginVersionString" },
+                "lspVersion": { "shape": "UserContextLspVersionString" }
             }
+        },
+        "UserContextLspVersionString": {
+            "type": "string",
+            "max": 50,
+            "min": 0
+        },
+        "UserContextPluginVersionString": {
+            "type": "string",
+            "max": 50,
+            "min": 0
         },
         "UserContextProductString": {
             "type": "string",
@@ -2138,18 +4631,38 @@
                 },
                 "userInputMessageContext": {
                     "shape": "UserInputMessageContext",
-                    "documentation": "<p>Chat message context associated with the Chat Message</p>"
+                    "documentation": "<p>Chat message context associated with the Chat Message.</p>"
                 },
                 "userIntent": {
                     "shape": "UserIntent",
-                    "documentation": "<p>User Intent</p>"
+                    "documentation": "<p>User Intent.</p>"
+                },
+                "origin": {
+                    "shape": "Origin",
+                    "documentation": "<p>User Input Origin.</p>"
+                },
+                "images": {
+                    "shape": "ImageBlocks",
+                    "documentation": "<p>Images associated with the Chat Message.</p>"
+                },
+                "modelId": {
+                    "shape": "ModelId",
+                    "documentation": "<p>Unique identifier for the model used in this conversation</p>"
+                },
+                "cachePoint": {
+                    "shape": "CachePoint",
+                    "documentation": "<p>Indicates whether to add a cache point after the current message</p>"
+                },
+                "clientCacheConfig": {
+                    "shape": "ClientCacheConfig",
+                    "documentation": "<p>Client cache config</p>"
                 }
             },
-            "documentation": "<p>Structure to represent a chat input message from User</p>"
+            "documentation": "<p>Structure to represent a chat input message from User.</p>"
         },
         "UserInputMessageContentString": {
             "type": "string",
-            "max": 4096,
+            "max": 10000000,
             "min": 0,
             "sensitive": true
         },
@@ -2170,11 +4683,35 @@
                 },
                 "envState": {
                     "shape": "EnvState",
-                    "documentation": "<p>Environment state chat messaage context.</p>"
+                    "documentation": "<p>Environment state chat message context.</p>"
+                },
+                "appStudioContext": {
+                    "shape": "AppStudioState",
+                    "documentation": "<p>The state of a user's AppStudio UI when sending a message.</p>"
                 },
                 "diagnostic": {
                     "shape": "Diagnostic",
                     "documentation": "<p>Diagnostic chat message context.</p>"
+                },
+                "consoleState": {
+                    "shape": "ConsoleState",
+                    "documentation": "<p>Contextual information about the environment from which the user is calling.</p>"
+                },
+                "userSettings": {
+                    "shape": "UserSettings",
+                    "documentation": "<p>Settings information, e.g., whether the user has enabled cross-region API calls.</p>"
+                },
+                "additionalContext": {
+                    "shape": "AdditionalContentList",
+                    "documentation": "<p>List of additional contextual content entries that can be included with the message.</p>"
+                },
+                "toolResults": {
+                    "shape": "ToolResults",
+                    "documentation": "<p>ToolResults for the requested ToolUses.</p>"
+                },
+                "tools": {
+                    "shape": "Tools",
+                    "documentation": "<p>Tools that can be used.</p>"
                 }
             },
             "documentation": "<p>Additional Chat message context associated with the Chat Message</p>"
@@ -2189,20 +4726,52 @@
                 "SHOW_EXAMPLES",
                 "CITE_SOURCES",
                 "EXPLAIN_LINE_BY_LINE",
-                "EXPLAIN_CODE_SELECTION"
+                "EXPLAIN_CODE_SELECTION",
+                "GENERATE_CLOUDFORMATION_TEMPLATE",
+                "GENERATE_UNIT_TESTS",
+                "CODE_GENERATION"
             ]
         },
         "UserModificationEvent": {
             "type": "structure",
-            "required": ["sessionId", "requestId", "programmingLanguage", "modificationPercentage", "timestamp"],
+            "required": [
+                "sessionId",
+                "requestId",
+                "programmingLanguage",
+                "modificationPercentage",
+                "timestamp",
+                "acceptedCharacterCount",
+                "unmodifiedAcceptedCharacterCount"
+            ],
             "members": {
                 "sessionId": { "shape": "UUID" },
                 "requestId": { "shape": "UUID" },
                 "programmingLanguage": { "shape": "ProgrammingLanguage" },
                 "modificationPercentage": { "shape": "Double" },
                 "customizationArn": { "shape": "CustomizationArn" },
-                "timestamp": { "shape": "Timestamp" }
+                "timestamp": { "shape": "Timestamp" },
+                "acceptedCharacterCount": { "shape": "PrimitiveInteger" },
+                "unmodifiedAcceptedCharacterCount": { "shape": "PrimitiveInteger" },
+                "addedCharacterCount": { "shape": "UserModificationEventAddedCharacterCountInteger" },
+                "unmodifiedAddedCharacterCount": {
+                    "shape": "UserModificationEventUnmodifiedAddedCharacterCountInteger"
+                }
             }
+        },
+        "UserModificationEventAddedCharacterCountInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "UserModificationEventUnmodifiedAddedCharacterCountInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "UserSettings": {
+            "type": "structure",
+            "members": {
+                "hasConsentedToCrossRegionCalls": { "shape": "Boolean" }
+            },
+            "documentation": "<p>Settings information passed by the Q widget</p>"
         },
         "UserTriggerDecisionEvent": {
             "type": "structure",
@@ -2227,8 +4796,28 @@
                 "triggerToResponseLatencyMilliseconds": { "shape": "Double" },
                 "suggestionReferenceCount": { "shape": "PrimitiveInteger" },
                 "generatedLine": { "shape": "PrimitiveInteger" },
-                "numberOfRecommendations": { "shape": "PrimitiveInteger" }
+                "numberOfRecommendations": { "shape": "PrimitiveInteger" },
+                "perceivedLatencyMilliseconds": { "shape": "Double" },
+                "acceptedCharacterCount": { "shape": "PrimitiveInteger" },
+                "addedIdeDiagnostics": { "shape": "IdeDiagnosticList" },
+                "removedIdeDiagnostics": { "shape": "IdeDiagnosticList" },
+                "addedCharacterCount": { "shape": "UserTriggerDecisionEventAddedCharacterCountInteger" },
+                "deletedCharacterCount": { "shape": "UserTriggerDecisionEventDeletedCharacterCountInteger" },
+                "streakLength": { "shape": "UserTriggerDecisionEventStreakLengthInteger" },
+                "suggestionType": { "shape": "SuggestionType" }
             }
+        },
+        "UserTriggerDecisionEventAddedCharacterCountInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "UserTriggerDecisionEventDeletedCharacterCountInteger": {
+            "type": "integer",
+            "min": 0
+        },
+        "UserTriggerDecisionEventStreakLengthInteger": {
+            "type": "integer",
+            "min": -1
         },
         "ValidationException": {
             "type": "structure",
@@ -2243,7 +4832,54 @@
         "ValidationExceptionReason": {
             "type": "string",
             "documentation": "<p>Reason for ValidationException</p>",
-            "enum": ["INVALID_CONVERSATION_ID", "CONTENT_LENGTH_EXCEEDS_THRESHOLD"]
+            "enum": [
+                "INVALID_CONVERSATION_ID",
+                "CONTENT_LENGTH_EXCEEDS_THRESHOLD",
+                "INVALID_KMS_GRANT",
+                "INVALID_MODEL_ID"
+            ]
+        },
+        "WorkspaceContext": {
+            "type": "structure",
+            "required": ["toggle"],
+            "members": {
+                "toggle": { "shape": "OptInFeatureToggle" }
+            }
+        },
+        "WorkspaceContextUploadContext": {
+            "type": "structure",
+            "required": ["workspaceId", "relativePath", "programmingLanguage"],
+            "members": {
+                "workspaceId": { "shape": "UUID" },
+                "relativePath": { "shape": "SensitiveString" },
+                "programmingLanguage": { "shape": "ProgrammingLanguage" }
+            }
+        },
+        "WorkspaceFolderList": {
+            "type": "list",
+            "member": { "shape": "WorkspaceFolderListMemberString" },
+            "max": 100,
+            "min": 0
+        },
+        "WorkspaceFolderListMemberString": {
+            "type": "string",
+            "max": 4096,
+            "min": 1,
+            "sensitive": true
+        },
+        "WorkspaceList": {
+            "type": "list",
+            "member": { "shape": "WorkspaceMetadata" }
+        },
+        "WorkspaceMetadata": {
+            "type": "structure",
+            "required": ["workspaceId", "workspaceStatus"],
+            "members": {
+                "workspaceId": { "shape": "UUID" },
+                "workspaceStatus": { "shape": "WorkspaceStatus" },
+                "environmentAddress": { "shape": "SensitiveString" },
+                "environmentId": { "shape": "SensitiveString" }
+            }
         },
         "WorkspaceState": {
             "type": "structure",
@@ -2263,6 +4899,10 @@
                 }
             },
             "documentation": "<p>Represents a Workspace state uploaded to S3 for Async Code Actions</p>"
+        },
+        "WorkspaceStatus": {
+            "type": "string",
+            "enum": ["CREATED", "PENDING", "READY", "CONNECTED", "DELETING"]
         },
         "timeBetweenChunks": {
             "type": "list",

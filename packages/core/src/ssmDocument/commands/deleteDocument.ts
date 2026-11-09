@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger, Logger } from '../../shared/logger/logger'
 import { DocumentItemNodeWriteable } from '../explorer/documentItemNodeWriteable'
 import { RegistryItemNode } from '../explorer/registryItemNode'
 import { showConfirmationMessage } from '../util/util'
@@ -60,7 +60,7 @@ export async function deleteDocument(node: DocumentItemNodeWriteable) {
     } catch (err) {
         result = 'Failed'
         const error = err as Error
-        logger.error('Error on deleting document: %0', error)
+        logger.error('Error on deleting document: %O', error)
         void showViewLogsMessage(
             localize(
                 'AWS.message.error.ssmDocument.deleteDocument.could_not_delete',

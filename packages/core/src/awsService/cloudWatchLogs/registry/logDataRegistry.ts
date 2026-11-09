@@ -4,13 +4,13 @@
  */
 
 import * as vscode from 'vscode'
-import { CloudWatchLogs } from 'aws-sdk'
-import { CloudWatchLogsSettings, parseCloudWatchLogsUri, uriToKey, msgKey } from '../cloudWatchLogsUtils'
-import { DefaultCloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogsClient'
+import { CloudWatchLogsSettings, uriToKey, msgKey, cwlUriSchema } from '../cloudWatchLogsUtils'
+import { CloudWatchLogsClient } from '../../../shared/clients/cloudWatchLogs'
 import { waitTimeout } from '../../../shared/utilities/timeoutUtils'
 import { Messages } from '../../../shared/utilities/messages'
 import { pageableToCollection } from '../../../shared/utilities/collectionUtils'
 import { Settings } from '../../../shared/settings'
+import * as CloudWatchLogs from '@aws-sdk/client-cloudwatch-logs'
 // TODO: Add debug logging statements
 
 /** Uri as a string */
@@ -190,7 +190,7 @@ export class LogDataRegistry {
         if (this.isRegistered(uri)) {
             throw new Error(`Already registered: ${uri.toString()}`)
         }
-        const data = parseCloudWatchLogsUri(uri)
+        const data = cwlUriSchema.parse(uri)
         this.setLogData(uri, initLogData(data.logGroupInfo, data.parameters, retrieveLogsFunction))
     }
 
@@ -212,7 +212,7 @@ export async function filterLogEventsFromUri(
     nextToken?: string,
     completeTimeout = false
 ): Promise<CloudWatchLogsResponse> {
-    const client = new DefaultCloudWatchLogsClient(logGroupInfo.regionName)
+    const client = new CloudWatchLogsClient(logGroupInfo.regionName)
 
     const cwlParameters: CloudWatchLogs.FilterLogEventsRequest = {
         logGroupName: logGroupInfo.groupName,
@@ -281,6 +281,11 @@ export function initLogData(
     }
 }
 
+export type CloudWatchLogsArgs = {
+    logGroupInfo: CloudWatchLogsGroupInfo
+    parameters: CloudWatchLogsParameters
+}
+
 export type CloudWatchLogsGroupInfo = {
     groupName: string
     regionName: string
@@ -296,9 +301,9 @@ export type CloudWatchLogsParameters = {
 }
 
 export type CloudWatchLogsResponse = {
-    events: CloudWatchLogs.FilteredLogEvents
-    nextForwardToken?: CloudWatchLogs.NextToken
-    nextBackwardToken?: CloudWatchLogs.NextToken
+    events: CloudWatchLogs.FilteredLogEvent[]
+    nextForwardToken?: string
+    nextBackwardToken?: string
 }
 
 export type CloudWatchLogsAction = (
@@ -318,10 +323,10 @@ export class CloudWatchLogsData {
     logGroupInfo!: CloudWatchLogsGroupInfo
     retrieveLogsFunction!: CloudWatchLogsAction
     next?: {
-        token: CloudWatchLogs.NextToken
+        token: string
     }
     previous?: {
-        token: CloudWatchLogs.NextToken
+        token: string
     }
     busy: boolean = false
 }

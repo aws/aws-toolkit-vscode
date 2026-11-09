@@ -1,15 +1,44 @@
 {
     "types": [
         {
+            "name": "toolId",
+            "type": "string",
+            "description": "The tool being installed",
+            "allowedValues": [
+                "session-manager-plugin",
+                "dotnet-lambda-deploy",
+                "dotnet-deploy-cli",
+                "aws-cli",
+                "sam-cli",
+                "docker",
+                "finch",
+                "path-resolver"
+            ]
+        },
+        {
+            "name": "amazonQProfileRegion",
+            "type": "string",
+            "description": "Region of the Q Profile associated with a metric\n- \"n/a\" if metric is not associated with a profile or region.\n- \"not-set\" if metric is associated with a profile, but profile is unknown."
+        },
+        {
+            "name": "ssoRegion",
+            "type": "string",
+            "description": "Region of the current SSO connection. Typically associated with credentialStartUrl\n- \"n/a\" if metric is not associated with a region.\n- \"not-set\" if metric is associated with a region, but region is unknown."
+        },
+        {
+            "name": "profileCount",
+            "type": "int",
+            "description": "The number of profiles that were available to choose from"
+        },
+        {
             "name": "amazonGenerateApproachLatency",
             "type": "double",
             "description": "The time it takes to generate approach response"
         },
         {
-            "name": "ec2ConnectionType",
+            "name": "proxiedSessionId",
             "type": "string",
-            "allowedValues": ["remoteDesktop", "ssh", "scp", "ssm"],
-            "description": "Ec2 Connection Methods"
+            "description": "The sessionId of the extension instance that this instance is reporting on behalf of."
         },
         {
             "name": "documentFormat",
@@ -22,6 +51,11 @@
             "type": "string",
             "allowedValues": ["Create", "Update"],
             "description": "SSM Publish Document operation type"
+        },
+        {
+            "name": "isInvalidJson",
+            "type": "boolean",
+            "description": "Indicates whether the message contains an invalid JSON definition."
         },
         {
             "name": "starterTemplate",
@@ -44,130 +78,14 @@
             "description": "Installed CLI"
         },
         {
-            "name": "hasChatAuth",
-            "type": "boolean",
-            "description": "Whether the user has access to CodeWhisperer Chat"
-        },
-        {
-            "name": "numAttempts",
-            "type": "int",
-            "description": "Number of generations before the user accepted or rejected"
-        },
-        {
-            "name": "resourceType",
-            "type": "string",
-            "description": "CloudFormation resource type"
-        },
-        {
-            "name": "pathsScrubbed",
-            "type": "int",
-            "description": "Number of generation paths modified"
-        },
-        {
-            "name": "generateFailure",
-            "type": "string",
-            "allowedValues": ["Parse"],
-            "description": "Type of generation failure"
-        },
-        {
-            "name": "loadFileTime",
-            "type": "int",
-            "description": "Time from opening Composer to loading the file"
-        },
-        {
-            "name": "initializeTime",
-            "type": "int",
-            "description": "Time from opening Composer to Composer initialize"
-        },
-        {
-            "name": "saveFileTime",
-            "type": "int",
-            "description": "Time from opening Composer to saving the file"
-        },
-        {
-            "name": "fps",
-            "type": "int",
-            "description": "Average frames per second"
-        },
-        {
-            "name": "sourceResourceType",
-            "type": "string",
-            "description": "CloudFormation resource type of connection start"
-        },
-        {
-            "name": "destResourceType",
-            "type": "string",
-            "description": "CloudFormation resource type of connection end"
-        },
-        {
-            "name": "sourceFacetType",
-            "type": "string",
-            "description": "Resource subtype of connection start"
-        },
-        {
-            "name": "destFacetType",
-            "type": "string",
-            "description": "Resource subtype of connection end"
-        },
-        {
-            "name": "didSave",
-            "type": "boolean",
-            "description": "Whether the user saved"
-        },
-        {
-            "name": "resourceCounts",
-            "type": "string",
-            "description": "Per-resource count of each resource in an opened template"
-        },
-        {
-            "name": "totalResourceCount",
-            "type": "int",
-            "description": "Total count of resources in an opened template"
-        },
-        {
-            "name": "cwsprChatTriggerInteraction",
-            "type": "string",
-            "allowedValues": ["hotkeys", "click", "contextMenu"],
-            "description": "Identifies the specific interaction that opens the chat panel"
-        },
-        {
-            "name": "cwsprChatConversationId",
-            "type": "string",
-            "description": "Unique identifier for each conversation"
-        },
-        {
-            "name": "cwsprChatUserIntent",
-            "type": "string",
-            "allowedValues": [
-                "suggestAlternateImplementation",
-                "applyCommonBestPractices",
-                "improveCode",
-                "showExample",
-                "citeSources",
-                "explainLineByLine",
-                "explainCodeSelection"
-            ],
-            "description": "Explict user intent associated with a chat message"
-        },
-        {
-            "name": "cwsprChatHasCodeSnippet",
-            "type": "boolean",
-            "description": "true if user has selected code snippet, false otherwise."
-        },
-        {
-            "name": "cwsprChatHasProjectContext",
-            "type": "boolean",
-            "description": "true if query has project level context, false otherwise."
-        },
-        {
-            "name": "cwsprChatProjectContextQueryMs",
-            "type": "int",
-            "description": "Query latency in ms for local project context"
-        },
-        {
             "name": "amazonqIndexFileSizeInMB",
             "type": "int",
             "description": "The sum of file sizes that were indexed in MB"
+        },
+        {
+            "name": "amazonqVectorIndexEnabled",
+            "type": "boolean",
+            "description": "True if vector index is enabled"
         },
         {
             "name": "amazonqIndexFileCount",
@@ -183,103 +101,6 @@
             "name": "amazonqIndexCpuUsagePercentage",
             "type": "int",
             "description": "CPU used by LSP server as a percentage of all available CPUs on the system"
-        },
-        {
-            "name": "cwsprChatProgrammingLanguage",
-            "type": "string",
-            "description": "Programming language associated with the message"
-        },
-        {
-            "name": "cwsprChatConversationType",
-            "type": "string",
-            "allowedValues": ["Chat", "Assign", "Transform"],
-            "description": "Identifies the type of conversation"
-        },
-        {
-            "name": "cwsprChatMessageId",
-            "type": "string",
-            "description": "Unique identifier for each message in an conversation"
-        },
-        {
-            "name": "cwsprChatActiveEditorTotalCharacters",
-            "type": "int",
-            "description": "Total number of characters in the active editor"
-        },
-        {
-            "name": "cwsprChatActiveEditorImportCount",
-            "type": "int",
-            "description": "Number of import statements in the active editor"
-        },
-        {
-            "name": "cwsprChatResponseCodeSnippetCount",
-            "type": "int",
-            "description": "Number of code snippets in response"
-        },
-        {
-            "name": "cwsprChatResponseCode",
-            "type": "int",
-            "description": "HTTP response code for message API invocation"
-        },
-        {
-            "name": "cwsprChatResponseErrorReason",
-            "type": "string",
-            "description": "Client error reason when processing response stream"
-        },
-        {
-            "name": "cwsprChatSourceLinkCount",
-            "type": "int",
-            "description": "Number of links in response"
-        },
-        {
-            "name": "cwsprChatReferencesCount",
-            "type": "int",
-            "description": "Number of references in response"
-        },
-        {
-            "name": "cwsprChatFollowUpCount",
-            "type": "int",
-            "description": "Number of follow ups in response"
-        },
-        {
-            "name": "cwsprChatTimeToFirstChunk",
-            "type": "int",
-            "description": "Time taken in ms to get back the first chunk"
-        },
-        {
-            "name": "cwsprChatTimeBetweenChunks",
-            "type": "string",
-            "description": "Time (list of int) taken in ms between chunks"
-        },
-        {
-            "name": "cwsprChatFullResponseLatency",
-            "type": "int",
-            "description": "Time taken to get the full response in ms"
-        },
-        {
-            "name": "cwsprChatResponseLength",
-            "type": "int",
-            "description": "Number of characters in response"
-        },
-        {
-            "name": "cwsprChatRequestLength",
-            "type": "int",
-            "description": "Number of characters in request"
-        },
-        {
-            "name": "cwsprChatInteractionType",
-            "allowedValues": [
-                "insertAtCursor",
-                "copySnippet",
-                "copy",
-                "clickLink",
-                "clickFollowUp",
-                "hoverReference",
-                "upvote",
-                "downvote",
-                "clickBodyLink"
-            ],
-            "type": "string",
-            "description": "Indicates the specific interaction type with a message in a conversation"
         },
         {
             "name": "cwsprChatInteractionTarget",
@@ -333,14 +154,9 @@
             "description": "A JSON serialized string of user input details."
         },
         {
-            "name": "action",
-            "type": "string",
-            "description": "Name of an action that was taken, displayed, etc."
-        },
-        {
             "name": "authStatus",
             "type": "string",
-            "allowedValues": ["connected", "notConnected", "expired"],
+            "allowedValues": ["connected", "notConnected", "expired", "connectedWithNetworkError"],
             "description": "Status of the an auth connection."
         },
         {
@@ -359,18 +175,304 @@
             "description": "Comma-delimited list of scopes that user has."
         },
         {
+            "name": "authConsoleLoginStarted",
+            "type": "boolean",
+            "description": "Indicates the console login flow was initiated"
+        },
+        {
             "name": "awsRegion",
             "type": "string",
             "description": "An AWS region."
         },
         {
-            "name": "saveType",
+            "name": "connectionState",
             "type": "string",
-            "allowedValues": ["MANUAL_SAVE", "AUTO_SAVE"],
-            "description": "Type of save executed"
+            "description": "A detailed state of a specific auth connection. Use `authStatus` for a higher level view of an extension's general connection."
+        },
+        {
+            "name": "userCpuUsage",
+            "type": "int",
+            "description": "Percentage of user cpu usage (user space)"
+        },
+        {
+            "name": "systemCpuUsage",
+            "type": "int",
+            "description": "Percentage of system cpu usage (kernal space)"
+        },
+        {
+            "name": "heapTotal",
+            "type": "int",
+            "description": "Memory heap usage in MB"
+        },
+        {
+            "name": "className",
+            "type": "string",
+            "description": "The name of the class"
+        },
+        {
+            "name": "functionName",
+            "type": "string",
+            "description": "The name of the function"
+        },
+        {
+            "name": "webviewName",
+            "type": "string",
+            "description": "The name of the webview"
+        },
+        {
+            "name": "architecture",
+            "type": "string",
+            "description": "The CPU architecture"
+        },
+        {
+            "name": "timestamp",
+            "type": "int",
+            "description": "A timestamp in milliseconds"
+        },
+        {
+            "name": "traceId",
+            "type": "string",
+            "description": "The unique identifier of a trace"
+        },
+        {
+            "name": "amazonqChatMessageSentTime",
+            "type": "int",
+            "description": "Time when a user initial pressed enter in the chat"
+        },
+        {
+            "name": "amazonqEditorReceivedMessageMs",
+            "type": "int",
+            "description": "Duration between user pressing enter and the editor receiving the message in ms"
+        },
+        {
+            "name": "amazonqFeatureReceivedMessageMs",
+            "type": "int",
+            "description": "Duration between the editor receiving the message and the partner teams code receiving it in ms"
+        },
+        {
+            "name": "amazonqMessageDisplayedMs",
+            "type": "int",
+            "description": "Duration between the partner teams code receiving the message and when the message was finally displayed in ms"
+        },
+        {
+            "name": "executedCount",
+            "type": "int",
+            "description": "The number of executed operations"
+        },
+        {
+            "name": "amazonqAutoDebugCommandType",
+            "type": "string",
+            "allowedValues": ["fixWithQ", "fixAllWithQ", "explainProblem"],
+            "description": "The type of auto debug command executed"
+        },
+        {
+            "name": "amazonqAutoDebugAction",
+            "type": "string",
+            "allowedValues": ["invoked", "completed"],
+            "description": "The action performed (invoked or completed)"
+        },
+        {
+            "name": "amazonqAutoDebugProblemCount",
+            "type": "int",
+            "description": "Number of problems being processed"
+        },
+        {
+            "name": "smusDomainId",
+            "type": "string",
+            "description": "SMUS domain identifier"
+        },
+        {
+            "name": "smusProjectId",
+            "type": "string",
+            "description": "SMUS project identifier"
+        },
+        {
+            "name": "smusSpaceKey",
+            "type": "string",
+            "description": "SMUS space composite key consisting of domainId and spaceName"
+        },
+        {
+            "name": "smusToolkitEnv",
+            "type": "string",
+            "description": "The environment user is running SMUS extension against"
+        },
+        {
+            "name": "smusDomainRegion",
+            "type": "string",
+            "description": "The SMUS domain region"
+        },
+        {
+            "name": "smusProjectRegion",
+            "type": "string",
+            "description": "The SMUS project region"
+        },
+        {
+            "name": "smusConnectionId",
+            "type": "string",
+            "description": "SMUS connection identifier"
+        },
+        {
+            "name": "smusConnectionType",
+            "type": "string",
+            "description": "SMUS connection type"
+        },
+        {
+            "name": "smusDomainAccountId",
+            "type": "string",
+            "description": "SMUS domain account id"
+        },
+        {
+            "name": "smusProjectAccountId",
+            "type": "string",
+            "description": "SMUS project account id"
+        },
+        {
+            "name": "smusAuthMode",
+            "type": "string",
+            "allowedValues": ["sso", "iam"],
+            "description": "SMUS authentication mode (SSO or IAM)"
+        },
+        {
+            "name": "smusDomainMode",
+            "type": "string",
+            "allowedValues": ["idc", "iam"],
+            "description": "SMUS domain mode (IDC or IAM)"
+        },
+        {
+            "name": "smusIamCredMethod",
+            "type": "string",
+            "allowedValues": ["console", "manual", "editCredentials", "editConfig"],
+            "description": "The credential management method selected by the user in the SMUS IAM auth flow"
+        },
+        {
+            "name": "smusConsoleLoginResult",
+            "type": "boolean",
+            "description": "Whether the SMUS console login attempt via AWS CLI succeeded"
+        },
+        {
+            "name": "smusConsoleLoginFallback",
+            "type": "boolean",
+            "description": "Whether the user chose manual credential entry after console login failure"
+        },
+        {
+            "name": "smusAcceptAgentContextAction",
+            "type": "string",
+            "allowedValues": ["accepted", "declined", "dismissed"],
+            "description": "Whether the user accepted, declined or dismissed the smus context prompt to add to AGENTS.md"
         }
     ],
     "metrics": [
+        {
+            "name": "sagemaker_openRemoteConnection",
+            "description": "Perform a connection to a SageMaker Space",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "sagemaker_stopSpace",
+            "description": "Stop a SageMaker Space",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "sagemaker_filterSpaces",
+            "description": "Filter SageMaker Spaces",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "sagemaker_deeplinkConnect",
+            "description": "Connect to SageMake Space via a deeplink",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "hyperpod_openRemoteConnection",
+            "description": "Perform a connection to a Hyperpod Space",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "hyperpod_stopSpace",
+            "description": "Stop a HyperPod Space",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "hyperpod_filterSpaces",
+            "description": "Filter HyperPod Spaces",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "hyperpod_deeplinkConnect",
+            "description": "Connect to HyperPod Space via a deeplink",
+            "metadata": [
+                {
+                    "type": "result"
+                }
+            ]
+        },
+        {
+            "name": "amazonq_didSelectProfile",
+            "description": "Emitted after the user's Q Profile has been set, whether the user was prompted with a dialog, or a profile was automatically assigned after signing in.",
+            "metadata": [
+                { "type": "source" },
+                { "type": "amazonQProfileRegion" },
+                { "type": "result" },
+                { "type": "ssoRegion", "required": false },
+                { "type": "credentialStartUrl", "required": false },
+                { "type": "profileCount", "required": false }
+            ],
+            "passive": true
+        },
+        {
+            "name": "amazonq_profileState",
+            "description": "Indicates a change in the user's Q Profile state",
+            "metadata": [
+                { "type": "source" },
+                { "type": "amazonQProfileRegion" },
+                { "type": "result" },
+                { "type": "ssoRegion", "required": false },
+                { "type": "credentialStartUrl", "required": false }
+            ],
+            "passive": true
+        },
+        {
+            "name": "ide_fileSystem",
+            "description": "File System event on execution",
+            "metadata": [
+                {
+                    "type": "action",
+                    "required": true
+                },
+                {
+                    "type": "attempts",
+                    "required": false
+                }
+            ]
+        },
         {
             "name": "vscode_executeCommand",
             "description": "Emitted whenever a registered Toolkit command is executed",
@@ -520,6 +622,47 @@
             "description": ""
         },
         {
+            "name": "stepfunctions_openWorkflowStudio",
+            "description": "Called after opening asl file in Step Functions Workflow Studio",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "stepfunctions_closeWorkflowStudio",
+            "description": "Called after closing Step Functions Workflow Studio custom editor",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "stepfunctions_saveFile",
+            "description": "Triggered when Workflow Studio auto-syncs to the local file or when unsaved local changes are saved from Workflow Studio or VSCode.",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                },
+                {
+                    "type": "saveType",
+                    "required": true
+                },
+                {
+                    "type": "source",
+                    "required": true
+                },
+                {
+                    "type": "isInvalidJson"
+                }
+            ]
+        },
+        {
             "name": "vscode_activeRegions",
             "description": "Record the number of active regions at startup and when regions are added/removed",
             "unit": "Count",
@@ -622,88 +765,6 @@
             "description": "Called after opening the SAM Config UI"
         },
         {
-            "name": "appcomposer_openTemplate",
-            "description": "Called after opening a template",
-            "metadata": [{ "type": "hasChatAuth" }]
-        },
-        {
-            "name": "appcomposer_deployClicked",
-            "description": "Called after clicking the Sync button"
-        },
-        {
-            "name": "appcomposer_deployCompleted",
-            "description": "Called after a Composer-triggered SAM Sync completes"
-        },
-        {
-            "name": "appcomposer_generateClicked",
-            "description": "Called after generating a standard resource template partial",
-            "metadata": [{ "type": "resourceType" }]
-        },
-        {
-            "name": "appcomposer_regenerateClicked",
-            "description": "Called after regenerating a standard resource template partial",
-            "metadata": [{ "type": "resourceType" }]
-        },
-        {
-            "name": "appcomposer_generateAccepted",
-            "description": "Called after accepting a generative AI suggestion",
-            "metadata": [{ "type": "resourceType" }, { "type": "numAttempts" }]
-        },
-        {
-            "name": "appcomposer_generateRejected",
-            "description": "Called after rejecting a generative AI suggestion",
-            "metadata": [{ "type": "resourceType" }, { "type": "numAttempts" }]
-        },
-        {
-            "name": "appcomposer_invalidGeneration",
-            "description": "Called after a generate failed",
-            "metadata": [{ "type": "resourceType" }, { "type": "generateFailure" }]
-        },
-        {
-            "name": "appcomposer_postProcess",
-            "description": "Called after a generate is processed",
-            "metadata": [{ "type": "resourceType" }, { "type": "pathsScrubbed" }]
-        },
-        {
-            "name": "appcomposer_customerReady",
-            "description": "Called after a customer loads into Composeer",
-            "metadata": [{ "type": "loadFileTime" }, { "type": "initializeTime" }, { "type": "saveFileTime" }]
-        },
-        {
-            "name": "appcomposer_fps",
-            "description": "Called regularly to record app performance",
-            "metadata": [{ "type": "fps" }]
-        },
-        {
-            "name": "appcomposer_addResource",
-            "description": "Called when a resource is added to the canvas",
-            "metadata": [{ "type": "resourceType" }]
-        },
-        {
-            "name": "appcomposer_addConnection",
-            "description": "Called when two resources are connected",
-            "metadata": [
-                { "type": "sourceResourceType" },
-                { "type": "sourceFacetType" },
-                { "type": "destResourceType" },
-                { "type": "destFacetType" }
-            ]
-        },
-        {
-            "name": "appcomposer_openWfs",
-            "description": "Called when Step Functions Workflow Studio is opened"
-        },
-        {
-            "name": "appcomposer_closeWfs",
-            "description": "Called when Step Functions Workflow Studio is closed",
-            "metadata": [{ "type": "didSave" }]
-        },
-        {
-            "name": "appcomposer_initializeProject",
-            "description": "Called when a project successfully loads",
-            "metadata": [{ "type": "resourceCounts" }, { "type": "totalResourceCount" }]
-        },
-        {
             "name": "amazonq_openChat",
             "description": "When user opens CWSPR chat panel"
         },
@@ -785,187 +846,9 @@
                 {
                     "type": "credentialStartUrl",
                     "required": false
-                }
-            ]
-        },
-        {
-            "name": "amazonq_addMessage",
-            "description": "When a message is added to the conversation",
-            "metadata": [
-                {
-                    "type": "cwsprChatConversationId"
                 },
                 {
-                    "type": "credentialStartUrl",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatMessageId"
-                },
-                {
-                    "type": "cwsprChatTriggerInteraction"
-                },
-                {
-                    "type": "cwsprChatUserIntent",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatHasCodeSnippet",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatProgrammingLanguage",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatActiveEditorTotalCharacters",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatActiveEditorImportCount",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatResponseCodeSnippetCount",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatResponseCode"
-                },
-                {
-                    "type": "cwsprChatSourceLinkCount",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatReferencesCount",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatFollowUpCount",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatTimeToFirstChunk"
-                },
-                {
-                    "type": "cwsprChatTimeBetweenChunks"
-                },
-                {
-                    "type": "cwsprChatFullResponseLatency"
-                },
-                {
-                    "type": "cwsprChatRequestLength"
-                },
-                {
-                    "type": "cwsprChatResponseLength",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatConversationType"
-                },
-                {
-                    "type": "cwsprChatHasProjectContext",
-                    "required": false
-                },
-                {
-                    "type": "codewhispererCustomizationArn",
-                    "required": false
-                }
-            ]
-        },
-        {
-            "name": "amazonq_messageResponseError",
-            "description": "When an error has occured in response to a prompt",
-            "metadata": [
-                {
-                    "type": "cwsprChatConversationId",
-                    "required": false
-                },
-                {
-                    "type": "credentialStartUrl",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatTriggerInteraction"
-                },
-                {
-                    "type": "cwsprChatUserIntent",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatHasCodeSnippet",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatProgrammingLanguage",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatActiveEditorTotalCharacters",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatActiveEditorImportCount",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatResponseCode"
-                },
-                {
-                    "type": "cwsprChatRequestLength"
-                },
-                {
-                    "type": "cwsprChatConversationType"
-                },
-                {
-                    "type": "cwsprChatResponseErrorReason",
-                    "required": false
-                }
-            ]
-        },
-        {
-            "name": "amazonq_interactWithMessage",
-            "description": "When a user interacts with a message in the conversation",
-            "metadata": [
-                {
-                    "type": "cwsprChatConversationId"
-                },
-                {
-                    "type": "credentialStartUrl",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatMessageId"
-                },
-                {
-                    "type": "cwsprChatInteractionType"
-                },
-                {
-                    "type": "cwsprChatInteractionTarget",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatAcceptedCharactersLength",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatAcceptedNumberOfLines",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatHasReference",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatCodeBlockIndex",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatTotalCodeBlocks",
-                    "required": false
-                },
-                {
-                    "type": "cwsprChatHasProjectContext",
+                    "type": "amazonqVectorIndexEnabled",
                     "required": false
                 }
             ]
@@ -1037,7 +920,9 @@
             "description": "User clicked on the thumbs up button to say that they are unsatisfied",
             "unit": "Count",
             "metadata": [
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -1049,7 +934,9 @@
             "description": "User clicked on the thumbs down button to say that they are unsatisfied",
             "unit": "Count",
             "metadata": [
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -1061,7 +948,9 @@
             "description": "User clicked on the thumbs up button, to mention that they are satisfied",
             "unit": "Count",
             "metadata": [
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -1073,7 +962,9 @@
             "description": "User clicked on the thumbs down button to say that they are unsatisfied",
             "unit": "Count",
             "metadata": [
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -1085,21 +976,26 @@
             "description": "User reviewed changes",
             "passive": true,
             "metadata": [
-                { "type": "enabled" },
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "enabled"
+                },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
                 }
             ]
         },
-
         {
             "name": "amazonq_startChat",
             "description": "Number of times the user have triggered /dev and started the chat",
             "unit": "Count",
             "metadata": [
-                { "type": "amazonqConversationId" },
+                {
+                    "type": "amazonqConversationId"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -1110,8 +1006,13 @@
             "name": "amazonq_endChat",
             "description": "Captures end of the conversation with amazonq /dev",
             "metadata": [
-                { "type": "amazonqConversationId" },
-                { "type": "amazonqEndOfTheConversationLatency", "required": false },
+                {
+                    "type": "amazonqConversationId"
+                },
+                {
+                    "type": "amazonqEndOfTheConversationLatency",
+                    "required": false
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -1122,9 +1023,15 @@
             "name": "amazonq_approachInvoke",
             "description": "Captures Approach generation process",
             "metadata": [
-                { "type": "amazonqConversationId" },
-                { "type": "amazonqGenerateApproachIteration" },
-                { "type": "amazonqGenerateApproachLatency" },
+                {
+                    "type": "amazonqConversationId"
+                },
+                {
+                    "type": "amazonqGenerateApproachIteration"
+                },
+                {
+                    "type": "amazonqGenerateApproachLatency"
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -1135,7 +1042,10 @@
             "name": "amazonq_startConversationInvoke",
             "description": "Captures startConversation invocation process",
             "metadata": [
-                { "type": "amazonqConversationId", "required": false },
+                {
+                    "type": "amazonqConversationId",
+                    "required": false
+                },
                 {
                     "type": "credentialStartUrl",
                     "required": false
@@ -1143,68 +1053,22 @@
             ]
         },
         {
-            "name": "amazonq_createUpload",
-            "description": "Captures createUploadUrl invocation process",
+            "name": "ide_editCodeFile",
+            "description": "User opened a code file with the given file extension. Client should DEDUPLICATE this metric (ideally hourly/daily). AWS-specific files should (also) emit `file_editAwsFile`.",
+            "passive": true,
             "metadata": [
-                { "type": "amazonqConversationId" },
-                { "type": "amazonqRepositorySize", "required": false },
                 {
-                    "type": "credentialStartUrl",
+                    "type": "filenameExt",
                     "required": false
                 }
             ]
         },
         {
-            "name": "codewhisperer_codePercentage",
-            "description": "Percentage of user tokens against suggestions until 5 mins of time",
+            "name": "auth_modifyConnection",
+            "description": "An auth connection was modified in some way, e.g. deleted, updated",
             "metadata": [
                 {
-                    "type": "codewhispererAcceptedTokens"
-                },
-                {
-                    "type": "codewhispererLanguage"
-                },
-                {
-                    "type": "codewhispererPercentage"
-                },
-                {
-                    "type": "codewhispererTotalTokens"
-                },
-                {
-                    "type": "codewhispererUserInputDetails",
-                    "required": false
-                },
-                {
-                    "type": "codewhispererUserGroup"
-                },
-                {
-                    "type": "reason",
-                    "required": false
-                },
-                {
-                    "type": "successCount"
-                },
-                {
-                    "type": "codewhispererCustomizationArn",
-                    "required": false
-                },
-                {
-                    "type": "credentialStartUrl",
-                    "required": false
-                }
-            ],
-            "passive": true
-        },
-        {
-            "name": "auth_userState",
-            "description": "The state of the user's authentication.",
-            "metadata": [
-                {
-                    "type": "source",
-                    "required": true
-                },
-                {
-                    "type": "authStatus",
+                    "type": "action",
                     "required": true
                 },
                 {
@@ -1212,8 +1076,36 @@
                     "required": false
                 },
                 {
-                    "type": "authEnabledConnections",
+                    "type": "authStatus",
+                    "required": false
+                },
+                {
+                    "type": "connectionState",
+                    "required": false
+                },
+                {
+                    "type": "credentialStartUrl",
+                    "required": false
+                },
+                {
+                    "type": "sessionDuration",
+                    "required": false
+                },
+                {
+                    "type": "source",
                     "required": true
+                },
+                {
+                    "type": "ssoRegistrationClientId",
+                    "required": false
+                },
+                {
+                    "type": "ssoRegistrationExpiresAt",
+                    "required": false
+                },
+                {
+                    "type": "id",
+                    "required": false
                 }
             ],
             "passive": true
@@ -1221,166 +1113,848 @@
         {
             "name": "auth_signInPageOpened",
             "description": "When the Amazon Q sign in page is opened and focused.",
-            "metadata": [],
-            "passive": true
-        },
-        {
-            "name": "auth_signInPageClosed",
-            "description": "When the Amazon Q sign in page is closed.",
-            "metadata": [],
-            "passive": true
-        },
-        {
-            "name": "toolkit_invokeAction",
-            "description": "A user invoked an action. Source represents the notification that produced the action",
             "metadata": [
-                {
-                    "type": "result",
-                    "required": true
-                },
-                {
-                    "type": "id",
-                    "required": true
-                },
                 {
                     "type": "source",
                     "required": true
-                },
+                }
+            ],
+            "passive": true
+        },
+        {
+            "name": "function_call",
+            "description": "Represents a function call. In most cases this should wrap code with a run(), then you can add context.",
+            "metadata": [
                 {
-                    "type": "component",
+                    "type": "functionName",
                     "required": true
                 },
                 {
-                    "type": "action",
-                    "required": true
-                },
-                {
-                    "type": "reason",
+                    "type": "className",
                     "required": false
+                },
+                {
+                    "type": "source",
+                    "required": false
+                }
+            ],
+            "passive": true
+        },
+        {
+            "name": "webview_error",
+            "description": "Represents an error that occurs in a webview",
+            "metadata": [
+                {
+                    "type": "webviewName",
+                    "required": true
                 }
             ]
         },
         {
-            "name": "aws_loginWithBrowser",
-            "description": "Called when a connection requires login using the browser",
+            "name": "trace_event",
+            "description": "Represents the root trace spanning multiple operations",
+            "passive": true,
             "metadata": [
                 {
-                    "type": "credentialSourceId",
-                    "required": false
+                    "type": "traceId",
+                    "required": true
                 },
                 {
-                    "type": "credentialStartUrl",
-                    "required": false
+                    "type": "name",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "amazonq_chatRoundTrip",
+            "description": "Measures sequential response times in Q chat, from user input to message display. Tracks time intervals between key events: editor receiving the message, feature processing, and final message rendering",
+            "passive": true,
+            "metadata": [
+                {
+                    "type": "amazonqChatMessageSentTime"
                 },
                 {
-                    "type": "credentialType",
-                    "required": false
+                    "type": "amazonqEditorReceivedMessageMs"
                 },
                 {
-                    "type": "isReAuth",
-                    "required": false
+                    "type": "amazonqFeatureReceivedMessageMs"
+                },
+                {
+                    "type": "amazonqMessageDisplayedMs"
                 },
                 {
                     "type": "source"
-                },
-                {
-                    "type": "result"
                 }
             ]
         },
         {
-            "name": "auth_addConnection",
-            "description": "Captures the result of adding a new connection in the 'Add New Connection' workflow",
+            "name": "session_start",
+            "description": "Called when starting the plugin",
             "metadata": [
                 {
-                    "type": "credentialSourceId",
+                    "type": "source",
+                    "required": false
+                }
+            ],
+            "passive": true
+        },
+        {
+            "name": "session_end",
+            "description": "Called when stopping the IDE on a best effort basis",
+            "metadata": [
+                {
+                    "type": "proxiedSessionId",
+                    "required": false
+                },
+                {
+                    "type": "timestamp",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "languageServer_crash",
+            "description": "Called when a language server crash is detected. TODO: Port this to common",
+            "metadata": [
+                {
+                    "type": "id"
+                }
+            ]
+        },
+        {
+            "name": "ide_heartbeat",
+            "description": "A heartbeat sent by the extension",
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                },
+                {
+                    "type": "name",
+                    "required": false
+                },
+                {
+                    "type": "timestamp",
+                    "required": false
+                }
+            ],
+            "passive": true
+        },
+        {
+            "name": "docdb_listClusters",
+            "description": "Called when DocumentDB node is expanded"
+        },
+        {
+            "name": "docdb_listInstances",
+            "description": "Called when a DocumentDB cluster node is expanded"
+        },
+        {
+            "name": "docdb_createCluster",
+            "description": "Captures the result of adding a new cluster in the 'Add Cluster' workflow"
+        },
+        {
+            "name": "docdb_createInstance",
+            "description": "Captures the result of adding an instance to a cluster"
+        },
+        {
+            "name": "docdb_deleteCluster",
+            "description": "Captures the result of deleting a cluster"
+        },
+        {
+            "name": "docdb_deleteInstance",
+            "description": "Captures the result of deleting an instance"
+        },
+        {
+            "name": "docdb_renameCluster",
+            "description": "Captures the result of renaming a cluster"
+        },
+        {
+            "name": "docdb_renameInstance",
+            "description": "Captures the result of renaming an instance"
+        },
+        {
+            "name": "docdb_resizeInstance",
+            "description": "Captures the result of changing an instance class"
+        },
+        {
+            "name": "docdb_rebootInstance",
+            "description": "Captures the result of rebooting an instance"
+        },
+        {
+            "name": "docdb_stopCluster",
+            "description": "Captures the result of stopping a cluster"
+        },
+        {
+            "name": "docdb_startCluster",
+            "description": "Captures the result of starting a cluster"
+        },
+        {
+            "name": "docdb_listTags",
+            "description": "User clicked on tags command"
+        },
+        {
+            "name": "docdb_addTag",
+            "description": "User clicked on add tag command"
+        },
+        {
+            "name": "docdb_removeTag",
+            "description": "User clicked on remove tag command"
+        },
+        {
+            "name": "docdb_addRegion",
+            "description": "User clicked on add region command"
+        },
+        {
+            "name": "appbuilder_lambda2sam",
+            "description": "User click Convert a lambda function to SAM project"
+        },
+        {
+            "name": "auth_customEndpoint",
+            "description": "User used a custom endpoint"
+        },
+        {
+            "name": "auth_localstackEndpoint",
+            "description": "User used a LocalStack connection"
+        },
+        {
+            "name": "aws_consoleLoginCLISuccess",
+            "description": "Emitted when AWS CLI 'aws login' command completes successfully with exit code 0"
+        },
+        {
+            "name": "auth_consoleLoginCommand",
+            "description": "Tracks the complete console login flow, including profile creation and activation",
+            "metadata": [
+                {
+                    "type": "authConsoleLoginStarted",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "lambda_remoteDebugStop",
+            "description": "user stop remote debugging",
+            "metadata": [
+                {
+                    "type": "sessionDuration",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "lambda_remoteDebugStart",
+            "description": "user start remote debugging",
+            "metadata": [
+                {
+                    "type": "runtimeString",
+                    "required": false
+                },
+                {
+                    "type": "source",
+                    "required": false
+                },
+                {
+                    "type": "action",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "lambda_remoteDebugPrecheck",
+            "description": "user click remote debug checkbox",
+            "metadata": [
+                {
+                    "type": "runtimeString",
+                    "required": false
+                },
+                {
+                    "type": "source",
+                    "required": false
+                },
+                {
+                    "type": "action",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "lambda_invokeRemote",
+            "description": "Called when invoking lambdas remotely",
+            "metadata": [
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "runtime",
+                    "required": false
+                },
+                {
+                    "type": "source",
+                    "required": false
+                },
+                {
+                    "type": "runtimeString",
+                    "required": false
+                },
+                {
+                    "type": "action",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "languageServer_setup",
+            "description": "Sets up a language server",
+            "unit": "Milliseconds",
+            "passive": true,
+            "metadata": [
+                {
+                    "type": "id",
+                    "required": true
+                },
+                {
+                    "type": "languageServerSetupStage",
+                    "required": true
+                },
+                {
+                    "type": "languageServerLocation",
+                    "required": false
+                },
+                {
+                    "type": "languageServerVersion",
+                    "required": false
+                },
+                {
+                    "type": "manifestLocation",
+                    "required": false
+                },
+                {
+                    "type": "manifestSchemaVersion",
                     "required": false
                 },
                 {
                     "type": "credentialStartUrl",
                     "required": false
+                }
+            ]
+        },
+        {
+            "name": "amazonq_autoDebugCommand",
+            "description": "Tracks usage of Amazon Q auto debug commands (fixWithQ, fixAllWithQ, explainProblem)",
+            "metadata": [
+                {
+                    "type": "amazonqAutoDebugCommandType",
+                    "required": true
                 },
                 {
-                    "type": "awsRegion",
+                    "type": "amazonqAutoDebugAction",
+                    "required": true
+                },
+                {
+                    "type": "amazonqAutoDebugProblemCount",
                     "required": false
                 },
                 {
-                    "type": "isReAuth",
-                    "required": false
-                },
-                {
-                    "type": "authEnabledFeatures",
-                    "required": false
-                },
-                {
-                    "type": "authScopes",
-                    "required": false
+                    "type": "result"
                 },
                 {
                     "type": "reason",
                     "required": false
                 },
                 {
-                    "type": "result",
+                    "type": "reasonDesc",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_login",
+            "description": "Emitted whenever a user signin to SMUS",
+            "metadata": [
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainMode",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_signOut",
+            "description": "Emitted whenever a user signouts SMUS",
+            "metadata": [
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainMode",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_accessProject",
+            "description": "Emitted whenever a user accesses a SMUS project",
+            "metadata": [
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainMode",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_renderProjectChildrenNode",
+            "description": "Emitted whenever children node of project is rendered",
+            "metadata": [
+                {
+                    "type": "smusToolkitEnv",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainMode",
+                    "required": false
+                }
+            ],
+            "passive": true
+        },
+        {
+            "name": "smus_openRemoteConnection",
+            "description": "Emitted whenever a user starts a SMUS space",
+            "metadata": [
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectId",
+                    "required": false
+                },
+                {
+                    "type": "smusSpaceKey",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainMode",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_stopSpace",
+            "description": "Emitted whenever a user stop a SMUS space",
+            "metadata": [
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectId",
+                    "required": false
+                },
+                {
+                    "type": "smusSpaceKey",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainMode",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_renderS3Node",
+            "description": "Emitted whenever rendering a s3 node",
+            "metadata": [
+                {
+                    "type": "smusToolkitEnv",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusConnectionId",
+                    "required": false
+                },
+                {
+                    "type": "smusConnectionType",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainMode",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_renderRedshiftNode",
+            "description": "Emitted whenever rendering a Redshift node",
+            "metadata": [
+                {
+                    "type": "smusToolkitEnv",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusConnectionId",
+                    "required": false
+                },
+                {
+                    "type": "smusConnectionType",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainMode",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_renderLakehouseNode",
+            "description": "Emitted whenever rendering a Lakehouse node",
+            "metadata": [
+                {
+                    "type": "smusToolkitEnv",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusConnectionId",
+                    "required": false
+                },
+                {
+                    "type": "smusConnectionType",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainMode",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_deeplinkConnect",
+            "description": "Emitted when a user connects to a SMUS space via deeplink",
+            "metadata": [
+                {
+                    "type": "result"
+                },
+                {
+                    "type": "reason",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusSpaceKey",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainMode",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_agentContextShowPrompt",
+            "description": "Emitted whenever user is shown a prompt to add SMUS context to their AGENTS.md",
+            "metadata": [
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusSpaceKey",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainMode",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_agentContextUserChoice",
+            "description": "Emitted whenever user makes a choice on adding SMUS context to their AGENTS.md",
+            "metadata": [
+                {
+                    "type": "smusDomainId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectAccountId",
+                    "required": false
+                },
+                {
+                    "type": "smusProjectRegion",
+                    "required": false
+                },
+                {
+                    "type": "smusSpaceKey",
+                    "required": false
+                },
+                {
+                    "type": "smusAuthMode",
+                    "required": false
+                },
+                {
+                    "type": "smusDomainMode",
+                    "required": false
+                },
+                {
+                    "type": "smusAcceptAgentContextAction",
+                    "required": false
+                }
+            ]
+        },
+        {
+            "name": "smus_iamCredentialMethod",
+            "description": "Emitted when a user selects a credential management method in the SMUS IAM auth flow",
+            "metadata": [
+                {
+                    "type": "smusIamCredMethod",
+                    "required": true
+                }
+            ]
+        },
+        {
+            "name": "smus_consoleLoginResult",
+            "description": "Emitted after an SMUS console login attempt completes",
+            "metadata": [
+                {
+                    "type": "smusConsoleLoginResult",
                     "required": true
                 },
                 {
-                    "type": "source",
-                    "required": true
-                }
-            ]
-        },
-        {
-            "name": "threatComposer_created",
-            "description": "Called after a new threat composer file is created using command pallet or New File option",
-            "metadata": [
-                {
-                    "type": "id",
-                    "required": true
-                }
-            ]
-        },
-        {
-            "name": "threatComposer_opened",
-            "description": "Called after opening a threat composer file",
-            "metadata": [
-                {
-                    "type": "id",
-                    "required": true
-                }
-            ]
-        },
-        {
-            "name": "threatComposer_fileSaved",
-            "description": "Called after a threat composer file has been saved",
-            "metadata": [
-                {
-                    "type": "id",
-                    "required": true
-                },
-                {
-                    "type": "saveType",
-                    "required": true
-                }
-            ]
-        },
-        {
-            "name": "threatComposer_closed",
-            "description": "Called after closing a threat composer file",
-            "metadata": [
-                {
-                    "type": "id",
-                    "required": true
-                }
-            ]
-        },
-        {
-            "name": "threatComposer_error",
-            "description": "Called after an error is thrown from the threat composer view",
-            "metadata": [
-                {
-                    "type": "id",
-                    "required": true
+                    "type": "smusConsoleLoginFallback",
+                    "required": false
                 }
             ]
         }

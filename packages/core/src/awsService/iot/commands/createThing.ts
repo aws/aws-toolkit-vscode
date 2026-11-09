@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { showViewLogsMessage } from '../../../shared/utilities/messages'
 import { IotThingFolderNode } from '../explorer/iotThingFolderNode'
@@ -43,7 +43,7 @@ export async function createThingCommand(node: IotThingFolderNode): Promise<void
         void showViewLogsMessage(localize('AWS.iot.createThing.error', 'Failed to create Thing: {0}', thingName))
     }
 
-    //Refresh the Things Folder node
+    // Refresh the Things Folder node
     await node.refreshNode()
 }
 

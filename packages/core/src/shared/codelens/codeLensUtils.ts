@@ -8,7 +8,7 @@ import { RuntimeFamily } from '../../lambda/models/samLambdaRuntime'
 import * as CloudFormation from '../cloudformation/cloudformation'
 import { getResourcesForHandler } from '../fs/templateRegistry'
 import { LambdaHandlerCandidate } from '../lambdaHandlerSearch'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { API_TARGET_TYPE, CODE_TARGET_TYPE, TEMPLATE_TARGET_TYPE } from '../sam/debugger/awsSamDebugConfiguration'
 import {
     addSamDebugConfiguration,
@@ -230,7 +230,7 @@ export async function pickAddSamDebugConfiguration(
 
     const templateItemsMap = new Map<string, AddSamDebugConfigurationInput>()
     const templateItems: vscode.QuickPickItem[] = []
-    templateConfigs.forEach((templateConfig) => {
+    for (const templateConfig of templateConfigs) {
         const label = `${
             getWorkspaceRelativePath(templateConfig.rootUri.fsPath)?.relativePath ?? templateConfig.rootUri.fsPath
         }:${templateConfig.resourceName}`
@@ -246,7 +246,7 @@ export async function pickAddSamDebugConfiguration(
             templateItems.push({ label: label })
             templateItemsMap.set(label, templateConfig)
         }
-    })
+    }
 
     const noTemplate = localize('AWS.pickDebugConfig.noTemplate', 'No Template')
     const picker = createQuickPick<vscode.QuickPickItem>({

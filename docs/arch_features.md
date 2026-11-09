@@ -39,6 +39,16 @@ For connecting a new VSCode _terminal_, remote connect works like this:
 1. Toolkit [builds a session-manager-plugin command](https://github.com/aws/aws-toolkit-vscode/blob/c77fc076fd0ed837d077bc0318716b711a2854c8/packages/core/src/ecs/util.ts#L92-L104) and [passes it to a new VSCode Terminal](https://github.com/aws/aws-toolkit-vscode/blob/c77fc076fd0ed837d077bc0318716b711a2854c8/packages/core/src/ecs/commands.ts#L141-L147).
 1. VSCode displays the terminal, so the user can enter shell commands on the remote machine.
 
+For EC2 specifically, there are a few additional steps:
+
+1. Remote window connections are only supported for EC2 instances running a linux based OS such as Amazon Linux or Ubuntu. However, the terminal option is supported by all OS, and will open a Powershell-based terminal for Windows instances.
+1. If connecting to EC2 instance via remote window, the toolkit generates temporary SSH keys (30 second lifetime), with the public key sent to the remote instance.
+    - Key type is ed25519 if supported, or RSA otherwise.
+    - Lines in `.ssh/authorized_keys` marked with the comment `#AWSToolkitForVSCode` will be removed by AWS Toolkit.
+    - Assumes `.sss/authorized_keys` can be found under `/home/ec2-user/` on Amazon Linux and `/home/ubuntu/` on Ubuntu.
+1. If insufficient permissions are detected on the attached IAM role, toolkit will prompt to add an inline policy with the necessary actions.
+1. If SSM sessions remain open after closing the window/terminal, the toolkit will terminate them on-shutdown, or when starting another session to the same instance.
+
 ### Implementation of remote connect
 
 These modules show how to use and extend the "remote connect" functionality:

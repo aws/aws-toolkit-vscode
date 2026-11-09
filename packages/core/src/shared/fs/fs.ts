@@ -2,15 +2,28 @@
  * Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
  * SPDX-License-Identifier: Apache-2.0
  */
-import * as vscode from 'vscode'
+import vscode from 'vscode'
 import os from 'os'
-import { promises as nodefs, constants as nodeConstants, WriteFileOptions } from 'fs'
-import { isCloud9 } from '../extensionUtilities'
+import { promises as nodefs, constants as nodeConstants, WriteFileOptions } from 'fs' // eslint-disable-line no-restricted-imports
+import { chmod } from 'fs/promises'
 import _path from 'path'
-import { PermissionsError, PermissionsTriplet, ToolkitError, isFileNotFoundError, isPermissionsError } from '../errors'
-import globals from '../extensionGlobals'
+import {
+    PermissionsError,
+    PermissionsTriplet,
+    ToolkitError,
+    getTelemetryReasonDesc,
+    isFileNotFoundError,
+    isPermissionsError,
+    scrubNames,
+} from '../errors'
+import globals, { isWeb } from '../extensionGlobals'
 import { isWin } from '../vscode/env'
 import { resolvePath } from '../utilities/pathUtils'
+import crypto from 'crypto'
+import { waitUntil } from '../utilities/timeoutUtils'
+import { telemetry } from '../telemetry/telemetry'
+import { getLogger } from '../logger/logger'
+import { toUri } from '../utilities/uriUtils'
 
 const vfs = vscode.workspace.fs
 type Uri = vscode.Uri
@@ -76,37 +89,33 @@ export class FileSystem {
 
     /** Creates the directory as well as missing parent directories. */
     async mkdir(path: Uri | string): Promise<void> {
-        const uri = this.#toUri(path)
+        const uri = toUri(path)
         const errHandler = createPermissionsErrorHandler(this.isWeb, vscode.Uri.joinPath(uri, '..'), '*wx')
-
-        // Certain URIs are not supported with vscode.workspace.fs in Cloud9
-        // so revert to using `fs` which works.
-        if (isCloud9()) {
-            return nodefs
-                .mkdir(uri.fsPath, { recursive: true })
-                .then(() => {})
-                .catch(errHandler)
-        }
 
         return vfs.createDirectory(uri).then(undefined, errHandler)
     }
 
-    // TODO: rename to readFileBytes()?
-    async readFile(path: Uri | string): Promise<Uint8Array> {
-        const uri = this.#toUri(path)
+    /**
+     * Read file into byte array.
+     * @param path uri or path to file.
+     * @returns byte content of file.
+     */
+    async readFileBytes(path: Uri | string): Promise<Uint8Array> {
+        const uri = toUri(path)
         const errHandler = createPermissionsErrorHandler(this.isWeb, uri, 'r**')
-
-        if (isCloud9()) {
-            return await nodefs.readFile(uri.fsPath).catch(errHandler)
-        }
 
         return vfs.readFile(uri).then(undefined, errHandler)
     }
 
-    // TODO: rename to readFile()?
-    async readFileAsString(path: Uri | string, decoder: TextDecoder = FileSystem.#decoder): Promise<string> {
-        const uri = this.#toUri(path)
-        const bytes = await this.readFile(uri)
+    /**
+     * Read file and convert the resulting bytes to a string.
+     * @param path uri or path to file.
+     * @param decoder decoder to be used, defaults to UTF-8
+     * @returns string of decoded text.
+     */
+    async readFileText(path: Uri | string, decoder: TextDecoder = FileSystem.#decoder): Promise<string> {
+        const uri = toUri(path)
+        const bytes = await this.readFileBytes(uri)
         return decoder.decode(bytes)
     }
 
@@ -115,9 +124,11 @@ export class FileSystem {
      * so we must do it ourselves (this implementation is inefficient).
      */
     async appendFile(path: Uri | string, content: Uint8Array | string): Promise<void> {
-        path = this.#toUri(path)
+        path = toUri(path)
 
-        const currentContent: Uint8Array = (await this.existsFile(path)) ? await this.readFile(path) : new Uint8Array(0)
+        const currentContent: Uint8Array = (await this.existsFile(path))
+            ? await this.readFileBytes(path)
+            : new Uint8Array(0)
         const currentLength = currentContent.length
 
         const newContent = this.#toBytes(content)
@@ -129,33 +140,22 @@ export class FileSystem {
 
         return this.writeFile(path, finalContent)
     }
-
+    /**
+     * Checks if file or folder exists.
+     * @param path path to check.
+     * @param fileType optional assert that path contains certain filetype.
+     * @returns if path exists and matches filetype.
+     */
     async exists(path: Uri | string, fileType?: vscode.FileType): Promise<boolean> {
         if (path === undefined || path === '') {
             return false
         }
-        const uri = this.#toUri(path)
+        const uri = toUri(path)
         if (uri.fsPath === undefined || uri.fsPath === '') {
             return false
         }
         // Note: comparison is bitwise (&) because `FileType` enum is bitwise.
         const anyKind = fileType === undefined || fileType & vscode.FileType.Unknown
-
-        if (isCloud9()) {
-            // vscode.workspace.fs.stat() is SLOW. Avoid it on Cloud9.
-            try {
-                const stat = await nodefs.stat(uri.fsPath)
-                if (anyKind) {
-                    return true
-                } else if (fileType & vscode.FileType.Directory) {
-                    return stat.isDirectory()
-                } else if (fileType & vscode.FileType.File) {
-                    return stat.isFile()
-                }
-            } catch {
-                return false
-            }
-        }
 
         const r = await this.stat(uri).then(
             (r) => r,
@@ -182,32 +182,173 @@ export class FileSystem {
      *
      * @param path File location
      * @param data File content
-     * @param opt File permissions/flags. Only works in a non-web (nodejs) context. If provided,
+     * @param opts File permissions/flags. Only works in a non-web (nodejs) context. If provided,
      * nodejs filesystem interface is used instead of routing through vscode VFS.
+     * @param opts.atomic If true, ensures content is not corrupted from a concurrent write.
+     *                    This is not truly atomic as an async write can override the final result,
+     *                    but if the content is structured like JSON it will still be parseable.
+     *
+     *                    Eg: we were seeing a JSON file with an unexpected extra '}' and when parsing it
+     *                    failed. We suspected a race condition from separate write, and all we wanted was
+     *                    a parseable JSON.
+     *
+     *                    This optional has an uncalcuated performance impact as there is an additional
+     *                    rename() operation.
      */
-    async writeFile(path: Uri | string, data: string | Uint8Array, opt?: WriteFileOptions): Promise<void> {
-        const uri = this.#toUri(path)
+    async writeFile(
+        path: Uri | string,
+        data: string | Uint8Array,
+        opts?: WriteFileOptions & { atomic?: boolean }
+    ): Promise<void> {
+        const uri = toUri(path)
         const errHandler = createPermissionsErrorHandler(this.isWeb, uri, '*w*')
         const content = this.#toBytes(data)
-        // - Special case: if `opt` is given, use nodejs directly. This isn't ideal, but is the only
-        //   way (unless you know better) we can let callers specify permissions.
-        // - Cloud9 vscode.workspace.writeFile has limited functionality, e.g. cannot write outside
-        //   of open workspace.
-        const useNodejs = (opt && !this.isWeb) || isCloud9()
 
-        if (useNodejs) {
-            return nodefs.writeFile(uri.fsPath, content, opt).catch(errHandler)
+        if (this.isWeb) {
+            return vfs.writeFile(uri, content).then(undefined, errHandler)
         }
 
-        return vfs.writeFile(uri, content).then(undefined, errHandler)
+        // Node writeFile is the only way to set `writeOpts`, such as the `mode`, on a file .
+        // When not in web we will use Node's writeFile() for all other scenarios.
+        // It also has better error messages than VS Code's writeFile().
+        const write = (u: Uri) => nodefs.writeFile(u.fsPath, content, opts).then(undefined, errHandler)
+
+        // Node writeFile does NOT create parent folders by default, unlike VS Code FS writeFile()
+        await fs.mkdir(_path.dirname(uri.fsPath))
+
+        if (opts?.atomic) {
+            // Background: As part of an "atomic write" we write to a temp file, then rename
+            // to the target file. The problem was that each `rename()` implementation doesn't always
+            // work. The solution is to try each implementation and then fallback to a regular write if none of them work.
+            // 1. Atomic write with VSC rename(), but may throw `FileNotFound` errors
+            //    - Looks to be this error from what we see in telemetry: https://github.com/microsoft/vscode/blob/09d5f4efc5089ce2fc5c8f6aeb51d728d7f4e758/src/vs/platform/files/common/fileService.ts#L1029-L1030
+            // 2. Atomic write with Node rename(), but may throw `EPERM` errors on Windows
+            //    - This is explained in https://github.com/aws/aws-toolkit-vscode/pull/5335
+            //    - Step 1 is supposed to address the EPERM issue
+            // 3. Finally, do a regular file write, but may result in invalid file content
+            //
+            // For telemetry, we will only report failures as to not overload with succeed events.
+            const tempFile = toUri(`${uri.fsPath}.${crypto.randomBytes(8).toString('hex')}.tmp`)
+            try {
+                await write(tempFile)
+                await fs.rename(tempFile, uri)
+                return
+            } catch (e) {
+                telemetry.ide_fileSystem.emit({
+                    action: 'writeFile',
+                    result: 'Failed',
+                    reason: 'writeFileAtomicVscRename',
+                    reasonDesc: getTelemetryReasonDesc(e),
+                })
+                getLogger().warn(`writeFile atomic VSC failed for, ${uri.fsPath}, with %O`, e)
+                // Atomic write with VSC rename() failed, so try with Node rename()
+                try {
+                    await write(tempFile)
+                    await nodefs.rename(tempFile.fsPath, uri.fsPath)
+                    return
+                } catch (e) {
+                    telemetry.ide_fileSystem.emit({
+                        action: 'writeFile',
+                        result: 'Failed',
+                        reason: 'writeFileAtomicNodeRename',
+                        reasonDesc: getTelemetryReasonDesc(e),
+                    })
+                    getLogger().warn(`writeFile atomic Node failed for, ${uri.fsPath}, with %O`, e)
+                    // The atomic rename techniques were not successful, so we will
+                    // just resort to regular a non-atomic write
+                }
+            } finally {
+                // clean up temp file since it possibly remains
+                if (await fs.exists(tempFile)) {
+                    await fs.delete(tempFile)
+                }
+            }
+        }
+
+        await write(uri)
     }
+
+    /**
+     * Rename (move) a file or folder.
+     * @param oldPath
+     * @param newPath
+     * @returns
+     */
+    async rename(oldPath: vscode.Uri | string, newPath: vscode.Uri | string) {
+        const oldUri = toUri(oldPath)
+        const newUri = toUri(newPath)
+        const errHandler = createPermissionsErrorHandler(this.isWeb, oldUri, 'rw*')
+
+        /**
+         * We were seeing 'FileNotFound' errors during renames, even though we did a `writeFile()` right before the rename.
+         * The error looks to be from here: https://github.com/microsoft/vscode/blob/09d5f4efc5089ce2fc5c8f6aeb51d728d7f4e758/src/vs/platform/files/node/diskFileSystemProvider.ts#L747
+         * So a guess is that the exists()(stat() under the hood) call needs to be retried since there may be a race condition.
+         */
+        let attempts = 0
+        const isExists = await waitUntil(async () => {
+            const result = await fs.exists(oldUri)
+            attempts += 1
+            return result
+        }, FileSystem.renameTimeoutOpts)
+        // TODO: Move the `ide_fileSystem` or some variation of this metric in to common telemetry
+        // TODO: Deduplicate the `ide_fileSystem` call. Maybe have a method that all operations pass through which wraps the call in telemetry.
+        //       Then look to report telemetry failure events.
+        const scrubbedPath = scrubNames(oldUri.fsPath)
+        if (!isExists) {
+            // source path never existed after multiple attempts.
+            // Either the file never existed, or had we waited longer it would have. We won't know.
+            telemetry.ide_fileSystem.emit({
+                result: 'Failed',
+                action: 'rename',
+                reason: 'SourceNotExists',
+                reasonDesc: `After ${FileSystem.renameTimeoutOpts.timeout}ms the source path did not exist: ${scrubbedPath}`,
+            })
+        } else if (attempts > 1) {
+            // Indicates that rename() would have failed if we had not waited for it to exist.
+            telemetry.ide_fileSystem.emit({
+                result: 'Succeeded',
+                action: 'rename',
+                reason: 'RenameRaceCondition',
+                reasonDesc: `After multiple attempts the source path existed: ${scrubbedPath}`,
+                attempts: attempts,
+            })
+        }
+
+        return vfs.rename(oldUri, newUri, { overwrite: true }).then(undefined, errHandler)
+    }
+
+    /**
+     * It looks like scenario of a failed rename is rare,
+     * so we can afford to have a longer timeout and interval.
+     *
+     * These values are an arbitrary guess to how long it takes
+     * for a newly created file to be visible on the filesystem.
+     */
+    static readonly renameTimeoutOpts = {
+        timeout: 10_000,
+        interval: 300,
+    } as const
 
     /**
      * The stat of the file,  throws if the file does not exist or on any other error.
      */
     async stat(uri: vscode.Uri | string): Promise<vscode.FileStat> {
-        const path = this.#toUri(uri)
+        const path = toUri(uri)
         return await vfs.stat(path)
+    }
+
+    /**
+     * Change permissions on file. Note that this will do nothing on browser.
+     * @param uri file whose permissions should be set.
+     * @param mode new permissions in octal notation.
+     * More info: https://nodejs.org/api/fs.html#fspromiseschmodpath-mode
+     * Examples: https://www.geeksforgeeks.org/node-js-fspromises-chmod-method/
+     */
+    async chmod(uri: vscode.Uri | string, mode: number): Promise<void> {
+        if (!this.isWeb) {
+            const path = toUri(uri)
+            await chmod(path.fsPath, mode)
+        }
     }
 
     /**
@@ -224,15 +365,9 @@ export class FileSystem {
     async delete(fileOrDir: string | vscode.Uri, opt_?: { recursive?: boolean; force?: boolean }): Promise<void> {
         const opt = { ...opt_, recursive: !!opt_?.recursive }
         opt.force = opt.force === false ? opt.force : !!(opt.force || opt.recursive)
-        const uri = this.#toUri(fileOrDir)
+        const uri = toUri(fileOrDir)
         const parent = vscode.Uri.joinPath(uri, '..')
         const errHandler = createPermissionsErrorHandler(this.isWeb, parent, '*wx')
-
-        if (isCloud9()) {
-            // Cloud9 does not support vscode.workspace.fs.delete.
-            opt.force = !!opt.recursive
-            return nodefs.rm(uri.fsPath, opt).catch(errHandler)
-        }
 
         if (opt.recursive) {
             // Error messages may be misleading if using the `recursive` option.
@@ -281,22 +416,18 @@ export class FileSystem {
     }
 
     async readdir(uri: vscode.Uri | string): Promise<[string, vscode.FileType][]> {
-        const path = this.#toUri(uri)
-
-        // readdir is not a supported vscode API in Cloud9
-        if (isCloud9()) {
-            return (await nodefs.readdir(path.fsPath, { withFileTypes: true })).map((e) => [
-                e.name,
-                e.isDirectory() ? vscode.FileType.Directory : vscode.FileType.File,
-            ])
-        }
-
-        return await vfs.readDirectory(path)
+        return await vfs.readDirectory(toUri(uri))
     }
 
+    /**
+     * Copy target file or directory
+     * @param source
+     * @param target
+     * @returns
+     */
     async copy(source: vscode.Uri | string, target: vscode.Uri | string): Promise<void> {
-        const sourcePath = this.#toUri(source)
-        const targetPath = this.#toUri(target)
+        const sourcePath = toUri(source)
+        const targetPath = toUri(target)
         return await vfs.copy(sourcePath, targetPath, { overwrite: true })
     }
 
@@ -308,7 +439,7 @@ export class FileSystem {
     async checkPerms(file: string | vscode.Uri, perms: PermissionsTriplet): Promise<void> {
         // TODO: implement checkExactPerms() by checking the file mode.
         // public static async checkExactPerms(file: string | vscode.Uri, perms: `${PermissionsTriplet}${PermissionsTriplet}${PermissionsTriplet}`)
-        const uri = this.#toUri(file)
+        const uri = toUri(file)
         const errHandler = createPermissionsErrorHandler(this.isWeb, uri, perms)
         const flags = Array.from(perms) as (keyof typeof this.modeMap)[]
         const mode = flags.reduce((m, f) => m | this.modeMap[f], nodeConstants.F_OK)
@@ -413,6 +544,43 @@ export class FileSystem {
     }
 
     /**
+     * Gets the application cache folder for the current platform
+     *
+     * Follows the cache_dir convention outlined in https://crates.io/crates/dirs
+     */
+    getCacheDir(): string {
+        if (isWeb()) {
+            const homeDir = this.#homeDir
+            if (!homeDir) {
+                throw new ToolkitError('Web home directory not found', {
+                    code: 'WebHomeDirectoryNotFound',
+                })
+            }
+            return homeDir
+        }
+        switch (process.platform) {
+            case 'darwin': {
+                return _path.join(this.getUserHomeDir(), 'Library/Caches')
+            }
+            case 'win32': {
+                const localAppData = process.env.LOCALAPPDATA
+                if (!localAppData) {
+                    throw new ToolkitError('LOCALAPPDATA environment variable not set', {
+                        code: 'LocalAppDataNotFound',
+                    })
+                }
+                return localAppData
+            }
+            case 'linux': {
+                return _path.join(this.getUserHomeDir(), '.cache')
+            }
+            default: {
+                throw new Error(`Unsupported platform: ${process.platform}. Expected 'darwin', 'win32', 'linux'.`)
+            }
+        }
+    }
+
+    /**
      * Gets the (cached) username for this session, or "webuser" in web-mode, or "unknown-user" if
      * a username could not be resolved.
      *
@@ -472,7 +640,7 @@ export class FileSystem {
             return fallback
         }
     }
-
+    // Defaults to UTF-8 encoding/decoding.
     static readonly #decoder = new TextDecoder()
     static readonly #encoder = new TextEncoder()
 
@@ -486,19 +654,6 @@ export class FileSystem {
             return FileSystem.stringToArray(data)
         }
         return data
-    }
-
-    /**
-     * Retrieve the Uri of the file.
-     *
-     * @param path The file path for which to retrieve metadata.
-     * @return The Uri about the file.
-     */
-    #toUri(path: string | vscode.Uri): vscode.Uri {
-        if (path instanceof vscode.Uri) {
-            return path
-        }
-        return vscode.Uri.file(path)
     }
 
     private get modeMap() {

@@ -1,5 +1,11 @@
 // smithy-typescript generated code
 import {
+  HttpAuthSchemeInputConfig,
+  HttpAuthSchemeResolvedConfig,
+  defaultCodeWhispererStreamingHttpAuthSchemeParametersProvider,
+  resolveHttpAuthSchemeConfig,
+} from "./auth/httpAuthSchemeProvider";
+import {
   ExportResultArchiveCommandInput,
   ExportResultArchiveCommandOutput,
 } from "./commands/ExportResultArchiveCommand";
@@ -11,6 +17,10 @@ import {
   GenerateTaskAssistPlanCommandInput,
   GenerateTaskAssistPlanCommandOutput,
 } from "./commands/GenerateTaskAssistPlanCommand";
+import {
+  SendMessageCommandInput,
+  SendMessageCommandOutput,
+} from "./commands/SendMessageCommand";
 import { getRuntimeConfig as __getRuntimeConfig } from "./runtimeConfig";
 import {
   RuntimeExtension,
@@ -26,12 +36,6 @@ import {
 import { getLoggerPlugin } from "@aws-sdk/middleware-logger";
 import { getRecursionDetectionPlugin } from "@aws-sdk/middleware-recursion-detection";
 import {
-  TokenInputConfig,
-  TokenResolvedConfig,
-  getTokenPlugin,
-  resolveTokenConfig,
-} from "@aws-sdk/middleware-token";
-import {
   UserAgentInputConfig,
   UserAgentResolvedConfig,
   getUserAgentPlugin,
@@ -46,6 +50,11 @@ import {
   resolveRegionConfig,
 } from "@smithy/config-resolver";
 import {
+  DefaultIdentityProviderConfig,
+  getHttpAuthSchemePlugin,
+  getHttpSigningPlugin,
+} from "@smithy/core";
+import {
   EventStreamSerdeInputConfig,
   EventStreamSerdeResolvedConfig,
   resolveEventStreamSerdeConfig,
@@ -57,7 +66,7 @@ import {
   getRetryPlugin,
   resolveRetryConfig,
 } from "@smithy/middleware-retry";
-import { HttpHandler as __HttpHandler } from "@smithy/protocol-http";
+import { HttpHandlerUserInput as __HttpHandlerUserInput } from "@smithy/protocol-http";
 import {
   Client as __Client,
   DefaultsMode as __DefaultsMode,
@@ -69,12 +78,10 @@ import {
   RegionInfoProvider,
   BodyLengthCalculator as __BodyLengthCalculator,
   CheckOptionalClientConfig as __CheckOptionalClientConfig,
-  Checksum as __Checksum,
   ChecksumConstructor as __ChecksumConstructor,
   Decoder as __Decoder,
   Encoder as __Encoder,
   EventStreamSerdeProvider as __EventStreamSerdeProvider,
-  Hash as __Hash,
   HashConstructor as __HashConstructor,
   HttpHandlerOptions as __HttpHandlerOptions,
   Logger as __Logger,
@@ -92,7 +99,8 @@ export { __Client }
 export type ServiceInputTypes =
   | ExportResultArchiveCommandInput
   | GenerateAssistantResponseCommandInput
-  | GenerateTaskAssistPlanCommandInput;
+  | GenerateTaskAssistPlanCommandInput
+  | SendMessageCommandInput;
 
 /**
  * @public
@@ -100,17 +108,18 @@ export type ServiceInputTypes =
 export type ServiceOutputTypes =
   | ExportResultArchiveCommandOutput
   | GenerateAssistantResponseCommandOutput
-  | GenerateTaskAssistPlanCommandOutput;
+  | GenerateTaskAssistPlanCommandOutput
+  | SendMessageCommandOutput;
 
 /**
  * @public
  */
 export interface ClientDefaults
-  extends Partial<__SmithyResolvedConfiguration<__HttpHandlerOptions>> {
+  extends Partial<__SmithyConfiguration<__HttpHandlerOptions>> {
   /**
-   * The HTTP handler to use. Fetch in browser and Https in Nodejs.
+   * The HTTP handler to use or its constructor options. Fetch in browser and Https in Nodejs.
    */
-  requestHandler?: __HttpHandler;
+  requestHandler?: __HttpHandlerUserInput;
 
   /**
    * A constructor for a class implementing the {@link @smithy/types#ChecksumConstructor} interface
@@ -190,6 +199,30 @@ export interface ClientDefaults
   useFipsEndpoint?: boolean | __Provider<boolean>;
 
   /**
+   * The AWS region to which this client will send requests
+   */
+  region?: string | __Provider<string>;
+
+  /**
+   * Setting a client profile is similar to setting a value for the
+   * AWS_PROFILE environment variable. Setting a profile on a client
+   * in code only affects the single client instance, unlike AWS_PROFILE.
+   *
+   * When set, and only for environments where an AWS configuration
+   * file exists, fields configurable by this file will be retrieved
+   * from the specified profile within that file.
+   * Conflicting code configuration and environment variables will
+   * still have higher priority.
+   *
+   * For client credential resolution that involves checking the AWS
+   * configuration file, the client's profile (this value) will be
+   * used unless a different profile is set in the credential
+   * provider options.
+   *
+   */
+  profile?: string;
+
+  /**
    * Fetch related hostname, signing name or signing region with given region.
    * @internal
    */
@@ -240,13 +273,13 @@ export interface ClientDefaults
  */
 export type CodeWhispererStreamingClientConfigType = Partial<__SmithyConfiguration<__HttpHandlerOptions>>
   & ClientDefaults
-  & RegionInputConfig
-  & EndpointsInputConfig
-  & RetryInputConfig
-  & HostHeaderInputConfig
-  & TokenInputConfig
   & UserAgentInputConfig
+  & RetryInputConfig
+  & RegionInputConfig
+  & HostHeaderInputConfig
+  & EndpointsInputConfig
   & EventStreamSerdeInputConfig
+  & HttpAuthSchemeInputConfig
 /**
  * @public
  *
@@ -260,13 +293,13 @@ export interface CodeWhispererStreamingClientConfig extends CodeWhispererStreami
 export type CodeWhispererStreamingClientResolvedConfigType = __SmithyResolvedConfiguration<__HttpHandlerOptions>
   & Required<ClientDefaults>
   & RuntimeExtensionsConfig
-  & RegionResolvedConfig
-  & EndpointsResolvedConfig
-  & RetryResolvedConfig
-  & HostHeaderResolvedConfig
-  & TokenResolvedConfig
   & UserAgentResolvedConfig
+  & RetryResolvedConfig
+  & RegionResolvedConfig
+  & HostHeaderResolvedConfig
+  & EndpointsResolvedConfig
   & EventStreamSerdeResolvedConfig
+  & HttpAuthSchemeResolvedConfig
 /**
  * @public
  *
@@ -290,23 +323,35 @@ export class CodeWhispererStreamingClient extends __Client<
 
   constructor(...[configuration]: __CheckOptionalClientConfig<CodeWhispererStreamingClientConfig>) {
     let _config_0 = __getRuntimeConfig(configuration || {});
-    let _config_1 = resolveRegionConfig(_config_0);
-    let _config_2 = resolveEndpointsConfig(_config_1);
-    let _config_3 = resolveRetryConfig(_config_2);
+    let _config_1 = resolveUserAgentConfig(_config_0);
+    let _config_2 = resolveRetryConfig(_config_1);
+    let _config_3 = resolveRegionConfig(_config_2);
     let _config_4 = resolveHostHeaderConfig(_config_3);
-    let _config_5 = resolveTokenConfig(_config_4);
-    let _config_6 = resolveUserAgentConfig(_config_5);
-    let _config_7 = resolveEventStreamSerdeConfig(_config_6);
+    let _config_5 = resolveEndpointsConfig(_config_4);
+    let _config_6 = resolveEventStreamSerdeConfig(_config_5);
+    let _config_7 = resolveHttpAuthSchemeConfig(_config_6);
     let _config_8 = resolveRuntimeExtensions(_config_7, configuration?.extensions || []);
     super(_config_8);
     this.config = _config_8;
-    this.middlewareStack.use(getRetryPlugin(this.config));
-    this.middlewareStack.use(getContentLengthPlugin(this.config));
-    this.middlewareStack.use(getHostHeaderPlugin(this.config));
-    this.middlewareStack.use(getLoggerPlugin(this.config));
-    this.middlewareStack.use(getRecursionDetectionPlugin(this.config));
-    this.middlewareStack.use(getTokenPlugin(this.config));
-    this.middlewareStack.use(getUserAgentPlugin(this.config));
+    this.middlewareStack.use(getUserAgentPlugin(this.config
+    ));
+    this.middlewareStack.use(getRetryPlugin(this.config
+    ));
+    this.middlewareStack.use(getContentLengthPlugin(this.config
+    ));
+    this.middlewareStack.use(getHostHeaderPlugin(this.config
+    ));
+    this.middlewareStack.use(getLoggerPlugin(this.config
+    ));
+    this.middlewareStack.use(getRecursionDetectionPlugin(this.config
+    ));
+    this.middlewareStack.use(getHttpAuthSchemePlugin(this.config
+      , {
+        httpAuthSchemeParametersProvider: defaultCodeWhispererStreamingHttpAuthSchemeParametersProvider,identityProviderConfigProvider: async (config: CodeWhispererStreamingClientResolvedConfig) => new DefaultIdentityProviderConfig({
+          "smithy.api#httpBearerAuth": config.token,}), }
+    ));
+    this.middlewareStack.use(getHttpSigningPlugin(this.config
+    ));
   }
 
   /**

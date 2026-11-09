@@ -6,120 +6,16 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Extension Tests",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--disable-extensions",
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/test/index",
-                "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
-            ],
-            "env": {
-                "DEVELOPMENT_PATH": "${workspaceFolder}",
-                "AWS_TOOLKIT_AUTOMATION": "local"
-            },
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "build"
-        },
-        {
-            "name": "Extension Tests (current file)",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--disable-extensions",
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/test/index.js",
-                "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
-            ],
-            "env": {
-                "TEST_FILE": "${relativeFile}",
-                "DEVELOPMENT_PATH": "${workspaceFolder}",
-                "AWS_TOOLKIT_AUTOMATION": "local"
-            },
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "build"
-        },
-        {
-            "name": "Extension Tests (web)",
-            "type": "extensionHost",
-            "debugWebWorkerHost": true,
-            "request": "launch",
-            "args": [
-                "--disable-extension=amazonwebservices.aws-toolkit-vscode",
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionDevelopmentKind=web",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/testWeb/testRunnerWebCore",
-                "${workspaceRoot}/dist/src/testFixtures/workspaceFolder"
-            ],
-            "outFiles": ["${workspaceFolder}/dist/src/**/*.js"],
-            "preLaunchTask": "testsBuildWatch"
-        },
-        {
-            "name": "Integration Tests",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--disable-extension=amazonwebservices.aws-toolkit-vscode",
-                "${workspaceFolder}/dist/src/testFixtures/workspaceFolder",
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/testInteg/index.js"
-            ],
-            "env": {
-                "DEVELOPMENT_PATH": "${workspaceFolder}",
-                "AWS_TOOLKIT_AUTOMATION": "local"
-            },
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "build"
-        },
-        {
-            "name": "Integration Tests (current file)",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--disable-extension=amazonwebservices.aws-toolkit-vscode",
-                "${workspaceFolder}/dist/src/testFixtures/workspaceFolder",
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/testInteg/index.js"
-            ],
-            "env": {
-                "TEST_FILE": "${relativeFile}",
-                "DEVELOPMENT_PATH": "${workspaceFolder}",
-                "AWS_TOOLKIT_AUTOMATION": "local"
-            },
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "build"
-        },
-        {
-            "name": "E2E Test (current file)",
-            "type": "extensionHost",
-            "request": "launch",
-            "runtimeExecutable": "${execPath}",
-            "args": [
-                "--disable-extension=amazonwebservices.aws-toolkit-vscode",
-                "${workspaceFolder}/dist/src/testFixtures/workspaceFolder",
-                "--extensionDevelopmentPath=${workspaceFolder}",
-                "--extensionTestsPath=${workspaceFolder}/dist/src/testE2E/index.js"
-            ],
-            "env": {
-                "TEST_FILE": "${relativeFile}",
-                "DEVELOPMENT_PATH": "${workspaceFolder}",
-                "AWS_TOOLKIT_AUTOMATION": "local"
-            },
-            "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "build"
-        },
-        {
             "name": "Test Lint",
             "type": "node",
             "request": "launch",
             "program": "${workspaceFolder}/scripts/lint/testLint.ts",
             "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-            "preLaunchTask": "build"
+            "preLaunchTask": "build",
+            "presentation": {
+                "group": "7_TestLint",
+                "order": 1
+            }
         }
         // ---- We do not need the following currently, and we want to reduce clutter. Re-enable if necessary ----
         // {

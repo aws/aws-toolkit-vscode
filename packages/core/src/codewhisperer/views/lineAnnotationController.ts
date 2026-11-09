@@ -9,18 +9,13 @@ import { LineSelection, LinesChangeEvent } from '../tracker/lineTracker'
 import { isTextEditor } from '../../shared/utilities/editorUtilities'
 import { cancellableDebounce } from '../../shared/utilities/functionUtils'
 import { subscribeOnce } from '../../shared/utilities/vsCodeUtils'
-import { RecommendationService } from '../service/recommendationService'
-import { set } from '../util/commonUtil'
-import { AnnotationChangeSource, autoTriggerEnabledKey, inlinehintKey } from '../models/constants'
+import { AnnotationChangeSource, inlinehintKey } from '../models/constants'
 import globals from '../../shared/extensionGlobals'
 import { Container } from '../service/serviceContainer'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { getLogger } from '../../shared/logger/logger'
-import { Commands } from '../../shared/vscode/commands2'
-import { session } from '../util/codeWhispererSession'
-import { RecommendationHandler } from '../service/recommendationHandler'
 import { runtimeLanguageContext } from '../util/runtimeLanguageContext'
-import { setContext } from '../../shared'
+import { setContext } from '../../shared/vscode/setContext'
 
 const case3TimeWindow = 30000 // 30 seconds
 
@@ -38,6 +33,8 @@ function fromId(id: string | undefined): AnnotationState | undefined {
             return new TryMoreExState()
         case EndState.id:
             return new EndState()
+        case InlineChatState.id:
+            return new InlineChatState()
         default:
             return undefined
     }
@@ -46,6 +43,7 @@ function fromId(id: string | undefined): AnnotationState | undefined {
 interface AnnotationState {
     id: string
     suppressWhileRunning: boolean
+    decorationRenderOptions?: vscode.ThemableDecorationAttachmentRenderOptions
 
     text: () => string
     updateState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState | undefined
@@ -72,13 +70,7 @@ export class AutotriggerState implements AnnotationState {
     static acceptedCount = 0
 
     updateState(changeSource: AnnotationChangeSource, force: boolean): AnnotationState | undefined {
-        if (AutotriggerState.acceptedCount < RecommendationService.instance.acceptedSuggestionCount) {
-            return new ManualtriggerState()
-        } else if (session.recommendations.length > 0 && RecommendationHandler.instance.isSuggestionVisible()) {
-            return new PressTabState()
-        } else {
-            return this
-        }
+        return undefined
     }
 
     isNextState(state: AnnotationState | undefined): boolean {
@@ -199,6 +191,25 @@ export class EndState implements AnnotationState {
     }
 }
 
+export class InlineChatState implements AnnotationState {
+    static id = 'amazonq_annotation_inline_chat'
+    id = InlineChatState.id
+    suppressWhileRunning = false
+
+    text = () => {
+        if (os.platform() === 'darwin') {
+            return 'Amazon Q: Edit \u2318I'
+        }
+        return 'Amazon Q: Edit (Ctrl+I)'
+    }
+    updateState(_changeSource: AnnotationChangeSource, _force: boolean): AnnotationState {
+        return this
+    }
+    isNextState(_state: AnnotationState | undefined): boolean {
+        return false
+    }
+}
+
 /**
  * There are
  * - existing users
@@ -206,8 +217,8 @@ export class EndState implements AnnotationState {
  *   -- new users who has not seen tutorial
  *   -- new users who has seen tutorial
  *
- * "existing users" should have the context key "autoTriggerEnabledKey"
- * "new users who has seen tutorial" should have the context key "inlineKey" and "autoTriggerEnabledKey"
+ * "existing users" should have the context key "CODEWHISPERER_AUTO_TRIGGER_ENABLED"
+ * "new users who has seen tutorial" should have the context key "inlineKey" and "CODEWHISPERER_AUTO_TRIGGER_ENABLED"
  * the remaining grouop of users should belong to "new users who has not seen tutorial"
  */
 export class LineAnnotationController implements vscode.Disposable {
@@ -228,8 +239,8 @@ export class LineAnnotationController implements vscode.Disposable {
         })
 
     constructor(private readonly container: Container) {
-        const cachedState = fromId(globals.context.globalState.get<string>(inlinehintKey))
-        const cachedAutotriggerEnabled = globals.context.globalState.get<boolean>(autoTriggerEnabledKey)
+        const cachedState = fromId(globals.globalState.get<string>(inlinehintKey))
+        const cachedAutotriggerEnabled = globals.globalState.get<boolean>('CODEWHISPERER_AUTO_TRIGGER_ENABLED')
 
         // new users (has or has not seen tutorial)
         if (cachedAutotriggerEnabled === undefined || cachedState !== undefined) {
@@ -246,26 +257,6 @@ export class LineAnnotationController implements vscode.Disposable {
             subscribeOnce(this.container.lineTracker.onReady)(async (_) => {
                 await this.onReady()
             }),
-            RecommendationService.instance.suggestionActionEvent(async (e) => {
-                if (!this._isReady) {
-                    return
-                }
-
-                if (this._currentState instanceof ManualtriggerState) {
-                    if (e.triggerType === 'OnDemand' && this._currentState.hasManualTrigger === false) {
-                        this._currentState.hasManualTrigger = true
-                    }
-                    if (
-                        e.response?.recommendationCount !== undefined &&
-                        e.response?.recommendationCount > 0 &&
-                        this._currentState.hasValidResponse === false
-                    ) {
-                        this._currentState.hasValidResponse = true
-                    }
-                }
-
-                await this.refresh(e.editor, 'codewhisperer')
-            }),
             this.container.lineTracker.onDidChangeActiveLines(async (e) => {
                 await this.onActiveLinesChanged(e)
             }),
@@ -276,17 +267,6 @@ export class LineAnnotationController implements vscode.Disposable {
             }),
             this.container.auth.secondaryAuth.onDidChangeActiveConnection(async () => {
                 await this.refresh(vscode.window.activeTextEditor, 'editor')
-            }),
-            Commands.register('aws.amazonq.dismissTutorial', async () => {
-                const editor = vscode.window.activeTextEditor
-                if (editor) {
-                    this.clear()
-                    try {
-                        telemetry.ui_click.emit({ elementId: `dismiss_${this._currentState.id}` })
-                    } catch (_) {}
-                    await this.dismissTutorial()
-                    getLogger().debug(`codewhisperer: user dismiss tutorial.`)
-                }
             })
         )
     }
@@ -306,10 +286,34 @@ export class LineAnnotationController implements vscode.Disposable {
         return this._currentState.id === new EndState().id
     }
 
+    isInlineChatHint(): boolean {
+        return this._currentState.id === new InlineChatState().id
+    }
+
     async dismissTutorial() {
         this._currentState = new EndState()
         await setContext('aws.codewhisperer.tutorial.workInProgress', false)
-        await set(inlinehintKey, this._currentState.id, globals.context.globalState)
+        await globals.globalState.update(inlinehintKey, this._currentState.id)
+    }
+
+    /**
+     * Trys to show the inline hint, if the tutorial is not finished it will not be shown
+     */
+    async tryShowInlineHint(): Promise<boolean> {
+        if (this.isTutorialDone()) {
+            this._isReady = true
+            this._currentState = new InlineChatState()
+            return true
+        }
+        return false
+    }
+
+    async tryHideInlineHint(): Promise<boolean> {
+        if (this._currentState instanceof InlineChatState) {
+            this._currentState = new EndState()
+            return true
+        }
+        return false
     }
 
     private async onActiveLinesChanged(e: LinesChangeEvent) {
@@ -382,7 +386,7 @@ export class LineAnnotationController implements vscode.Disposable {
         }
 
         // Disable Tips when language is not supported by Amazon Q.
-        if (!runtimeLanguageContext.isLanguageSupported(editor.document.languageId)) {
+        if (!runtimeLanguageContext.isLanguageSupported(editor.document)) {
             return
         }
 
@@ -423,8 +427,10 @@ export class LineAnnotationController implements vscode.Disposable {
 
         decorationOptions.range = range
 
-        await set(inlinehintKey, this._currentState.id, globals.context.globalState)
-        await setContext('aws.codewhisperer.tutorial.workInProgress', true)
+        await globals.globalState.update(inlinehintKey, this._currentState.id)
+        if (!this.isInlineChatHint()) {
+            await setContext('aws.codewhisperer.tutorial.workInProgress', true)
+        }
         editor.setDecorations(this.cwLineHintDecoration, [decorationOptions])
     }
 
@@ -434,9 +440,9 @@ export class LineAnnotationController implements vscode.Disposable {
         source: AnnotationChangeSource,
         force?: boolean
     ): Partial<vscode.DecorationOptions> | undefined {
-        const isCWRunning = RecommendationService.instance.isRunning
+        const isCWRunning = true
 
-        const textOptions = {
+        const textOptions: vscode.ThemableDecorationAttachmentRenderOptions = {
             contentText: '',
             fontWeight: 'normal',
             fontStyle: 'normal',
@@ -467,9 +473,9 @@ export class LineAnnotationController implements vscode.Disposable {
         this._currentState = updatedState
 
         // take snapshot of accepted session so that we can compre if there is delta -> users accept 1 suggestion after seeing this state
-        AutotriggerState.acceptedCount = RecommendationService.instance.acceptedSuggestionCount
+        AutotriggerState.acceptedCount = 0
         // take snapshot of total trigger count so that we can compare if there is delta -> users accept/reject suggestions after seeing this state
-        TryMoreExState.triggerCount = RecommendationService.instance.totalValidTriggerCount
+        TryMoreExState.triggerCount = 0
 
         textOptions.contentText = this._currentState.text()
 

@@ -99,7 +99,7 @@ function getNotebookConnectClickedHandler(ctx: ExtContext, redshiftNotebookContr
             connectionParams = undefined
         }
         const edit = new vscode.WorkspaceEdit()
-        //NotebookEdit is  only available for engine version > 1.68.0
+        // NotebookEdit is  only available for engine version > 1.68.0
         const nbEdit = (vscode as any).NotebookEdit.updateNotebookMetadata({
             connectionParams: connectionParams,
         })

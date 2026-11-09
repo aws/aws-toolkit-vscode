@@ -6,10 +6,12 @@
 import * as semver from 'semver'
 import * as vscode from 'vscode'
 import * as packageJson from '../../../package.json'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import { onceChanged } from '../utilities/functionUtils'
-import { ChildProcess } from '../utilities/childProcess'
-import { isWeb } from '../extensionGlobals'
+import { ChildProcess } from '../utilities/processUtils'
+import globals, { isWeb } from '../extensionGlobals'
+import * as devConfig from '../../dev/config'
+import * as os from 'os'
 
 /**
  * Returns true if the current build is running on CI (build server).
@@ -30,10 +32,29 @@ try {
 
 /**
  * Returns true if the current build is a production build (as opposed to a
- * prerelease/test/nightly build)
+ * prerelease/test/nightly build).
+ *
+ * Note: `isBeta()` is treated separately.
  */
 export function isReleaseVersion(prereleaseOk: boolean = false): boolean {
     return (prereleaseOk || !semver.prerelease(extensionVersion)) && extensionVersion !== testVersion
+}
+
+/**
+ * Returns true if the current build is a "beta" build.
+ */
+export function isBeta(): boolean {
+    const testing = extensionVersion === testVersion
+    for (const url of Object.values(devConfig.betaUrl)) {
+        if (url && url.length > 0) {
+            if (!testing && semver.lt(extensionVersion, '99.0.0-dev')) {
+                throw Error('beta build must set version=99.0.0 in package.json')
+            }
+
+            return true
+        }
+    }
+    return false
 }
 
 /**
@@ -50,6 +71,15 @@ export function isAutomation(): boolean {
     return isCI() || !!process.env['AWS_TOOLKIT_AUTOMATION']
 }
 
+/** Returns true if this extension is in a `Run & Debug` instance of VS Code. */
+export function isDebugInstance(): boolean {
+    /**
+     * This is a loose heuristic since the env var was not intentionally made to indicate a debug instance.
+     * If we ever get rid of this env var, just make a new env var in the same place.
+     */
+    return !!process.env['WEBPACK_DEVELOPER_SERVER']
+}
+
 export { extensionVersion }
 
 /**
@@ -57,10 +87,10 @@ export { extensionVersion }
  *
  * @param throwWhen Throw if minimum vscode is equal or later than this version.
  */
-export function isMinVscode(throwWhen?: string): boolean {
+export function isMinVscode(options?: { throwWhen: string }): boolean {
     const minVscode = getMinVscodeVersion()
-    if (throwWhen && semver.gte(minVscode, throwWhen)) {
-        throw Error(`Min vscode ${minVscode} >= ${throwWhen}. Delete or update the code that called this.`)
+    if (options?.throwWhen && semver.gte(minVscode, options.throwWhen)) {
+        throw Error(`Min vscode ${minVscode} >= ${options.throwWhen}. Delete or update the code that called this.`)
     }
     return vscode.version.startsWith(getMinVscodeVersion())
 }
@@ -94,6 +124,151 @@ export function isRemoteWorkspace(): boolean {
     return vscode.env.remoteName === 'ssh-remote'
 }
 
+/**
+ * Parses an os-release file according to the freedesktop.org standard.
+ *
+ * @param content The content of the os-release file
+ * @returns A record of key-value pairs from the os-release file
+ *
+ * @see https://www.freedesktop.org/software/systemd/man/latest/os-release.html
+ */
+function parseOsRelease(content: string): Record<string, string> {
+    const result: Record<string, string> = {}
+
+    for (let line of content.split('\n')) {
+        line = line.trim()
+        // Skip empty lines and comments
+        if (!line || line.startsWith('#')) {
+            continue
+        }
+
+        const eqIndex = line.indexOf('=')
+        if (eqIndex > 0) {
+            const key = line.slice(0, eqIndex)
+            const value = line.slice(eqIndex + 1).replace(/^["']|["']$/g, '')
+            result[key] = value
+        }
+    }
+
+    return result
+}
+
+/**
+ * Checks if the current environment has SageMaker-specific environment variables
+ * @returns true if SageMaker environment variables are detected
+ */
+export function hasSageMakerEnvVars(): boolean {
+    // Check both old and new environment variable names
+    // SageMaker is renaming their environment variables in their Docker images
+    return (
+        // Original environment variables
+        process.env.SAGEMAKER_APP_TYPE !== undefined ||
+        process.env.SAGEMAKER_INTERNAL_IMAGE_URI !== undefined ||
+        process.env.STUDIO_LOGGING_DIR?.includes('/var/log/studio') === true ||
+        // New environment variables (update these with the actual new names)
+        process.env.SM_APP_TYPE !== undefined ||
+        process.env.SM_INTERNAL_IMAGE_URI !== undefined ||
+        process.env.SERVICE_NAME === 'SageMakerUnifiedStudio'
+    )
+}
+
+/**
+ * Checks if the current environment is running on Amazon Linux 2.
+ *
+ * This function detects the container/runtime OS, not the host OS.
+ * In containerized environments, we check the container's OS identity.
+ *
+ * Detection Process (in order):
+ * 1. Returns false for web environments (browser-based)
+ * 2. Returns false for SageMaker environments (even if container is AL2)
+ * 3. Checks `/etc/os-release` with fallback to `/usr/lib/os-release`
+ *    - Standard Linux OS identification files per freedesktop.org spec
+ *    - Looks for `ID="amzn"` and `VERSION_ID="2"` for AL2
+ *    - This correctly identifies AL2 containers regardless of host OS
+ *
+ * This approach ensures correct detection in:
+ * - Containerized environments (detects container OS, not host)
+ * - AL2 containers on any host OS (Ubuntu, AL2023, etc.)
+ * - Web/browser environments (returns false)
+ * - SageMaker environments (returns false)
+ *
+ * Note: We intentionally do NOT check kernel version as it reflects the host OS,
+ * not the container OS. AL2 containers should be treated as AL2 environments
+ * regardless of whether they run on AL2, Ubuntu, or other host kernels.
+ *
+ * References:
+ * - https://docs.aws.amazon.com/linux/al2/ug/ident-amazon-linux-specific.html
+ * - https://docs.aws.amazon.com/linux/al2/ug/ident-os-release.html
+ * - https://www.freedesktop.org/software/systemd/man/latest/os-release.html
+ */
+export function isAmazonLinux2() {
+    // Skip AL2 detection for web environments
+    // In web mode, we're running in a browser, not on AL2
+    if (isWeb()) {
+        return false
+    }
+
+    // First check if we're in a SageMaker environment, which should not be treated as AL2
+    // even if the underlying container is AL2
+    if (hasSageMakerEnvVars()) {
+        return false
+    }
+
+    // Only proceed with file checks on Linux platforms
+    if (process.platform !== 'linux') {
+        return false
+    }
+
+    // Check the container/runtime OS identity via os-release files
+    // This correctly identifies AL2 containers regardless of host OS
+    try {
+        const fs = require('fs')
+        // Check /etc/os-release with fallback to /usr/lib/os-release as per freedesktop.org spec
+        const osReleasePaths = ['/etc/os-release', '/usr/lib/os-release']
+
+        for (const osReleasePath of osReleasePaths) {
+            if (fs.existsSync(osReleasePath)) {
+                try {
+                    const osReleaseContent = fs.readFileSync(osReleasePath, 'utf8')
+                    const osRelease = parseOsRelease(osReleaseContent)
+
+                    // Check if this is Amazon Linux 2
+                    // We trust os-release as the authoritative source for container OS identity
+                    return osRelease.VERSION_ID === '2' && osRelease.ID === 'amzn'
+                } catch (e) {
+                    // Continue to next path if parsing fails
+                    getLogger().error(`Parsing os-release file ${osReleasePath} failed: ${e}`)
+                }
+            }
+        }
+    } catch (e) {
+        // If we can't read the files, we cannot determine AL2 status
+        getLogger().error(`Checking os-release files failed: ${e}`)
+    }
+
+    // Fall back to kernel version check if os-release files are unavailable or failed
+    // This is needed for environments where os-release might not be accessible
+    const kernelRelease = os.release()
+    const hasAL2Kernel = kernelRelease.includes('.amzn2int.') || kernelRelease.includes('.amzn2.')
+
+    return hasAL2Kernel
+}
+
+/**
+ * Returns true if we are in an internal Amazon Cloud Desktop
+ */
+export async function isCloudDesktop() {
+    if (!isAmazonLinux2()) {
+        return false
+    }
+
+    // This heuristic is explained in IDE-14524
+    return (await new ChildProcess('/apollo/bin/getmyfabric').run().then((r) => r.exitCode)) === 0
+}
+
+export function isMac(): boolean {
+    return process.platform === 'darwin'
+}
 /** Returns true if OS is Windows. */
 export function isWin(): boolean {
     // if (isWeb()) {
@@ -103,8 +278,33 @@ export function isWin(): boolean {
     return process.platform === 'win32'
 }
 
-export function isWebWorkspace(): boolean {
-    return vscode.env.uiKind === vscode.UIKind.Web
+const UIKind = {
+    [vscode.UIKind.Desktop]: 'desktop',
+    [vscode.UIKind.Web]: 'web',
+} as const
+export type ExtensionHostUI = (typeof UIKind)[keyof typeof UIKind]
+export type ExtensionHostLocation = 'local' | 'remote' | 'webworker'
+
+/**
+ * Detects where the ui and the extension host are running
+ */
+export function getExtRuntimeContext(): {
+    ui: ExtensionHostUI
+    extensionHost: ExtensionHostLocation
+} {
+    const extensionHost =
+        // Check if we're in a Node.js environment (desktop/remote) vs web worker
+        // Updated to be compatible with Node.js v22 which includes navigator global
+        typeof process === 'object' && process.versions?.node
+            ? globals.context.extension.extensionKind === vscode.ExtensionKind.UI
+                ? 'local'
+                : 'remote'
+            : 'webworker'
+
+    return {
+        ui: UIKind[vscode.env.uiKind],
+        extensionHost,
+    }
 }
 
 export function getCodeCatalystProjectName(): string | undefined {
@@ -183,7 +383,76 @@ export async function getMachineId(): Promise<string> {
         // TODO: use `vscode.env.machineId` instead?
         return 'browser'
     }
+    // Eclipse Che-based envs (backing compute rotates, not classified as a web instance)
+    // TODO: use `vscode.env.machineId` instead?
+    if (process.env.CHE_WORKSPACE_ID) {
+        return process.env.CHE_WORKSPACE_ID
+    }
+    // RedHat Dev Workspaces (run some VSC web variant)
+    if (process.env.DEVWORKSPACE_ID) {
+        return process.env.DEVWORKSPACE_ID
+    }
     const proc = new ChildProcess('hostname', [], { collect: true, logging: 'no' })
     // TODO: check exit code.
     return (await proc.run()).stdout.trim() ?? 'unknown-host'
+}
+
+/**
+ * Detects the current IDE information (name, CLI command, process patterns)
+ * Supports VS Code, Cursor, Kiro, Windsurf, and other forks
+ */
+export function getIdeInfo(): {
+    name: string
+    cliName: string
+    processPatterns: {
+        windows: RegExp
+        darwin: RegExp
+        linux: RegExp
+    }
+} {
+    const appName = vscode?.env?.appName?.toLowerCase() || ''
+
+    // Detect IDE based on app name
+    if (appName.includes('cursor')) {
+        return {
+            name: 'Cursor',
+            cliName: 'cursor',
+            processPatterns: {
+                windows: /Cursor\.exe/i,
+                darwin: /Cursor\.app\/Contents\/MacOS\/Electron/,
+                linux: /^cursor$/i,
+            },
+        }
+    } else if (appName.includes('kiro')) {
+        return {
+            name: 'Kiro',
+            cliName: 'kiro',
+            processPatterns: {
+                windows: /Kiro\.exe/i,
+                darwin: /Kiro\.app\/Contents\/MacOS\/Electron/,
+                linux: /^kiro$/i,
+            },
+        }
+    } else if (appName.includes('windsurf')) {
+        return {
+            name: 'Windsurf',
+            cliName: 'windsurf',
+            processPatterns: {
+                windows: /Windsurf\.exe/i,
+                darwin: /Windsurf\.app\/Contents\/MacOS\/Electron/,
+                linux: /^windsurf$/i,
+            },
+        }
+    }
+
+    // Default to VS Code (including insiders)
+    return {
+        name: 'VS Code',
+        cliName: 'code',
+        processPatterns: {
+            windows: /Code\.exe/i,
+            darwin: /Visual Studio Code( - Insiders)?\.app\/Contents\/MacOS\/Electron/,
+            linux: /^(code(-insiders)?|electron)$/i,
+        },
+    }
 }

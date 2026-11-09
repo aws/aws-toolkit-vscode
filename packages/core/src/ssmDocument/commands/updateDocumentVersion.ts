@@ -6,10 +6,10 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { SSM } from 'aws-sdk'
+import { DocumentVersionInfo } from '@aws-sdk/client-ssm'
 import * as vscode from 'vscode'
 import { AwsContext } from '../../shared/awsContext'
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger, Logger } from '../../shared/logger/logger'
 import * as picker from '../../shared/ui/picker'
 import { DocumentItemNodeWriteable } from '../explorer/documentItemNodeWriteable'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
@@ -70,23 +70,23 @@ export async function updateDocumentVersion(node: DocumentItemNodeWriteable, aws
                 node.documentName
             )
         )
-        logger.error('Error on updating document version: %0', error)
+        logger.error('Error on updating document version: %O', error)
     } finally {
         telemetry.ssm_updateDocumentVersion.emit({ result: result })
     }
 }
 
-async function promptUserforDocumentVersion(versions: SSM.Types.DocumentVersionInfo[]): Promise<string | undefined> {
+async function promptUserforDocumentVersion(versions: DocumentVersionInfo[]): Promise<string | undefined> {
     // Prompt user to pick document version
     const quickPickItems: vscode.QuickPickItem[] = []
-    versions.forEach((version) => {
+    for (const version of versions) {
         if (version.DocumentVersion) {
             quickPickItems.push({
                 label: version.DocumentVersion,
                 description: `${version.IsDefaultVersion ? 'Default' : ''}`,
             })
         }
-    })
+    }
 
     if (quickPickItems.length > 1) {
         const versionPick = picker.createQuickPick({

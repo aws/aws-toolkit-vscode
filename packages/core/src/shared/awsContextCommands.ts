@@ -65,7 +65,7 @@ export class AwsContextCommands {
         await this.editCredentials()
         if (
             credentialsFiles.length === 0 &&
-            (await ToolkitPromptSettings.instance.isPromptEnabled('createCredentialsProfile')) &&
+            ToolkitPromptSettings.instance.isPromptEnabled('createCredentialsProfile') &&
             (await this.promptCredentialsSetup())
         ) {
             await this.onCommandCreateCredentialsProfile()

@@ -6,17 +6,17 @@
 import assert from 'assert'
 import { S3BucketNode } from '../../../../awsService/s3/explorer/s3BucketNode'
 import { S3Node } from '../../../../awsService/s3/explorer/s3Nodes'
-import { S3Client, Bucket } from '../../../../shared/clients/s3Client'
+import { S3Client, S3Bucket } from '../../../../shared/clients/s3'
 import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
 import sinon from 'sinon'
 
 describe('S3Node', function () {
-    const firstBucket: Bucket = { name: 'first-bucket-name', region: 'firstRegion', arn: 'firstArn' }
-    const secondBucket: Bucket = { name: 'second-bucket-name', region: 'secondRegion', arn: 'secondArn' }
+    const firstBucket: S3Bucket = { Name: 'first-bucket-name', BucketRegion: 'firstRegion', Arn: 'firstArn' }
+    const secondBucket: S3Bucket = { Name: 'second-bucket-name', BucketRegion: 'secondRegion', Arn: 'secondArn' }
 
     let s3: S3Client
 
-    function assertBucketNode(node: AWSTreeNodeBase, expectedBucket: Bucket): void {
+    function assertBucketNode(node: AWSTreeNodeBase, expectedBucket: S3Bucket): void {
         assert.ok(node instanceof S3BucketNode, `Node ${node} should be a Bucket Node`)
         assert.deepStrictEqual((node as S3BucketNode).bucket, expectedBucket)
     }

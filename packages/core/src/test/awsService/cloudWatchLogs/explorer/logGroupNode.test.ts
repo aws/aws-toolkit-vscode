@@ -4,13 +4,13 @@
  */
 
 import assert from 'assert'
-import { CloudWatchLogs } from 'aws-sdk'
 import * as os from 'os'
 import { LogGroupNode } from '../../../../awsService/cloudWatchLogs/explorer/logGroupNode'
+import { LogGroup } from '@aws-sdk/client-cloudwatch-logs'
 
 describe('LogGroupNode', function () {
     let testNode: LogGroupNode
-    let fakeLogGroup: CloudWatchLogs.LogGroup
+    let fakeLogGroup: LogGroup
 
     before(function () {
         fakeLogGroup = {

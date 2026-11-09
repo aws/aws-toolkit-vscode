@@ -3,13 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import * as vscode from 'vscode'
 import { getLogger } from '../../shared/logger/logger'
 import { CodewhispererLanguage } from '../../shared/telemetry/telemetry.gen'
 import { createConstantMap, ConstantMap } from '../../shared/utilities/tsUtils'
 import * as codewhispererClient from '../client/codewhisperer'
 import * as CodeWhispererConstants from '../models/constants'
+import * as path from 'path'
 
-type RuntimeLanguage = Exclude<CodewhispererLanguage, 'jsx' | 'tsx'>
+type RuntimeLanguage = Exclude<CodewhispererLanguage, 'jsx' | 'tsx' | 'systemVerilog'> | 'systemverilog'
 
 const runtimeLanguageSet: ReadonlySet<RuntimeLanguage> = new Set([
     'c',
@@ -21,15 +23,22 @@ const runtimeLanguageSet: ReadonlySet<RuntimeLanguage> = new Set([
     'kotlin',
     'php',
     'python',
+    'powershell',
+    'r',
+    'dart',
     'ruby',
     'rust',
     'scala',
     'shell',
     'sql',
+    'swift',
+    'lua',
+    'vue',
     'typescript',
     'json',
     'yaml',
     'tf',
+    'systemverilog',
 ])
 
 export class RuntimeLanguageContext {
@@ -49,9 +58,16 @@ export class RuntimeLanguageContext {
      */
     private supportedLanguageExtensionMap: ConstantMap<string, CodewhispererLanguage>
 
+    /**
+     * A map storing single-line comment prefixes for different languages
+     * Key: CodewhispererLanguage
+     * Value: Comment prefix string
+     */
+    private languageSingleLineCommentPrefixMap: ConstantMap<CodewhispererLanguage, string>
+
     constructor() {
         this.supportedLanguageMap = createConstantMap<
-            CodeWhispererConstants.PlatformLanguageId | CodewhispererLanguage,
+            Exclude<CodeWhispererConstants.PlatformLanguageId | CodewhispererLanguage, 'plaintext'>,
             CodewhispererLanguage
         >({
             c: 'c',
@@ -69,7 +85,6 @@ export class RuntimeLanguageContext {
             jsx: 'jsx',
             kotlin: 'kotlin',
             packer: 'tf',
-            plaintext: 'plaintext',
             php: 'php',
             python: 'python',
             ruby: 'ruby',
@@ -87,10 +102,23 @@ export class RuntimeLanguageContext {
             typescriptreact: 'tsx',
             yml: 'yaml',
             yaml: 'yaml',
+            dart: 'dart',
+            lua: 'lua',
+            powershell: 'powershell',
+            r: 'r',
+            swift: 'swift',
+            systemVerilog: 'systemVerilog',
+            systemverilog: 'systemVerilog',
+            verilog: 'systemVerilog',
+            vue: 'vue',
+            abap: 'abap',
         })
         this.supportedLanguageExtensionMap = createConstantMap<string, CodewhispererLanguage>({
             c: 'c',
+            h: 'c',
             cpp: 'cpp',
+            cc: 'cpp',
+            'c++': 'cpp',
             cs: 'csharp',
             go: 'go',
             hcl: 'tf',
@@ -113,7 +141,57 @@ export class RuntimeLanguageContext {
             ts: 'typescript',
             yaml: 'yaml',
             yml: 'yaml',
+            sv: 'systemVerilog',
+            svh: 'systemVerilog',
+            vh: 'systemVerilog',
+            dart: 'dart',
+            lua: 'lua',
+            wlua: 'lua',
+            swift: 'swift',
+            vue: 'vue',
+            ps1: 'powershell',
+            psm1: 'powershell',
+            r: 'r',
+            abap: 'abap',
         })
+        this.languageSingleLineCommentPrefixMap = createConstantMap<CodewhispererLanguage, string>({
+            c: '// ',
+            cpp: '// ',
+            csharp: '// ',
+            dart: '// ',
+            go: '// ',
+            hcl: '# ',
+            java: '// ',
+            javascript: '// ',
+            json: '// ',
+            jsonc: '// ',
+            jsx: '// ',
+            kotlin: '// ',
+            lua: '-- ',
+            php: '// ',
+            plaintext: '',
+            powershell: '# ',
+            python: '# ',
+            r: '# ',
+            ruby: '# ',
+            rust: '// ',
+            scala: '// ',
+            shell: '# ',
+            sql: '-- ',
+            swift: '// ',
+            systemVerilog: '// ',
+            tf: '# ',
+            tsx: '// ',
+            typescript: '// ',
+            vue: '', // vue lacks a single-line comment prefix
+            yaml: '# ',
+            yml: '# ',
+            abap: '',
+        })
+    }
+
+    public resolveLang(doc: vscode.TextDocument): CodewhispererLanguage {
+        return this.normalizeLanguage(doc.languageId) || this.byFileExt(doc) || 'plaintext'
     }
 
     /**
@@ -128,6 +206,16 @@ export class RuntimeLanguageContext {
     }
 
     /**
+     * Get the comment prefix for a given language
+     * @param language The language to get comment prefix for
+     * @returns The comment prefix string, or empty string if not found
+     */
+    public getSingleLineCommentPrefix(language?: string): string {
+        const normalizedLanguage = this.normalizeLanguage(language)
+        return normalizedLanguage ? (this.languageSingleLineCommentPrefixMap.get(normalizedLanguage) ?? '') : ''
+    }
+
+    /**
      * Normalize client side language id to service aware language id (service is not aware of jsx/tsx)
      * Only used when invoking CodeWhisperer service API, for client usage please use normalizeLanguage
      * Client side CodewhispererLanguage is a superset of NormalizedLanguageId
@@ -139,6 +227,9 @@ export class RuntimeLanguageContext {
 
             case 'tsx':
                 return 'typescript'
+
+            case 'systemVerilog':
+                return 'systemverilog'
 
             default:
                 if (!runtimeLanguageSet.has(language)) {
@@ -170,6 +261,17 @@ export class RuntimeLanguageContext {
             json: 'json',
             yaml: 'yaml',
             yml: 'yaml',
+            sv: 'systemVerilog',
+            svh: 'systemVerilog',
+            vh: 'systemVerilog',
+            dart: 'dart',
+            lua: 'lua',
+            wlua: 'lua',
+            swift: 'swift',
+            vue: 'vue',
+            ps1: 'powershell',
+            psm1: 'powershell',
+            r: 'r',
             // Add more mappings if needed
         }
 
@@ -210,15 +312,23 @@ export class RuntimeLanguageContext {
         }
     }
 
-    /**
-     *
-     * @param languageId: either vscodeLanguageId or CodewhispererLanguage
-     * @returns true if the language is supported by CodeWhisperer otherwise false
-     */
-    public isLanguageSupported(languageId: string): boolean {
-        const lang = this.normalizeLanguage(languageId)
-        return lang !== undefined && this.normalizeLanguage(languageId) !== 'plaintext'
+    public isLanguageSupported(languageId: string): boolean
+    public isLanguageSupported(doc: vscode.TextDocument): boolean
+    public isLanguageSupported(arg: string | vscode.TextDocument): boolean {
+        if (typeof arg === 'string') {
+            const normalizedLanguageId = this.normalizeLanguage(arg)
+            const byLanguageId = !normalizedLanguageId || normalizedLanguageId === 'plaintext' ? false : true
+
+            return byLanguageId
+        } else {
+            const normalizedLanguageId = this.normalizeLanguage(arg.languageId)
+            const byLanguageId = !normalizedLanguageId || normalizedLanguageId === 'plaintext' ? false : true
+            const byFileExtension = this.byFileExt(arg) !== undefined
+
+            return byLanguageId || byFileExtension
+        }
     }
+
     /**
      *
      * @param fileFormat : vscode editor filecontext filename extension
@@ -235,6 +345,17 @@ export class RuntimeLanguageContext {
      */
     public getLanguageFromFileExtension(fileExtension: string) {
         return this.supportedLanguageExtensionMap.get(fileExtension)
+    }
+
+    private byFileExt(doc: vscode.TextDocument): CodewhispererLanguage | undefined {
+        const extension = path.extname(doc.uri.fsPath)
+        const byExt = this.supportedLanguageExtensionMap.get(extension.substring(1))
+
+        if (byExt === 'plaintext') {
+            return undefined
+        }
+
+        return byExt
     }
 }
 

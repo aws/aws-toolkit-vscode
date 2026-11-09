@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { CdkAppLocation } from './cdkProject'
 
 export async function detectCdkProjects(
@@ -21,7 +21,9 @@ export async function detectCdkProjects(
         []
     )
 
-    projects.forEach((p) => results.set(p.cdkJsonUri.toString(), p))
+    for (const p of projects) {
+        results.set(p.cdkJsonUri.toString(), p)
+    }
 
     return Array.from(results.values())
 }

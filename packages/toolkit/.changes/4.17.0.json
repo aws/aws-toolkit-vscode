@@ -1,0 +1,10 @@
+{
+	"date": "2026-10-05",
+	"version": "4.17.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "CloudFormation: HTML-encode stack data and add a Content-Security-Policy in views to prevent cross-site scripting"
+		}
+	]
+}

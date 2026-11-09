@@ -4,7 +4,7 @@
  */
 
 import assert from 'assert'
-import { createTestWorkspaceFolder, openATextEditorWithText } from '../../test/testUtil'
+import { createTestWorkspaceFolder, toTextEditor } from '../../test/testUtil'
 import vscode from 'vscode'
 import { ASLLanguageClient } from '../../stepFunctions/asl/client'
 import { waitUntil } from '../../shared'
@@ -23,7 +23,7 @@ describe('stepFunctions ASL LSP', async function () {
 
 }`
         const fileName = 'stepfunction.asl'
-        const editor = await openATextEditorWithText(stateMachineFileText, fileName, tempFolder)
+        const editor = await toTextEditor(stateMachineFileText, fileName, tempFolder)
         await waitUntil(async () => ASLLanguageClient.isReady, {
             timeout: 30000,
             interval: 500,
@@ -35,7 +35,7 @@ describe('stepFunctions ASL LSP', async function () {
         )) as vscode.CompletionList
         assert.deepStrictEqual(
             result.items.map((item) => item.label),
-            ['Comment', 'StartAt', 'States', 'TimeoutSeconds', 'Version']
+            ['Comment', 'QueryLanguage', 'StartAt', 'States', 'TimeoutSeconds', 'Version']
         )
     })
 })

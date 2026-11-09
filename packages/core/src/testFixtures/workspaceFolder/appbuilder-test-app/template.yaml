@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: |
+  This is an example application consist of  Amazon API Gateway REST API,
+  Sample AWS SAM template to create a simple Lambda function connected to a REST API, and S3 bucket.
+
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+  AppBuilderProjectAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub
+        - ${ResourceName} From Stack ${AWS::StackName}
+        - ResourceName: AppBuilderProjectAPI
+      StageName: Prod
+      DefinitionBody:
+        openapi: '3.0'
+        info: {}
+        paths:
+          /:
+            get:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AppBuilderProjectLambda.Arn}/invocations
+              responses: {}
+      EndpointConfiguration: REGIONAL
+      TracingEnabled: true
+      Cors:
+        MaxAge: 5
+  AppBuilderProjectLambda:
+    Type: AWS::Serverless::Function 
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      Events:
+        HelloWorld:
+          Type: Api 
+          Properties:
+            Path: /hello
+            Method: get
+        AppBuilderProjectAPIGET:
+          Type: Api
+          Properties:
+            Path: /
+            Method: GET
+            RestApiId: !Ref AppBuilderProjectAPI
+      Environment:
+        Variables:
+          APPBUILDERPROJECTBUCKET_BUCKET_NAME: !Ref AppBuilderProjectBucket
+          APPBUILDERPROJECTBUCKET_BUCKET_ARN: !GetAtt AppBuilderProjectBucket.Arn
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - s3:*
+              Resource:
+                - !Sub arn:${AWS::Partition}:s3:::${AppBuilderProjectBucket}
+                - !Sub arn:${AWS::Partition}:s3:::${AppBuilderProjectBucket}/*
+      MemorySize: 3008
+      Timeout: 30
+  AppBuilderProjectBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${AWS::StackName}-appbuilde-${AWS::AccountId}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: alias/aws/s3
+      PublicAccessBlockConfiguration:
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+  AppBuilderProjectBucketBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AppBuilderProjectBucket
+      PolicyDocument:
+        Id: RequireEncryptionInTransit
+        Version: '2012-10-17'
+        Statement:
+          - Principal: '*'
+            Action: '*'
+            Effect: Deny
+            Resource:
+              - !GetAtt AppBuilderProjectBucket.Arn
+              - !Sub ${AppBuilderProjectBucket.Arn}/*
+            Condition:
+              Bool:
+                aws:SecureTransport: 'false'

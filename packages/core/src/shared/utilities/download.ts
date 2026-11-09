@@ -3,32 +3,29 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import path from 'path'
 import { CodeWhispererStreaming, ExportResultArchiveCommandInput } from '@amzn/codewhisperer-streaming'
 import { ToolkitError } from '../errors'
-import { CodeTransformTelemetryState } from '../../amazonqGumby/telemetry/codeTransformTelemetryState'
-import { transformByQState } from '../../codewhisperer/models/model'
-import { calculateTotalLatency } from '../../amazonqGumby/telemetry/codeTransformTelemetry'
-import { telemetry } from '../telemetry/telemetry'
 import fs from '../fs/fs'
+import { RegionProfile } from '../../codewhisperer/models/model'
 
 /**
  * This class represents the structure of the archive returned by the ExportResultArchive endpoint
  */
 export class ExportResultArchiveStructure {
-    static readonly PathToSummary = path.join('summary', 'summary.md')
-    static readonly PathToDiffPatch = path.join('patch', 'diff.patch')
+    static readonly PathToSummary = 'summary/summary.md'
+    static readonly PathToDiffPatch = 'patch/diff.patch'
+    static readonly PathToPatch = 'patch'
+    static readonly PathToMetrics = 'metrics/metrics.json'
     static readonly PathToManifest = 'manifest.json'
 }
 
 export async function downloadExportResultArchive(
     cwStreamingClient: CodeWhispererStreaming,
     exportResultArchiveArgs: ExportResultArchiveCommandInput,
-    toPath: string
+    toPath: string,
+    profile: RegionProfile | undefined
 ) {
-    const apiStartTime = Date.now()
-    let totalDownloadBytes = 0
-    const result = await cwStreamingClient.exportResultArchive(exportResultArchiveArgs)
+    const result = await cwStreamingClient.exportResultArchive({ ...exportResultArchiveArgs, profileArn: profile?.arn })
 
     const buffer = []
 
@@ -41,18 +38,9 @@ export async function downloadExportResultArchive(
             const chunkData = chunk.binaryPayloadEvent
             if (chunkData.bytes) {
                 buffer.push(chunkData.bytes)
-                totalDownloadBytes += chunkData.bytes?.length
             }
         }
     }
 
     await fs.writeFile(toPath, Buffer.concat(buffer))
-    telemetry.codeTransform_logApiLatency.emit({
-        codeTransformApiNames: 'ExportResultArchive',
-        codeTransformSessionId: CodeTransformTelemetryState.instance.getSessionId(),
-        codeTransformJobId: transformByQState.getJobId(),
-        codeTransformRunTimeLatency: calculateTotalLatency(apiStartTime),
-        codeTransformTotalByteSize: totalDownloadBytes,
-        codeTransformRequestId: result.$metadata.requestId,
-    })
 }

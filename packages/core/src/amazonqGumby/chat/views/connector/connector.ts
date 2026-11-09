@@ -6,9 +6,9 @@
 import { gumbyChat } from '../../../models/constants'
 import { AuthFollowUpType } from '../../../../amazonq/auth/model'
 import { MessagePublisher } from '../../../../amazonq/messages/messagePublisher'
-import { ChatItemType } from '../../../../amazonqFeatureDev/models'
 import { ChatItemButton, ChatItemFormItem } from '@aws/mynah-ui/dist/static'
 import { GumbyCommands } from '../../controller/messenger/messengerUtils'
+import { ChatItemType } from '../../../../amazonq/commons/model'
 
 export type GumbyMessageType =
     | 'errorMessage'
@@ -72,7 +72,7 @@ export class AuthenticationUpdateMessage {
     readonly type: GumbyMessageType = 'authenticationUpdateMessage'
 
     constructor(
-        readonly featureDevEnabled: boolean,
+        readonly gumbyEnabled: boolean,
         readonly authenticatingTabIDs: string[]
     ) {}
 }
@@ -117,7 +117,8 @@ export class ChatPrompt extends UiMessage {
             keepCardAfterClick: false,
             waitMandatoryFormItems: false,
             text: 'Cancel',
-            id: `gumby${promptIDPrefix}Cancel`,
+            // makes the Cancel button shared in all forms, which is fine since we respond the same exact way each time
+            id: 'gumbyTransformFormCancel',
         })
     }
 }

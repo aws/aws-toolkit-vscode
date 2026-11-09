@@ -18,6 +18,11 @@ import {
   GenerateTaskAssistPlanCommandInput,
   GenerateTaskAssistPlanCommandOutput,
 } from "./commands/GenerateTaskAssistPlanCommand";
+import {
+  SendMessageCommand,
+  SendMessageCommandInput,
+  SendMessageCommandOutput,
+} from "./commands/SendMessageCommand";
 import { createAggregatedClient } from "@smithy/smithy-client";
 import { HttpHandlerOptions as __HttpHandlerOptions } from "@smithy/types";
 
@@ -25,6 +30,7 @@ const commands = {
   ExportResultArchiveCommand,
   GenerateAssistantResponseCommand,
   GenerateTaskAssistPlanCommand,
+  SendMessageCommand,
 }
 
 export interface CodeWhispererStreaming {
@@ -77,6 +83,23 @@ export interface CodeWhispererStreaming {
     args: GenerateTaskAssistPlanCommandInput,
     options: __HttpHandlerOptions,
     cb: (err: any, data?: GenerateTaskAssistPlanCommandOutput) => void
+  ): void;
+
+  /**
+   * @see {@link SendMessageCommand}
+   */
+  sendMessage(
+    args: SendMessageCommandInput,
+    options?: __HttpHandlerOptions,
+  ): Promise<SendMessageCommandOutput>;
+  sendMessage(
+    args: SendMessageCommandInput,
+    cb: (err: any, data?: SendMessageCommandOutput) => void
+  ): void;
+  sendMessage(
+    args: SendMessageCommandInput,
+    options: __HttpHandlerOptions,
+    cb: (err: any, data?: SendMessageCommandOutput) => void
   ): void;
 
 }

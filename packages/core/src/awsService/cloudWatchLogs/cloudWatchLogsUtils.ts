@@ -6,8 +6,9 @@ import { telemetry } from '../../shared/telemetry/telemetry'
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../shared/constants'
 import { fromExtensionManifest } from '../../shared/settings'
-import { CloudWatchLogsData, CloudWatchLogsGroupInfo } from './registry/logDataRegistry'
+import { CloudWatchLogsArgs, CloudWatchLogsData, CloudWatchLogsGroupInfo } from './registry/logDataRegistry'
 import { CloudWatchLogsParameters } from './registry/logDataRegistry'
+import { UriSchema } from '../../shared/utilities/uriUtils'
 
 // URIs are the only vehicle for delivering information to a TextDocumentContentProvider.
 // The following functions are used to structure and destructure relevant information to/from a URI.
@@ -32,8 +33,7 @@ export function recordTelemetryFilter(logData: CloudWatchLogsData): void {
 export function uriToKey(uri: vscode.Uri): string {
     if (uri.query) {
         try {
-            const { filterPattern, startTime, endTime, limit, streamNameOptions } =
-                parseCloudWatchLogsUri(uri).parameters
+            const { filterPattern, startTime, endTime, limit, streamNameOptions } = cwlUriSchema.parse(uri).parameters
             const parts = [uri.path, filterPattern, startTime, endTime, limit, streamNameOptions]
             return parts.map((p) => p ?? '').join(':')
         } catch {
@@ -52,7 +52,7 @@ export function uriToKey(uri: vscode.Uri): string {
  * message as the actual log group search. That results in a more fluid UX.
  */
 export function msgKey(logGroupInfo: CloudWatchLogsGroupInfo): string {
-    const uri = createURIFromArgs(logGroupInfo, {})
+    const uri = cwlUriSchema.form({ logGroupInfo: logGroupInfo, parameters: {} })
     return uri.toString()
 }
 
@@ -60,10 +60,7 @@ export function msgKey(logGroupInfo: CloudWatchLogsGroupInfo): string {
  * Destructures an awsCloudWatchLogs URI into its component pieces.
  * @param uri URI for a Cloudwatch Logs file
  */
-export function parseCloudWatchLogsUri(uri: vscode.Uri): {
-    logGroupInfo: CloudWatchLogsGroupInfo
-    parameters: CloudWatchLogsParameters
-} {
+function parseCloudWatchLogsUri(uri: vscode.Uri): CloudWatchLogsArgs {
     const parts = uri.path.split(':')
 
     if (uri.scheme !== CLOUDWATCH_LOGS_SCHEME) {
@@ -85,18 +82,8 @@ export function parseCloudWatchLogsUri(uri: vscode.Uri): {
     }
 }
 
-/** True if given URI is a valid Cloud Watch Logs Uri */
-export function isCwlUri(uri: vscode.Uri): boolean {
-    try {
-        parseCloudWatchLogsUri(uri)
-        return true
-    } catch {
-        return false
-    }
-}
-
 export function patternFromCwlUri(uri: vscode.Uri): CloudWatchLogsParameters['filterPattern'] {
-    return parseCloudWatchLogsUri(uri).parameters.filterPattern
+    return cwlUriSchema.parse(uri).parameters.filterPattern
 }
 
 /**
@@ -105,7 +92,7 @@ export function patternFromCwlUri(uri: vscode.Uri): CloudWatchLogsParameters['fi
  * @returns
  */
 export function isLogStreamUri(uri: vscode.Uri): boolean {
-    const logGroupInfo = parseCloudWatchLogsUri(uri).logGroupInfo
+    const logGroupInfo = cwlUriSchema.parse(uri).logGroupInfo
     return logGroupInfo.streamName !== undefined
 }
 
@@ -115,15 +102,13 @@ export function isLogStreamUri(uri: vscode.Uri): boolean {
  * @param streamName Log stream name
  * @param regionName AWS region
  */
-export function createURIFromArgs(
-    logGroupInfo: CloudWatchLogsGroupInfo,
-    parameters: CloudWatchLogsParameters
-): vscode.Uri {
-    let uriStr = `${CLOUDWATCH_LOGS_SCHEME}:${logGroupInfo.regionName}:${logGroupInfo.groupName}`
-    uriStr += logGroupInfo.streamName ? `:${logGroupInfo.streamName}` : ''
+function createURIFromArgs(args: CloudWatchLogsArgs): vscode.Uri {
+    let uriStr = `${CLOUDWATCH_LOGS_SCHEME}:${args.logGroupInfo.regionName}:${args.logGroupInfo.groupName}`
+    uriStr += args.logGroupInfo.streamName ? `:${args.logGroupInfo.streamName}` : ''
 
-    uriStr += `?${encodeURIComponent(JSON.stringify(parameters))}`
+    uriStr += `?${encodeURIComponent(JSON.stringify(args.parameters))}`
     return vscode.Uri.parse(uriStr)
 }
+export const cwlUriSchema = new UriSchema<CloudWatchLogsArgs>(parseCloudWatchLogsUri, createURIFromArgs)
 
 export class CloudWatchLogsSettings extends fromExtensionManifest('aws.cwl', { limit: Number }) {}

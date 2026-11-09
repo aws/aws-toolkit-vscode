@@ -8,7 +8,7 @@ import { toTitleCase } from '../utilities/textUtilities'
 import { getLogger, NullLogger } from '../logger/logger'
 import { FunctionKeys, Functions, getFunctions } from '../utilities/classUtils'
 import { TreeItemContent, TreeNode } from '../treeview/resourceTreeDataProvider'
-import { telemetry, MetricName, VscodeExecuteCommand, Metric } from '../telemetry/telemetry'
+import { telemetry, MetricName, VscodeExecuteCommand, Metric, Span } from '../telemetry/telemetry'
 import globals from '../extensionGlobals'
 import { ToolkitError } from '../errors'
 import crypto from 'crypto'
@@ -159,11 +159,6 @@ export class Commands {
         id: string,
         ...args: Parameters<T>
     ): Promise<ReturnType<T> | undefined> {
-        const cmd = this.resources.get(id)
-        if (!cmd) {
-            getLogger().debug('command not found: "%s"', id)
-            return undefined
-        }
         return this.commands.executeCommand<ReturnType<T>>(id, ...args)?.then(undefined, (e: Error) => {
             getLogger().warn('command failed (not registered?): "%s"', id)
             return undefined
@@ -489,22 +484,27 @@ function getInstrumenter(
     }
 
     // Throttling occurs regardless of whether or not the instrumenter is invoked
-    const span = telemetryName ? telemetry[telemetryName] : telemetry.vscode_executeCommand
+    const span: Metric = telemetryName ? telemetry[telemetryName] : telemetry.vscode_executeCommand
     const debounceCount = info?.debounceCount !== 0 ? info?.debounceCount : undefined
     TelemetryDebounceInfo.instance.set(id, { startTime: currentTime, debounceCount: 0 })
 
     const fields = findFieldsToAddToMetric(id.args, id.compositeKey)
 
     return <T extends Callback>(fn: T, ...args: Parameters<T>) =>
-        span.run((span) => {
-            ;(span as Metric<VscodeExecuteCommand>).record({
-                command: id.id,
-                debounceCount,
-                ...fields,
-            })
+        span.run(
+            (span) => {
+                ;(span as Span<VscodeExecuteCommand>).record({
+                    command: id.id,
+                    debounceCount,
+                    ...fields,
+                })
 
-            return fn(...args)
-        })
+                return fn(...args)
+            },
+            // wrap all command executions with their ID as context for telemetry.
+            // this will give us a better idea on the entrypoints of executions
+            { functionId: { name: id.id, class: 'Commands' } }
+        )
 }
 
 export const unsetSource = 'sourceImproperlySet'
@@ -518,7 +518,7 @@ function handleBadCompositeKey(data: { id: string; args: any[]; compositeKey: Co
         return // nothing to do since no key
     }
 
-    Object.entries(compositeKey).forEach(([index, field]) => {
+    for (const [index, field] of Object.entries(compositeKey)) {
         const indexAsInt = parseInt(index)
         const arg = args[indexAsInt]
         if (field === 'source' && arg === undefined) {
@@ -535,7 +535,7 @@ function handleBadCompositeKey(data: { id: string; args: any[]; compositeKey: Co
             getLogger().error('Commands/Telemetry: "%s" executed with invalid "source" type: "%O"', id, args)
             args[indexAsInt] = unsetSource
         }
-    })
+    }
 }
 
 /**
@@ -550,11 +550,11 @@ function findFieldsToAddToMetric(args: any[], compositeKey: CompositeKey): { [fi
     const sortedIndexesWithValue = indexesWithValue.sort((a, b) => a - b)
 
     const result: { [field in MetricField]?: any } = {}
-    sortedIndexesWithValue.forEach((i) => {
+    for (const i of sortedIndexesWithValue) {
         const fieldName: MetricField = compositeKey[i]
         const fieldValue = args[i]
         result[fieldName] = fieldValue
-    })
+    }
     return result
 }
 
@@ -634,7 +634,9 @@ export class TelemetryDebounceInfo {
         })
 
         const hasher = crypto.createHash('sha256')
-        hashableObjects.forEach((o) => hasher.update(o))
+        for (const o of hashableObjects) {
+            hasher.update(o)
+        }
         return hasher.digest('hex')
     }
 }
@@ -651,7 +653,7 @@ async function runCommand<T extends Callback>(fn: T, info: CommandInfo<T>): Prom
 
     logger.debug(
         `command: running ${label} with arguments: %O`,
-        partialClone(args, 3, ['clientSecret', 'accessToken', 'refreshToken'], '[omitted]')
+        partialClone(args, 3, ['clientSecret', 'accessToken', 'refreshToken', 'tooltip'], { replacement: '[omitted]' })
     )
 
     try {

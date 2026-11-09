@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { Iot } from 'aws-sdk'
 import { IotClient, IotPolicy } from '../../../shared/clients/iotClient'
 
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
@@ -20,6 +19,7 @@ import { localize } from '../../../shared/utilities/vsCodeUtils'
 import { getIcon } from '../../../shared/icons'
 import { Settings } from '../../../shared/settings'
 import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
+import { PolicyVersion } from '@aws-sdk/client-iot'
 
 /**
  * Represents an IoT Policy that may have either a Certificate Node or the
@@ -39,7 +39,7 @@ export class IotPolicyNode extends AWSTreeNodeBase implements AWSResourceNode {
             'AWS.explorerNode.iot.policyToolTip',
             '{0}{1}',
             policy.name,
-            certs?.length ?? 0 > 0 ? `\nAttached to: ${certs?.join(', ')}` : ''
+            (certs?.length ?? 0 > 0) ? `\nAttached to: ${certs?.join(', ')}` : ''
         )
         this.iconPath = getIcon('aws-iot-policy')
         this.contextValue = 'awsIotPolicyNode.Certificates'
@@ -101,7 +101,7 @@ export class IotPolicyWithVersionsNode extends IotPolicyNode {
     }
 
     public async updateChildren(): Promise<void> {
-        const versions: Map<string, Iot.PolicyVersion> = toMap(
+        const versions: Map<string, PolicyVersion> = toMap(
             await toArrayAsync(this.iot.listPolicyVersions({ policyName: this.policy.name })),
             (version) => version.versionId
         )

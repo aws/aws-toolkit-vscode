@@ -4,7 +4,7 @@
  */
 
 import { localize } from '../../shared/utilities/vsCodeUtils'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import { AWSTreeNodeBase } from '../../shared/treeview/nodes/awsTreeNodeBase'
 import { LoadMoreNode } from '../../shared/treeview/nodes/loadMoreNode'
 import { AwsExplorer } from '../awsExplorer'

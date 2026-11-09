@@ -4,10 +4,13 @@
  */
 
 import * as vscode from 'vscode'
-import { isCloud9 } from '../shared/extensionUtilities'
 import { Protocol, registerWebviewServer } from './server'
 import { getIdeProperties } from '../shared/extensionUtilities'
 import { getFunctions } from '../shared/utilities/classUtils'
+import { telemetry } from '../shared/telemetry/telemetry'
+import { randomUUID } from '../shared/crypto'
+import { Timeout } from '../shared/utilities/timeoutUtils'
+import globals from '../shared/extensionGlobals'
 
 interface WebviewParams {
     /**
@@ -153,6 +156,35 @@ export abstract class VueWebview {
     public abstract readonly id: string
 
     /**
+     * Implementations must override this field to `true` if the webview can support
+     * {@link telemetry.toolkit_didLoadModule}.
+     * A webview that supports this will call {@link setDidLoad}
+     * to confirm the UI has successfully loaded.
+     */
+    public supportsLoadTelemetry: boolean = false
+    /**
+     * The metadata used to connect {@link telemetry.toolkit_willOpenModule} and {@link telemetry.toolkit_didLoadModule}.
+     * Always clear this field after load is completed, as it should not be shared with future open/loads.
+     */
+    public loadMetadata:
+        | {
+              /**
+               * A unique identifier used to connect the opening/loaded metrics of a webview
+               */
+              traceId: string
+              /**
+               * When the webview is doing its initial render/load, this times out if it takes too long
+               * to get a "success" message (we assume something went wrong)
+               */
+              loadTimeout: Timeout | undefined
+              /**
+               * The time in milliseconds, when the module was triggered to start loading
+               */
+              start: number
+          }
+        | undefined = undefined
+
+    /**
      * The relative location, from the repository root, to the frontend entrypoint.
      */
     public readonly source: string
@@ -190,6 +222,7 @@ export abstract class VueWebview {
 
     protected dispose(): void {
         this.disposed = true
+        this.loadMetadata?.loadTimeout?.dispose()
         this.onDidDisposeEmitter.fire()
     }
 
@@ -226,10 +259,49 @@ export abstract class VueWebview {
             }
 
             public async setup(webview: vscode.Webview) {
+                this.setupTelemetry()
+
                 const server = registerWebviewServer(webview, this.instance.protocol, this.instance.id)
                 this.instance.onDidDispose(() => {
                     server.dispose()
                 })
+            }
+
+            /**
+             * Setup telemetry events that report on the initial loading of a webview
+             */
+            private setupTelemetry() {
+                const traceId = randomUUID()
+                // Notify intent to open a module, this does not mean it successfully opened
+                telemetry.toolkit_willOpenModule.emit({
+                    module: this.instance.id,
+                    result: 'Succeeded',
+                    traceId: traceId,
+                })
+
+                // setup for when the webview is (possibly) loaded
+                if (this.instance.supportsLoadTelemetry) {
+                    // Arbitrary assumption that UI will take no longer than 10 seconds to load
+                    const loadTimeout = new Timeout(10_000)
+                    const start = globals.clock.Date.now()
+                    this.instance.loadMetadata = {
+                        traceId,
+                        loadTimeout,
+                        start,
+                    }
+
+                    // webview frontend did not successfuly respond quick enough, so we assume loading failed
+                    loadTimeout.token.onCancellationRequested(() => {
+                        telemetry.toolkit_didLoadModule.emit({
+                            module: this.instance.id,
+                            result: 'Failed',
+                            traceId: traceId,
+                            reason: 'LoadTimedOut',
+                            reasonDesc: 'Likely due to an error in the frontend',
+                        })
+                        this.instance.loadMetadata = undefined
+                    })
+                }
             }
 
             public async show(params: Omit<WebviewPanelParams, 'id' | 'webviewJs'>): Promise<vscode.WebviewPanel> {
@@ -318,6 +390,46 @@ export abstract class VueWebview {
             }
         }
     }
+
+    /**
+     * Call this after the webview has successfully loaded
+     */
+    protected setDidLoad(module: string) {
+        this.loadMetadata?.loadTimeout?.dispose()
+
+        // Represents time from intent to open, to confirmation of a successful load
+        const duration = globals.clock.Date.now() - this.loadMetadata!.start
+
+        telemetry.toolkit_didLoadModule.emit({
+            passive: true,
+            module,
+            result: 'Succeeded',
+            traceId: this.loadMetadata?.traceId,
+            duration,
+        })
+
+        this.loadMetadata = undefined
+    }
+
+    /**
+     * Call this if we catch an error in the frontend, and are able to forward it to the backed
+     *
+     * @param message Error message from the frontend
+     */
+    public setLoadFailure(module: string, message: string) {
+        this.loadMetadata?.loadTimeout?.dispose()
+
+        telemetry.toolkit_didLoadModule.emit({
+            passive: true,
+            module,
+            result: 'Failed',
+            traceId: this.loadMetadata?.traceId,
+            reason: 'CaughtFrontendError',
+            reasonDesc: message,
+        })
+
+        this.loadMetadata = undefined
+    }
 }
 
 type FilteredKeys<T> = { [P in keyof T]: unknown extends T[P] ? never : P }[keyof T]
@@ -345,11 +457,7 @@ export type ClassToProtocol<T extends VueWebview> = FilterUnknown<Commands<T> & 
  * Creates a brand new webview panel, setting some basic initial parameters and updating the webview.
  */
 function createWebviewPanel(ctx: vscode.ExtensionContext, params: WebviewPanelParams): vscode.WebviewPanel {
-    // C9 doesn't support 'Beside'. The next best thing is always using the second column.
-    const viewColumn =
-        isCloud9() && params.viewColumn === vscode.ViewColumn.Beside
-            ? vscode.ViewColumn.Two
-            : params.viewColumn ?? vscode.ViewColumn.Active
+    const viewColumn = params.viewColumn ?? vscode.ViewColumn.Active
 
     const panel = vscode.window.createWebviewPanel(
         params.id,
@@ -358,9 +466,10 @@ function createWebviewPanel(ctx: vscode.ExtensionContext, params: WebviewPanelPa
         {
             // The redundancy here is to correct a bug with Cloud9's Webview implementation
             // We need to assign certain things on instantiation, otherwise they'll never be applied to the view
+            // TODO: Comment is old, no cloud9 support anymore. Is this needed?
             enableScripts: true,
             enableCommandUris: true,
-            retainContextWhenHidden: isCloud9() || params.retainContextWhenHidden,
+            retainContextWhenHidden: params.retainContextWhenHidden,
         }
     )
     updateWebview(ctx, panel.webview, params)
@@ -392,7 +501,7 @@ function updateWebview(ctx: vscode.ExtensionContext, webview: vscode.Webview, pa
     ])
 
     const css = resolveRelative(webview, vscode.Uri.joinPath(resources, 'css'), [
-        isCloud9() ? 'base-cloud9.css' : 'base.css',
+        'base.css',
         ...(params.cssFiles ?? []),
     ])
 
@@ -403,7 +512,7 @@ function updateWebview(ctx: vscode.ExtensionContext, webview: vscode.Webview, pa
         stylesheets: css.map((p) => `<link rel="stylesheet" href="${p}">\n`).join('\n'),
         main: mainScript,
         webviewJs: params.webviewJs,
-        cspSource: updateCspSource(webview.cspSource),
+        cspSource: webview.cspSource,
     })
 
     return webview
@@ -454,13 +563,4 @@ function resolveWebviewHtml(params: {
         <script src="${resolvedParams.main}"></script>
     </body>
 </html>`
-}
-
-/**
- * Updates the CSP source for webviews with an allowed source for AWS endpoints when running in
- * Cloud9 environments. Possible this can be further scoped to specific C9 CDNs or removed entirely
- * if C9 injects this.
- */
-export function updateCspSource(baseSource: string) {
-    return isCloud9() ? `https://*.amazonaws.com ${baseSource}` : baseSource
 }

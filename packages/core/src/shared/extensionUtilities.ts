@@ -7,26 +7,38 @@ import * as _ from 'lodash'
 import * as os from 'os'
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import { getLogger } from './logger'
+import { getLogger } from './logger/logger'
 import { VSCODE_EXTENSION_ID, extensionAlphaVersion } from './extensions'
 import { Ec2MetadataClient } from './clients/ec2MetadataClient'
 import { DefaultEc2MetadataClient } from './clients/ec2MetadataClient'
-import { extensionVersion, getCodeCatalystDevEnvId } from './vscode/env'
-import { DevSettings } from './settings'
+import { extensionVersion, getCodeCatalystDevEnvId, hasSageMakerEnvVars } from './vscode/env'
 import globals from './extensionGlobals'
 import { once } from './utilities/functionUtils'
+import {
+    apprunnerCreateServiceDocUrl,
+    debugNewSamAppDocUrl,
+    documentationUrl,
+    launchConfigDocUrl,
+    samDeployDocUrl,
+    samInitDocUrl,
+} from './constants'
+import {
+    cloud9Appname,
+    cloud9CnAppname,
+    cursorAppname,
+    kiroAppname,
+    sageMakerAppname,
+    sageMakerUnifiedStudio,
+    vscodeAppname,
+} from './vscode/constants'
 
 const localize = nls.loadMessageBundle()
 
-const vscodeAppname = 'Visual Studio Code'
-const cloud9Appname = 'AWS Cloud9'
-const cloud9CnAppname = 'Amazon Cloud9'
-const sageMakerAppname = 'SageMaker Code Editor'
 const notInitialized = 'notInitialized'
 
 function _isAmazonQ() {
     const id = globals.context.extension.id
-    const isToolkit = id === VSCODE_EXTENSION_ID.awstoolkit || id === VSCODE_EXTENSION_ID.awstoolkitcore
+    const isToolkit = id === VSCODE_EXTENSION_ID.awstoolkit
     const isQ = id === VSCODE_EXTENSION_ID.amazonq
     if (!isToolkit && !isQ) {
         throw Error(`unexpected extension id: ${id}`) // sanity check
@@ -41,43 +53,50 @@ export function productName() {
     return isAmazonQ() ? 'Amazon Q' : `${getIdeProperties().company} Toolkit`
 }
 
+/** Gets the client name stored in oidc */
+export const oidcClientName = once(_oidcClientName)
+function _oidcClientName() {
+    const companyName = getIdeProperties().company
+    return isCloud9() ? `${companyName} Cloud9` : `${companyName} IDE Extensions for VSCode`
+}
+
+export const getExtensionId = () => {
+    return isAmazonQ() ? VSCODE_EXTENSION_ID.amazonq : VSCODE_EXTENSION_ID.awstoolkit
+}
+
 /** Gets the "AWS" or "Amazon Q" prefix (in package.json: `commands.category`). */
 export function commandsPrefix(): string {
     return isAmazonQ() ? 'Amazon Q' : getIdeProperties().company
 }
 
-export const mostRecentVersionKey: string = 'globalsMostRecentVersion'
-
-export enum IDE {
-    vscode,
-    cloud9,
-    sagemaker,
-    unknown,
-}
-
 let computeRegion: string | undefined = notInitialized
+let serviceName: string = notInitialized
+let isSMUS: boolean = false
 
-export function getIdeType(): IDE {
-    const settings = DevSettings.instance
-    if (
-        vscode.env.appName === cloud9Appname ||
-        vscode.env.appName === cloud9CnAppname ||
-        settings.get('forceCloud9', false)
-    ) {
-        return IDE.cloud9
+export function getIdeType(): 'vscode' | 'cloud9' | 'sagemaker' | 'kiro' | 'cursor' | 'unknown' {
+    if (vscode.env.appName === cloud9Appname || vscode.env.appName === cloud9CnAppname) {
+        return 'cloud9'
     }
 
     if (vscode.env.appName === sageMakerAppname) {
-        return IDE.sagemaker
+        return 'sagemaker'
+    }
+
+    if (vscode.env.appName?.includes(kiroAppname)) {
+        return 'kiro'
+    }
+
+    if (vscode.env.appName?.toLowerCase().includes(cursorAppname.toLowerCase())) {
+        return 'cursor'
     }
 
     // Theia doesn't necessarily have all env properties
     // so we should be defensive and assume appName is nullable.
     if (vscode.env.appName?.startsWith(vscodeAppname)) {
-        return IDE.vscode
+        return 'vscode'
     }
 
-    return IDE.unknown
+    return 'unknown'
 }
 
 interface IdeProperties {
@@ -102,12 +121,12 @@ export function getIdeProperties(): IdeProperties {
     }
 
     switch (getIdeType()) {
-        case IDE.cloud9:
+        case 'cloud9':
             if (isCn()) {
                 return createCloud9Properties(localize('AWS.title.cn', 'Amazon'))
             }
             return createCloud9Properties(company)
-        case IDE.sagemaker:
+        case 'sagemaker':
             if (isCn()) {
                 // check for cn region
                 return createSageMakerProperties(localize('AWS.title.cn', 'Amazon'))
@@ -142,10 +161,31 @@ function createCloud9Properties(company: string): IdeProperties {
 }
 
 /**
+ * export method - for testing purposes only
+ * @internal
+ */
+export function isSageMakerUnifiedStudio(): boolean {
+    if (serviceName === notInitialized) {
+        serviceName = process.env.SERVICE_NAME ?? ''
+        isSMUS = serviceName === sageMakerUnifiedStudio
+    }
+    return isSMUS
+}
+
+/**
+ * Reset cached SageMaker state - for testing purposes only
+ * @internal
+ */
+export function resetSageMakerState(): void {
+    serviceName = notInitialized
+    isSMUS = false
+}
+
+/**
  * Decides if the current system is (the specified flavor of) Cloud9.
  */
 export function isCloud9(flavor: 'classic' | 'codecatalyst' | 'any' = 'any'): boolean {
-    const cloud9 = getIdeType() === IDE.cloud9
+    const cloud9 = getIdeType() === 'cloud9'
     if (!cloud9 || flavor === 'any') {
         return cloud9
     }
@@ -153,12 +193,51 @@ export function isCloud9(flavor: 'classic' | 'codecatalyst' | 'any' = 'any'): bo
     return (flavor === 'classic' && !codecat) || (flavor === 'codecatalyst' && codecat)
 }
 
-export function isSageMaker(): boolean {
-    return vscode.env.appName === sageMakerAppname
+/**
+ * Determines if the current system is the Kiro IDE.
+ */
+export function isKiro(): boolean {
+    return getIdeType() === 'kiro'
+}
+
+/**
+ *
+ * @param appName to identify the proper SM instance
+ * @returns true if the current system is SageMaker(SMAI or SMUS)
+ */
+export function isSageMaker(appName: 'SMAI' | 'SMUS' | 'SMUS-SPACE-REMOTE-ACCESS' = 'SMAI'): boolean {
+    // Check for SageMaker-specific environment variables first
+    let hasSMEnvVars: boolean = false
+    if (hasSageMakerEnvVars()) {
+        getLogger().debug('SageMaker environment detected via environment variables')
+        hasSMEnvVars = true
+    }
+
+    switch (appName) {
+        case 'SMAI':
+            return (vscode.env.appName === sageMakerAppname || vscode.env.appName === vscodeAppname) && hasSMEnvVars
+        case 'SMUS':
+            return vscode.env.appName === sageMakerAppname && isSageMakerUnifiedStudio() && hasSMEnvVars
+        case 'SMUS-SPACE-REMOTE-ACCESS':
+            // When is true, the AWS toolkit is running in remote SSH conenction to SageMaker Unified Studio space
+            return vscode.env.appName !== sageMakerAppname && isSageMakerUnifiedStudio() && hasSMEnvVars
+        default:
+            return false
+    }
 }
 
 export function isCn(): boolean {
-    return getComputeRegion()?.startsWith('cn') ?? false
+    try {
+        const region = getComputeRegion()
+        if (!region || region === 'notInitialized') {
+            getLogger().debug('isCn called before compute region initialized, defaulting to false')
+            return false
+        }
+        return region.startsWith('cn')
+    } catch (err) {
+        getLogger().error(`Error in isCn method: ${err}`)
+        return false
+    }
 }
 
 /**
@@ -172,8 +251,8 @@ export function isCn(): boolean {
  * @param context VS Code Extension Context
  * @param currVersion Current version to compare stored most recent version against (useful for tests)
  */
-export function isDifferentVersion(context: vscode.ExtensionContext, currVersion: string = extensionVersion): boolean {
-    const mostRecentVersion = context.globalState.get<string>(mostRecentVersionKey)
+export function isDifferentVersion(currVersion: string = extensionVersion): boolean {
+    const mostRecentVersion = globals.globalState.tryGet('globalsMostRecentVersion', String)
     if (mostRecentVersion && mostRecentVersion === currVersion) {
         return false
     }
@@ -187,8 +266,8 @@ export function isDifferentVersion(context: vscode.ExtensionContext, currVersion
  *
  * @param context VS Code Extension Context
  */
-export function setMostRecentVersion(context: vscode.ExtensionContext): void {
-    context.globalState.update(mostRecentVersionKey, extensionVersion).then(undefined, (e) => {
+export function setMostRecentVersion(): void {
+    globals.globalState.update('globalsMostRecentVersion', extensionVersion).then(undefined, (e) => {
         getLogger().error('globalState.update() failed: %s', (e as Error).message)
     })
 }
@@ -240,8 +319,8 @@ export function showWelcomeMessage(context: vscode.ExtensionContext): void {
         return
     }
     try {
-        if (isDifferentVersion(context)) {
-            setMostRecentVersion(context)
+        if (isDifferentVersion()) {
+            setMostRecentVersion()
             if (!isCloud9()) {
                 void promptQuickstart()
             }
@@ -250,6 +329,28 @@ export function showWelcomeMessage(context: vscode.ExtensionContext): void {
         // swallow error and don't block extension load
         getLogger().error(err as Error)
     }
+}
+
+function _getDocumentationUrl(urls: { cloud9: vscode.Uri; toolkit: vscode.Uri }): vscode.Uri {
+    return isCloud9() ? urls.cloud9 : urls.toolkit
+}
+export function getDocUrl() {
+    return _getDocumentationUrl(documentationUrl)
+}
+export function getSamInitDocUrl() {
+    return _getDocumentationUrl(samInitDocUrl)
+}
+export function getLaunchConfigDocUrl() {
+    return _getDocumentationUrl(launchConfigDocUrl)
+}
+export function getSamDeployDocUrl() {
+    return _getDocumentationUrl(samDeployDocUrl)
+}
+export function getDebugNewSamAppDocUrl() {
+    return _getDocumentationUrl(debugNewSamAppDocUrl)
+}
+export function getAppRunnerCreateServiceDocUrl() {
+    return _getDocumentationUrl(apprunnerCreateServiceDocUrl)
 }
 
 /**
@@ -347,20 +448,22 @@ export class UserActivity implements vscode.Disposable {
         const throttledEmit = _.throttle(
             (event: vscode.Event<any>) => {
                 this.activityEvent.fire()
-                getLogger().debug(`UserActivity: event fired "${event.name}"`)
+                getLogger().debug(
+                    `[UserActivity] Event fired: "${event.name}", window focused: ${vscode.window.state.focused}`
+                )
             },
             delay,
             { leading: true, trailing: false }
         )
 
         if (customEvents) {
-            customEvents.forEach((event) =>
+            for (const event of customEvents) {
                 this.register(
                     event(() => {
                         throttledEmit(event)
                     })
                 )
-            )
+            }
         } else {
             this.registerAllEvents(throttledEmit)
         }
@@ -380,21 +483,29 @@ export class UserActivity implements vscode.Disposable {
             vscode.window.onDidChangeTextEditorOptions,
             vscode.window.onDidOpenTerminal,
             vscode.window.onDidCloseTerminal,
-            vscode.window.onDidChangeTerminalState,
             vscode.window.onDidChangeTextEditorViewColumn,
         ]
 
-        activityEvents.forEach((event) =>
+        for (const event of activityEvents) {
             this.register(
                 event(() => {
                     throttledEmit(event)
                 })
             )
-        )
+        }
 
         //
         // Events with special cases:
         //
+
+        this.register(
+            vscode.window.onDidChangeTerminalState((terminal) => {
+                if (!vscode.window.state.focused) {
+                    return
+                }
+                throttledEmit(vscode.window.onDidChangeTerminalState)
+            })
+        )
 
         this.register(
             vscode.window.onDidChangeWindowState((e) => {
@@ -453,6 +564,8 @@ export class UserActivity implements vscode.Disposable {
     }
 
     dispose() {
-        this.disposables.forEach((d) => d.dispose())
+        for (const d of this.disposables) {
+            d.dispose()
+        }
     }
 }

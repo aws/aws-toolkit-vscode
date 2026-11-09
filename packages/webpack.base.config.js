@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-//@ts-check
+// @ts-check
 
 'use strict'
 
@@ -20,7 +20,7 @@ const packageJsonFile = path.join(currentDir, 'package.json')
 const packageJson = JSON.parse(fs.readFileSync(packageJsonFile, 'utf8'))
 const packageId = `${packageJson.publisher}.${packageJson.name}`
 
-//@ts-check
+// @ts-check
 /** @typedef {import('webpack').Configuration} WebpackConfig **/
 
 module.exports = (env = {}, argv = {}) => {
@@ -38,6 +38,7 @@ module.exports = (env = {}, argv = {}) => {
         externals: {
             vscode: 'commonjs vscode',
             vue: 'root Vue',
+            tls: 'commonjs tls',
         },
         resolve: {
             extensions: ['.ts', '.js'],
@@ -59,7 +60,7 @@ module.exports = (env = {}, argv = {}) => {
             },
         },
         node: {
-            __dirname: false, //preserve the default node.js behavior for __dirname
+            __dirname: false, // preserve the default node.js behavior for __dirname
         },
         module: {
             rules: [
@@ -100,6 +101,10 @@ module.exports = (env = {}, argv = {}) => {
             new NLSBundlePlugin(packageId),
             new webpack.DefinePlugin({
                 EXTENSION_VERSION: JSON.stringify(packageJson.version),
+            }),
+            new webpack.DefinePlugin({
+                __VUE_OPTIONS_API__: 'true',
+                __VUE_PROD_DEVTOOLS__: 'false',
             }),
             new CircularDependencyPlugin({
                 exclude: /node_modules|testFixtures/,

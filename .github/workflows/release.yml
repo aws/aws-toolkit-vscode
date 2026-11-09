@@ -12,7 +12,7 @@ on:
                 required: false
                 default: prerelease
     push:
-        branches: [master, feature/*]
+        branches: [master, feature/*, release/*]
         # tags:
         #   - v[0-9]+.[0-9]+.[0-9]+
 
@@ -25,9 +25,7 @@ jobs:
             feature: ${{ steps.build.outputs.feature }}
             tagname: ${{ steps.build.outputs.tagname }}
             toolkit_version: ${{ steps.build.outputs.toolkit_version }}
-            amazonq_version: ${{ steps.build.outputs.amazonq_version }}
             toolkit_changes: ${{ steps.build.outputs.toolkit_changes }}
-            amazonq_changes: ${{ steps.build.outputs.amazonq_changes }}
         steps:
             - uses: actions/checkout@v4
               with:
@@ -40,12 +38,16 @@ jobs:
             #   run: echo 'TAG_NAME=prerelease' >> $GITHUB_ENV
             - if: github.event_name == 'workflow_dispatch'
               run: echo "TAG_NAME=${{ github.event.inputs.tag_name }}" >> $GITHUB_ENV
-            - if: github.ref_name != 'master'
+            - if: startsWith(github.ref_name, 'feature/')
               run: |
-                  TAG_NAME=${{ github.ref_name }}
-                  FEAT_NAME=$(echo $TAG_NAME | sed 's/feature\///')
+                  FEAT_NAME=$(echo ${{ github.ref_name }} | sed 's/feature\///')
                   echo "FEAT_NAME=$FEAT_NAME" >> $GITHUB_ENV
                   echo "TAG_NAME=pre-$FEAT_NAME" >> $GITHUB_ENV
+            - if: startsWith(github.ref_name, 'release/')
+              run: |
+                  RC_NAME=$(echo ${{ github.ref_name }} | sed 's/release\///')
+                  echo "FEAT_NAME=" >> $GITHUB_ENV
+                  echo "TAG_NAME=$RC_NAME" >> $GITHUB_ENV
             - if: github.ref_name == 'master'
               run: |
                   echo "FEAT_NAME=" >> $GITHUB_ENV
@@ -53,9 +55,10 @@ jobs:
             - run: npm ci
             - name: vsix
               run: |
-                  npm run createRelease -w packages/toolkit -w packages/amazonq  # Generate CHANGELOG.md
+                  npm run createRelease -w packages/toolkit  # Generate CHANGELOG.md
+                  npm run -w packages/sagemaker-ssh-kiro package  # Must be built before toolkit (toolkit embeds it)
                   npm run -w packages/toolkit package -- --feature "$FEAT_NAME"
-                  npm run -w packages/amazonq package -- --feature "$FEAT_NAME"
+                  rm -f sagemaker-ssh-kiro-*.vsix  # Remove standalone VSIX; it's already embedded inside toolkit VSIX
             - uses: actions/upload-artifact@v4
               with:
                   name: artifacts
@@ -76,7 +79,6 @@ jobs:
                   echo "feature=$FEAT_NAME" >> $GITHUB_OUTPUT
                   echo "tagname=$TAG_NAME" >> $GITHUB_OUTPUT
                   write_package_info toolkit
-                  write_package_info amazonq
 
     publish:
         needs: [package]
@@ -90,13 +92,11 @@ jobs:
             FEAT_NAME: ${{ needs.package.outputs.feature }}
             TAG_NAME: ${{ needs.package.outputs.tagname }}
             AWS_TOOLKIT_VERSION: ${{ needs.package.outputs.toolkit_version }}
-            AMAZON_Q_VERSION: ${{ needs.package.outputs.amazonq_version }}
             #
             # Used in release_notes.md
             #
             BRANCH: ${{ github.ref_name }}
             AWS_TOOLKIT_CHANGES: ${{ needs.package.outputs.toolkit_changes }}
-            AMAZON_Q_CHANGES: ${{ needs.package.outputs.amazonq_changes }}
         permissions:
             contents: write
         steps:
@@ -105,10 +105,14 @@ jobs:
             - uses: actions/checkout@v4
             - uses: actions/download-artifact@v4
             - name: Delete existing prerelease
-              # "prerelease" (main branch) or "pre-<feature>"
-              if: "env.TAG_NAME == 'prerelease' || startsWith(env.TAG_NAME, 'pre-')"
+              # "prerelease" (main branch), "pre-<feature>", or "rc-<date>"
+              if: env.TAG_NAME == 'prerelease' || startsWith(env.TAG_NAME, 'pre-') || startsWith(env.TAG_NAME, 'rc-')
               run: |
-                  echo "SUBJECT=AWS IDE Extensions: ${FEAT_NAME:-${TAG_NAME}}" >> $GITHUB_ENV
+                  if [[ "$TAG_NAME" == rc-* ]]; then
+                    echo "SUBJECT=AWS IDE Extensions Release Candidate: ${TAG_NAME#rc-}" >> $GITHUB_ENV
+                  else
+                    echo "SUBJECT=AWS IDE Extensions: ${FEAT_NAME:-${TAG_NAME}}" >> $GITHUB_ENV
+                  fi
                   gh release delete "$TAG_NAME" --cleanup-tag --yes || true
                   # git push origin :"$TAG_NAME" || true
             - name: Publish Prerelease

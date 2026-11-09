@@ -6,14 +6,13 @@
 import assert from 'assert'
 import * as path from 'path'
 import * as vscode from 'vscode'
-import * as fs from 'fs-extra'
 import { detectCdkProjects } from '../../../awsService/cdk/explorer/detectCdkProjects'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { saveCdkJson } from './treeTestUtils'
 import { createTestWorkspaceFolder } from '../../testUtil'
 import { FakeExtensionContext } from '../../fakeExtensionContext'
-import { mkdirp, writeJSON } from 'fs-extra'
 import { waitUntil } from '../../../shared/utilities/timeoutUtils'
+import { fs } from '../../../shared'
 
 describe('detectCdkProjects', function () {
     const workspacePaths: string[] = []
@@ -45,7 +44,7 @@ describe('detectCdkProjects', function () {
 
     afterEach(async function () {
         for (const path of workspacePaths) {
-            await fs.remove(path)
+            await fs.delete(path, { recursive: true })
         }
 
         workspacePaths.length = 0
@@ -88,7 +87,7 @@ describe('detectCdkProjects', function () {
 
     it('detects deep projects', async function () {
         const cdkJsonUri = vscode.Uri.joinPath(workspaceFolders[0].uri, 'directory1', 'directory2', 'cdk.json')
-        await mkdirp(path.dirname(cdkJsonUri.fsPath))
+        await fs.mkdir(path.dirname(cdkJsonUri.fsPath))
         await saveCdkJson(cdkJsonUri.fsPath)
         const actual = await detectCdkProjects_wait(workspaceFolders)
         assert.strictEqual(actual[0]?.cdkJsonUri.fsPath, cdkJsonUri.fsPath)
@@ -96,7 +95,7 @@ describe('detectCdkProjects', function () {
 
     it('ignores projects in `node_modules`', async function () {
         const cdkJsonPath = path.join(workspaceFolders[0].uri.fsPath, 'node_modules', 'lib', 'cdk.json')
-        await mkdirp(path.dirname(cdkJsonPath))
+        await fs.mkdir(path.dirname(cdkJsonPath))
         await saveCdkJson(cdkJsonPath)
         const actual = await detectCdkProjects_wait(workspaceFolders)
         assert.strictEqual(actual.length, 0)
@@ -118,7 +117,8 @@ describe('detectCdkProjects', function () {
 
     it('takes into account `output` from cdk.json to build tree.json path', async function () {
         const cdkJsonUri = vscode.Uri.joinPath(workspaceFolders[0].uri, 'cdk.json')
-        await writeJSON(cdkJsonUri.fsPath, { app: 'npx ts-node bin/demo-nov7.ts', output: 'build/cdk.out' })
+        const cdkJsonStr = JSON.stringify({ app: 'npx ts-node bin/demo-nov7.ts', output: 'build/cdk.out' })
+        await fs.writeFile(cdkJsonUri.fsPath, cdkJsonStr)
         const actual = await detectCdkProjects_wait(workspaceFolders)
 
         assert.ok(actual)

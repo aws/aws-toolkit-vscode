@@ -6,16 +6,21 @@
 import * as vscode from 'vscode'
 import * as path from 'path'
 import fs from '../../shared/fs/fs'
-import { ChildProcess } from './childProcess'
+import { ChildProcess, ChildProcessOptions } from './processUtils'
 import { GitExtension } from '../extensions/git'
 import { Settings } from '../settings'
 import { getLogger } from '../logger/logger'
+import { mergeResolvedShellPath } from '../env/resolveEnv'
+import { matchesPattern } from './textUtilities'
+import { getIdeInfo } from '../vscode/env'
 
 /** Full path to VSCode CLI. */
 let vscPath: string
 let sshPath: string
 let gitPath: string
 let bashPath: string
+let javaPath: string
+const pathMap = new Map<string, string>()
 
 /**
  * Tries to execute a program at path `p` with the given args and
@@ -30,11 +35,15 @@ export async function tryRun(
     p: string,
     args: string[],
     logging: 'yes' | 'no' | 'noresult' = 'yes',
-    expected?: string
+    expected?: string | RegExp,
+    opt?: ChildProcessOptions
 ): Promise<boolean> {
     const proc = new ChildProcess(p, args, { logging: 'no' })
-    const r = await proc.run()
-    const ok = r.exitCode === 0 && (expected === undefined || r.stdout.includes(expected))
+    const r = await proc.run({
+        ...opt,
+        spawnOptions: { env: await mergeResolvedShellPath(opt?.spawnOptions?.env ?? process.env) },
+    })
+    const ok = r.exitCode === 0 && (expected === undefined || matchesPattern(r.stdout, expected))
     if (logging === 'noresult') {
         getLogger().info('tryRun: %s: %s', ok ? 'ok' : 'failed', proc)
     } else if (logging !== 'no') {
@@ -44,37 +53,65 @@ export async function tryRun(
 }
 
 /**
- * Gets the fullpath to `code` (VSCode CLI), or falls back to "code" (not
+ * Gets the fullpath to the IDE CLI (code, cursor, kiro, windsurf, etc.), or falls back to the CLI name (not
  * absolute) if it works.
  *
  * @see https://github.com/microsoft/vscode-test/blob/4bdccd4c386813a8158b0f9b96f31cbbecbb3374/lib/util.ts#L133
  */
+/**
+ * Builds the ordered list of candidate paths to probe when looking for an IDE CLI binary.
+ * Extracted from `getVscodeCliPath()` so it can be unit-tested without touching the filesystem,
+ * module cache, or process globals.
+ *
+ * For Kiro, `code`-named fallback paths inside the app bundle are appended after the standard
+ * `kiro`-named probes. This is because Kiro.app ships its CLI as `code` (not `kiro`); on systems
+ * where the user hasn't installed the `/usr/local/bin/kiro` PATH shim, these fallbacks are the
+ * only way to resolve a working CLI.
+ */
+export function getCliProbePaths(cliName: string, appRoot: string, vscExe: string): string[] {
+    const base = [
+        // Special case for flatpak (steamdeck). #V896741845
+        // https://github.com/flathub/com.visualstudio.code/blob/master/code.sh
+        `/app/bin/${cliName}`,
+        // Note: macOS does not have a separate "code-insiders" binary.
+        path.resolve(`${appRoot}/bin/${cliName}`), // macOS
+        path.resolve(`${appRoot}/../../bin/${cliName}`), // Windows
+        path.resolve(`${appRoot}/../../bin/${cliName}-insiders`), // Windows
+        // Linux example "appRoot": vscode-linux-x64-1.42.0/VSCode-linux-x64/resources/app
+        path.resolve(`${appRoot}/${cliName}`),
+        path.resolve(vscExe, `../bin/${cliName}-insiders`),
+        path.resolve(vscExe, `../bin/${cliName}`),
+        path.resolve(vscExe, `../../bin/${cliName}-insiders`),
+        path.resolve(vscExe, `../../bin/${cliName}`),
+        `/usr/bin/${cliName}`,
+        cliName, // $PATH
+    ]
+    if (cliName === 'kiro') {
+        // Kiro fallback: Kiro.app ships the CLI as `code`, not `kiro`. On the $PATH, `kiro` may exist
+        // but it's just a symlink to /Applications/Kiro.app/Contents/Resources/app/bin/code. If none of
+        // the `kiro`-named probes succeed, search for a `code`-named binary in the same application paths.
+        base.push(
+            path.resolve(`${appRoot}/bin/code`),
+            path.resolve(`${appRoot}/../../bin/code`),
+            path.resolve(`${appRoot}/code`),
+            path.resolve(vscExe, '../bin/code'),
+            path.resolve(vscExe, '../../bin/code')
+        )
+    }
+    return base
+}
+
 export async function getVscodeCliPath(): Promise<string | undefined> {
     if (vscPath) {
         return vscPath
     }
 
-    const vscExe = process.argv0
-    // https://github.com/microsoft/vscode-test/blob/4bdccd4c386813a8158b0f9b96f31cbbecbb3374/lib/util.ts#L133
-    const vscs = [
-        // Special case for flatpak (steamdeck). #V896741845
-        // https://github.com/flathub/com.visualstudio.code/blob/master/code.sh
-        '/app/bin/code',
-        // Note: macOS does not have a separate "code-insiders" binary.
-        path.resolve(`${vscode.env.appRoot}/bin/code`), // macOS
-        path.resolve(`${vscode.env.appRoot}/../../bin/code`), // Windows
-        path.resolve(`${vscode.env.appRoot}/../../bin/code-insiders`), // Windows
-        // Linux example "appRoot": vscode-linux-x64-1.42.0/VSCode-linux-x64/resources/app
-        path.resolve(`${vscode.env.appRoot}/code`),
-        path.resolve(vscExe, '../bin/code-insiders'),
-        path.resolve(vscExe, '../bin/code'),
-        path.resolve(vscExe, '../../bin/code-insiders'),
-        path.resolve(vscExe, '../../bin/code'),
-        '/usr/bin/code',
-        'code', // $PATH
-    ]
+    const ideInfo = getIdeInfo()
+    const cliName = ideInfo.cliName || 'code'
+    const vscs = getCliProbePaths(cliName, vscode.env.appRoot, process.argv0)
+
     for (const vsc of vscs) {
-        if (!vsc || (vsc !== 'code' && !(await fs.exists(vsc)))) {
+        if (!vsc || (vsc !== cliName && !(await fs.exists(vsc)))) {
             continue
         }
         if (await tryRun(vsc, ['--version'])) {
@@ -114,8 +151,8 @@ export async function findTypescriptCompiler(): Promise<string | undefined> {
  * Gets the configured `ssh` path, or falls back to "ssh" (not absolute),
  * or tries common locations, or returns undefined.
  */
-export async function findSshPath(): Promise<string | undefined> {
-    if (sshPath !== undefined) {
+export async function findSshPath(useCache: boolean = true): Promise<string | undefined> {
+    if (useCache && sshPath !== undefined) {
         return sshPath
     }
 
@@ -132,7 +169,45 @@ export async function findSshPath(): Promise<string | undefined> {
             continue
         }
         if (await tryRun(p, ['-G', 'x'], 'noresult' /* "ssh -G" prints quasi-sensitive info. */)) {
-            sshPath = p
+            sshPath = useCache ? p : sshPath
+            return p
+        }
+    }
+}
+
+/**
+ * Gets a working `java`, or undefined.
+ */
+export async function findJavaPath(): Promise<string | undefined> {
+    if (javaPath !== undefined) {
+        return javaPath
+    }
+
+    const paths = [
+        'java', // Try $PATH first
+        '/usr/bin/java',
+        '/usr/local/bin/java',
+        '/opt/java/bin/java',
+        // Common Oracle JDK locations
+        '/usr/lib/jvm/default-java/bin/java',
+        '/usr/lib/jvm/java-11-openjdk/bin/java',
+        '/usr/lib/jvm/java-8-openjdk/bin/java',
+        // Windows locations
+        'C:/Program Files/Java/jre1.8.0_301/bin/java.exe',
+        'C:/Program Files/Java/jdk1.8.0_301/bin/java.exe',
+        'C:/Program Files/OpenJDK/openjdk-11.0.2/bin/java.exe',
+        'C:/Program Files (x86)/Java/jre1.8.0_301/bin/java.exe',
+        'C:/Program Files (x86)/Java/jdk1.8.0_301/bin/java.exe',
+        // macOS locations
+        '/System/Library/Frameworks/JavaVM.framework/Versions/Current/Commands/java',
+        '/usr/libexec/java_home',
+    ]
+    for (const p of paths) {
+        if (!p || ('java' !== p && !(await fs.exists(p)))) {
+            continue
+        }
+        if (await tryRun(p, ['-version'])) {
+            javaPath = p
             return p
         }
     }
@@ -175,6 +250,40 @@ export async function findBashPath(): Promise<string | undefined> {
         }
         if (await tryRun(p, ['--version'])) {
             bashPath = p
+            return p
+        }
+    }
+}
+
+/**
+ * Gets a working `name` in $PATH or `paths`. If found, try to run the command with `verifyArgs`.
+ *
+ * @param name the name of executable, E.g. aws|sam|docker
+ * @param paths An array of path to search
+ * @param verifyArgs the array of verify args to run the found executable. typically ['--version']
+ * @returns If found and valid, return a executable path of `name`, else undefined
+ */
+export async function findPath(
+    name: string,
+    paths: Array<string>,
+    verifyArgs: Array<string>
+): Promise<string | undefined> {
+    // get from cache
+    if (pathMap && pathMap.get(name)) {
+        return pathMap.get(name)
+    }
+    // name found in path
+    if (await tryRun(name, verifyArgs)) {
+        pathMap.set(name, name)
+        return name
+    }
+    // find working paths
+    for (const p of paths) {
+        if (!p || !(await fs.exists(p))) {
+            continue
+        }
+        if (await tryRun(p, verifyArgs)) {
+            pathMap.set(name, p)
             return p
         }
     }

@@ -6,10 +6,8 @@
 import assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
-import * as fs from 'fs-extra'
 import { DefaultTelemetryService } from '../../../shared/telemetry/telemetryService'
 import { AccountStatus } from '../../../shared/telemetry/telemetryClient'
-import { FakeExtensionContext } from '../../fakeExtensionContext'
 
 import {
     defaultTestAccountId,
@@ -22,6 +20,7 @@ import { installFakeClock } from '../../testUtil'
 import { TelemetryLogger } from '../../../shared/telemetry/telemetryLogger'
 import globals from '../../../shared/extensionGlobals'
 import { toArrayAsync } from '../../../shared/utilities/collectionUtils'
+import { fs } from '../../../shared'
 
 type Metric = { [P in keyof ClientTelemetry.MetricDatum as Uncapitalize<P>]: ClientTelemetry.MetricDatum[P] }
 
@@ -39,13 +38,12 @@ describe('TelemetryService', function () {
     const testFlushPeriod = 10
     let clock: FakeTimers.InstalledClock
     let sandbox: sinon.SinonSandbox
-    let mockContext: FakeExtensionContext
     let mockPublisher: FakeTelemetryPublisher
     let service: DefaultTelemetryService
     let logger: TelemetryLogger
 
     async function initService(awsContext = new FakeAwsContext()): Promise<DefaultTelemetryService> {
-        const newService = await DefaultTelemetryService.create(mockContext, awsContext, undefined, mockPublisher)
+        const newService = await DefaultTelemetryService.create(awsContext, undefined, mockPublisher)
         newService.flushPeriod = testFlushPeriod
         await newService.setTelemetryEnabled(true)
 
@@ -62,7 +60,6 @@ describe('TelemetryService', function () {
     })
 
     beforeEach(async function () {
-        mockContext = await FakeExtensionContext.create()
         mockPublisher = new FakeTelemetryPublisher()
         service = await initService()
         logger = service.logger
@@ -70,7 +67,7 @@ describe('TelemetryService', function () {
     })
 
     afterEach(async function () {
-        await fs.remove(service.persistFilePath)
+        await fs.delete(service.persistFilePath, { recursive: true })
         sandbox.restore()
         clock.uninstall()
     })

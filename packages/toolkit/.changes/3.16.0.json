@@ -1,0 +1,10 @@
+{
+	"date": "2024-07-25",
+	"version": "3.16.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "AccessAnalyzer: error when running CheckNoPublicAccess with only role trust policy in template"
+		}
+	]
+}

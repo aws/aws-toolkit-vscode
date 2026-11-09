@@ -6,17 +6,17 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
-import { SSM } from 'aws-sdk'
+import { DocumentFormat, DocumentVersionInfo } from '@aws-sdk/client-ssm'
 import * as vscode from 'vscode'
 import { DocumentItemNode } from '../explorer/documentItemNode'
 import { AwsContext } from '../../shared/awsContext'
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger, Logger } from '../../shared/logger/logger'
 import * as picker from '../../shared/ui/picker'
 import { showViewLogsMessage } from '../../shared/utilities/messages'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { Result } from '../../shared/telemetry/telemetry'
 
-export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsContext, format?: string) {
+export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsContext, format?: DocumentFormat) {
     const logger: Logger = getLogger()
 
     let result: Result = 'Succeeded'
@@ -44,7 +44,7 @@ export async function openDocumentItem(node: DocumentItemNode, awsContext: AwsCo
     } catch (err) {
         result = 'Failed'
         const error = err as Error
-        logger.error('Error on opening document: %0', error)
+        logger.error('Error on opening document: %O', error)
         void showViewLogsMessage(
             localize(
                 'AWS.message.error.ssmDocument.openDocument.could_not_open',
@@ -65,17 +65,17 @@ export async function openDocumentItemYaml(node: DocumentItemNode, awsContext: A
     await openDocumentItem(node, awsContext, 'YAML')
 }
 
-async function promptUserforDocumentVersion(versions: SSM.Types.DocumentVersionInfo[]): Promise<string | undefined> {
+async function promptUserforDocumentVersion(versions: DocumentVersionInfo[]): Promise<string | undefined> {
     // Prompt user to pick document version
     const quickPickItems: vscode.QuickPickItem[] = []
-    versions.forEach((version) => {
+    for (const version of versions) {
         if (version.DocumentVersion) {
             quickPickItems.push({
                 label: version.DocumentVersion,
                 description: `${version.IsDefaultVersion ? 'Default' : ''}`,
             })
         }
-    })
+    }
 
     if (quickPickItems.length > 1) {
         const versionPick = picker.createQuickPick({

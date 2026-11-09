@@ -18,6 +18,8 @@ export const firstStartUpSource = ExtStartUpSources.firstStartUp
 export const cwEllipsesMenu = 'ellipsesMenu'
 /** Indicates a CodeWhisperer command was executed from the command palette */
 export const commandPalette = 'commandPalette'
+/** Indicates a CodeWhisperer command was executed as a result of a toast message interaction */
+export const toastMessage = 'toastMessage'
 
 /**
  * Indicates what caused the CodeWhisperer command to be executed, since a command can be executed from different "sources"
@@ -35,3 +37,4 @@ export type CodeWhispererSource =
     | typeof firstStartUpSource
     | typeof cwEllipsesMenu
     | typeof commandPalette
+    | typeof toastMessage

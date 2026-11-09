@@ -4,8 +4,8 @@
  */
 
 import assert from 'assert'
-import { LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
-import { contextValueLambdaFunction, LambdaNode } from '../../../lambda/explorer/lambdaNodes'
+import { contextValueLambdaFunction, LambdaFunctionNode } from '../../../lambda/explorer/lambdaFunctionNode'
+import { LambdaNode } from '../../../lambda/explorer/lambdaNodes'
 import { asyncGenerator } from '../../../shared/utilities/collectionUtils'
 import {
     assertNodeListOnlyHasErrorNode,
@@ -17,7 +17,7 @@ import { DefaultLambdaClient } from '../../../shared/clients/lambdaClient'
 const regionCode = 'someregioncode'
 
 function createLambdaClient(...functionNames: string[]) {
-    const client = stub(DefaultLambdaClient, { regionCode })
+    const client = stub(DefaultLambdaClient, { regionCode, userAgent: undefined })
     client.listFunctions.returns(asyncGenerator(functionNames.map((name) => ({ FunctionName: name }))))
 
     return client
@@ -39,21 +39,21 @@ describe('LambdaNode', function () {
 
         assert.strictEqual(childNodes.length, 2, 'Unexpected child count')
 
-        childNodes.forEach((node) =>
+        for (const node of childNodes) {
             assert.ok(node instanceof LambdaFunctionNode, 'Expected child node to be LambdaFunctionNode')
-        )
+        }
     })
 
     it('has child nodes with Lambda Function contextValue', async function () {
         const childNodes = await createNode('f1', 'f2').getChildren()
 
-        childNodes.forEach((node) =>
+        for (const node of childNodes) {
             assert.strictEqual(
                 node.contextValue,
                 contextValueLambdaFunction,
                 'expected the node to have a CloudFormation contextValue'
             )
-        )
+        }
     })
 
     it('sorts child nodes', async function () {

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SignedUrlRequest } from '../../../shared/clients/s3Client'
+import { SignedUrlRequest } from '../../../shared/clients/s3'
 import { copyToClipboard } from '../../../shared/utilities/messages'
 import { S3FileNode } from '../explorer/s3FileNode'
 import * as vscode from 'vscode'
@@ -19,13 +19,12 @@ export async function presignedURLCommand(node: S3FileNode): Promise<void> {
         const validTime = await promptTime(node.file.key)
         const s3Client = node.s3
         const request: SignedUrlRequest = {
-            bucketName: node.bucket.name,
+            bucketName: node.bucket.Name,
             key: node.file.key,
             time: validTime * 60,
-            operation: 'getObject',
         }
 
-        const url = await s3Client.getSignedUrl(request).catch((e) => {
+        const url = await s3Client.getSignedUrlForObject(request).catch((e) => {
             throw ToolkitError.chain(
                 e,
                 'Error creating the presigned URL. Make sure you have access to the requested file.'

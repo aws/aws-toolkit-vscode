@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { readFileSync } from 'fs'
+import { readFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import * as CloudFormation from '../cloudformation/cloudformation'
 import * as pathutils from '../utilities/pathUtils'
 import * as path from 'path'
@@ -12,12 +12,13 @@ import { isInDirectory } from '../filesystemUtilities'
 import { dotNetRuntimes, goRuntimes, javaRuntimes } from '../../lambda/models/samLambdaRuntime'
 import { getLambdaDetails } from '../../lambda/utils'
 import { WatchedFiles, WatchedItem } from './watchedFiles'
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 import globals from '../extensionGlobals'
 import { Timeout } from '../utilities/timeoutUtils'
 import { localize } from '../utilities/vsCodeUtils'
 import { PerfLog } from '../logger/perfLogger'
 import { showMessageWithCancel } from '../utilities/messages'
+import { Runtime } from '@aws-sdk/client-lambda'
 
 export class CloudFormationTemplateRegistry extends WatchedFiles<CloudFormation.Template> {
     public name: string = 'CloudFormationTemplateRegistry'
@@ -188,7 +189,7 @@ export function getResourcesForHandlerFromTemplateDatum(
                 resource.Properties,
                 'Runtime',
                 templateDatum.item
-            )
+            ) as Runtime
             const registeredCodeUri = CloudFormation.getStringForProperty(
                 resource.Properties,
                 'CodeUri',

@@ -4,13 +4,15 @@
  */
 
 import { parse } from '@aws-sdk/util-arn-parser'
-import { Lambda, STS } from 'aws-sdk'
+import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda'
+import { STSClient, GetCallerIdentityCommand } from '@aws-sdk/client-sts'
 import * as vscode from 'vscode'
 import { getLogger } from '../shared/logger'
 import { hasKey } from '../shared/utilities/tsUtils'
 import { getTestWindow, printPendingUiElements } from './shared/vscode/window'
 import { ToolkitError, formatError } from '../shared/errors'
 import { proceedToBrowser } from '../auth/sso/model'
+import { decodeBase64 } from '../shared'
 
 const runnableTimeout = Symbol('runnableTimeout')
 
@@ -134,13 +136,13 @@ export function patchObjectDescriptor<T extends Record<string, any>, U extends k
 
 async function createLambdaClient(functionId: string) {
     if (!functionId.startsWith('arn:aws:lambda')) {
-        return Object.assign(new Lambda(), { isCrossAccount: false })
+        return Object.assign(new LambdaClient({}), { isCrossAccount: false })
     }
 
-    const sts = new STS()
+    const sts = new STSClient({})
     const { region, accountId } = parse(functionId)
-    const identity = await sts.getCallerIdentity().promise()
-    const client = new Lambda({ region })
+    const identity = await sts.send(new GetCallerIdentityCommand({}))
+    const client = new LambdaClient({ region })
 
     return Object.assign(client, { isCrossAccount: identity.Account !== accountId })
 }
@@ -148,14 +150,15 @@ async function createLambdaClient(functionId: string) {
 export async function invokeLambda(id: string, request: unknown): Promise<unknown> {
     const client = await createLambdaClient(id)
     const response = await client
-        .invoke({
-            FunctionName: id,
-            // Setting this to `Tail` with cross account calls results in
-            // `AccessDeniedException: Cross-account log access is not allowed`
-            LogType: client.isCrossAccount ? 'None' : 'Tail',
-            Payload: JSON.stringify(request),
-        })
-        .promise()
+        .send(
+            new InvokeCommand({
+                FunctionName: id,
+                // Setting this to `Tail` with cross account calls results in
+                // `AccessDeniedException: Cross-account log access is not allowed`
+                LogType: client.isCrossAccount ? 'None' : 'Tail',
+                Payload: JSON.stringify(request),
+            })
+        )
         .catch((err) => {
             if (err instanceof Error) {
                 err.message = maskArns(err.message)
@@ -164,13 +167,13 @@ export async function invokeLambda(id: string, request: unknown): Promise<unknow
         })
 
     if (response.LogResult) {
-        const logs = Buffer.from(response.LogResult, 'base64').toString()
+        const logs = decodeBase64(response.LogResult)
         getLogger().debug('lambda invocation logs: %s', maskArns(logs))
     } else {
-        getLogger().debug('lambda invocation request id: %s', response.$response.requestId)
+        getLogger().debug('lambda invocation request id: %s', response.$metadata?.requestId)
     }
 
-    const respStr = response.Payload?.toString('utf-8')
+    const respStr = response.Payload ? new TextDecoder().decode(response.Payload) : undefined
     if (!respStr || respStr === 'null') {
         return
     }
@@ -210,7 +213,7 @@ function maskArns(text: string) {
  */
 export function registerAuthHook(secret: string, lambdaId = process.env['AUTH_UTIL_LAMBDA_ARN']) {
     return getTestWindow().onDidShowMessage((message) => {
-        if (message.items[0].title.match(new RegExp(proceedToBrowser))) {
+        if (message.items.length > 0 && message.items[0].title.match(new RegExp(proceedToBrowser))) {
             if (!lambdaId) {
                 const baseMessage = 'Browser login flow was shown during testing without an authorizer function'
                 if (process.env['AWS_TOOLKIT_AUTOMATION'] === 'local') {
@@ -222,12 +225,16 @@ export function registerAuthHook(secret: string, lambdaId = process.env['AUTH_UT
 
             const openStub = patchObject(vscode.env, 'openExternal', async (target) => {
                 try {
-                    const url = new URL(target.toString(true))
-                    const userCode = url.searchParams.get('user_code')
+                    // Latest eg: 'https://nkomonen.awsapps.com/start/#/device?user_code=JXZC-NVRK'
+                    const urlString = target.toString(true)
 
-                    // TODO: Update this to just be the full URL if the authorizer lambda ever
-                    // supports the verification URI with user code embedded (VerificationUriComplete).
-                    const verificationUri = url.origin
+                    // Drop the user_code parameter since the auth lambda does not support it yet, and keeping it
+                    // would trigger a slightly different UI flow which breaks the automation.
+                    // TODO: If the auth lambda supports user_code in the parameters then we can skip this step
+                    const verificationUri = urlString.split('?')[0]
+
+                    const params = urlString.split('?')[1]
+                    const userCode = new URLSearchParams(params).get('user_code')
 
                     await invokeLambda(lambdaId, {
                         secret,

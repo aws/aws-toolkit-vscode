@@ -3,60 +3,108 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItemType, MynahUIDataModel } from '@aws/mynah-ui'
+import { ChatItem, ChatItemType, MynahUIDataModel, QuickActionCommandGroup } from '@aws/mynah-ui'
 import { TabType } from '../storages/tabsStorage'
 import { FollowUpGenerator } from '../followUps/generator'
 import { QuickActionGenerator } from '../quickActions/generator'
-import { TabTypeDataMap } from './constants'
+import { qChatIntroMessageForSMUS, TabTypeDataMap } from './constants'
+import { FeatureContext } from '../../../../shared/featureConfig'
+import { RegionProfile } from '../../../../codewhisperer/models/model'
 
 export interface TabDataGeneratorProps {
-    isFeatureDevEnabled: boolean
     isGumbyEnabled: boolean
+    isScanEnabled: boolean
+    disabledCommands?: string[]
+    commandHighlight?: FeatureContext
+    regionProfile?: RegionProfile
 }
 
 export class TabDataGenerator {
     private followUpsGenerator: FollowUpGenerator
     public quickActionsGenerator: QuickActionGenerator
+    private highlightCommand?: FeatureContext
+    private regionProfile?: RegionProfile
 
     constructor(props: TabDataGeneratorProps) {
         this.followUpsGenerator = new FollowUpGenerator()
         this.quickActionsGenerator = new QuickActionGenerator({
-            isFeatureDevEnabled: props.isFeatureDevEnabled,
             isGumbyEnabled: props.isGumbyEnabled,
+            isScanEnabled: props.isScanEnabled,
+            disableCommands: props.disabledCommands,
         })
+        this.highlightCommand = props.commandHighlight
+        this.regionProfile = props.regionProfile
     }
 
-    public getTabData(tabType: TabType, needWelcomeMessages: boolean, taskName?: string): MynahUIDataModel {
+    public getTabData(
+        tabType: TabType,
+        needWelcomeMessages: boolean,
+        taskName?: string,
+        isSMUS?: boolean
+    ): MynahUIDataModel {
+        if (tabType === 'welcome') {
+            return {}
+        }
+
+        const regionProfileCard: ChatItem | undefined =
+            this.regionProfile === undefined
+                ? undefined
+                : {
+                      type: ChatItemType.ANSWER,
+                      body: `You are using the ${this.regionProfile?.name} profile for this chat period`,
+                      status: 'info',
+                      messageId: 'regionProfile',
+                  }
+
         const tabData: MynahUIDataModel = {
             tabTitle: taskName ?? TabTypeDataMap[tabType].title,
             promptInputInfo:
-                'Use of Amazon Q is subject to the [AWS Responsible AI Policy](https://aws.amazon.com/machine-learning/responsible-ai/policy/).',
+                'Amazon Q Developer uses generative AI. You may need to verify responses. See the [AWS Responsible AI Policy](https://aws.amazon.com/machine-learning/responsible-ai/policy/).',
             quickActionCommands: this.quickActionsGenerator.generateForTab(tabType),
             promptInputPlaceholder: TabTypeDataMap[tabType].placeholder,
-            contextCommands: [
-                {
-                    groupName: 'Mention code',
-                    commands: [
-                        {
-                            command: '@workspace',
-                            description: '(BETA) Reference all code in workspace.',
-                        },
-                    ],
-                },
-            ],
+            contextCommands: this.getContextCommands(tabType),
             chatItems: needWelcomeMessages
                 ? [
+                      ...(regionProfileCard ? [regionProfileCard] : []),
                       {
                           type: ChatItemType.ANSWER,
-                          body: TabTypeDataMap[tabType].welcome,
+                          body: isSMUS ? qChatIntroMessageForSMUS : TabTypeDataMap[tabType].welcome,
                       },
                       {
                           type: ChatItemType.ANSWER,
                           followUp: this.followUpsGenerator.generateWelcomeBlockForTab(tabType),
                       },
                   ]
-                : [],
+                : [...(regionProfileCard ? [regionProfileCard] : [])],
         }
         return tabData
+    }
+
+    private getContextCommands(tabType: TabType): QuickActionCommandGroup[] | undefined {
+        if (tabType === 'welcome') {
+            return
+        }
+
+        const commandName = this.highlightCommand?.value.stringValue
+        if (commandName === undefined || commandName === '') {
+            return TabTypeDataMap[tabType].contextCommands
+        } else {
+            const commandHighlight: QuickActionCommandGroup = {
+                groupName: 'Additional Commands',
+                commands: [
+                    {
+                        command: commandName,
+                        description: this.highlightCommand?.variation,
+                    },
+                ],
+            }
+
+            const contextCommands = TabTypeDataMap[tabType].contextCommands
+            if (contextCommands === undefined) {
+                return [commandHighlight]
+            } else {
+                return [...contextCommands, commandHighlight]
+            }
+        }
     }
 }

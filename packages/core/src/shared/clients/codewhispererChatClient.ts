@@ -16,10 +16,8 @@ export async function createCodeWhispererChatStreamingClient(): Promise<CodeWhis
         region: cwsprConfig.region,
         endpoint: cwsprConfig.endpoint,
         token: { token: bearerToken },
-        customUserAgent: getUserAgent(),
-        // SETTING max attempts to 0 FOR BETA. RE-ENABLE FOR RE-INVENT
-        // Implement exponential back off starting with a base of 500ms (500 + attempt^10)
-        retryStrategy: new ConfiguredRetryStrategy(0, (attempt: number) => 500 + attempt ** 10),
+        customUserAgent: getUserAgent({ includePlatform: true, includeClientId: true }),
+        retryStrategy: new ConfiguredRetryStrategy(1, (attempt: number) => 500 + attempt ** 10),
     })
     return streamingClient
 }

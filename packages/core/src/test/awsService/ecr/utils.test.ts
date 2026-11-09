@@ -21,9 +21,9 @@ describe('createRepositoryCommand', function () {
     })
 
     it('Validates repository name against large regex the service uses', function () {
-        ;['abc--a', 'abc//a', 'abc__a', 'abc-', 'abc/', 'abc_'].forEach((item) =>
+        for (const item of ['abc--a', 'abc//a', 'abc__a', 'abc-', 'abc/', 'abc_']) {
             assert.strictEqual(validateRepositoryName(item), 'Invalid repository name')
-        )
+        }
     })
 
     it('Allows lowercase names with slashes, underscores, and dashes', function () {

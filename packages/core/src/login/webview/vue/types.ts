@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { AuthAddConnection } from '../../../shared/telemetry/telemetry'
-
 /**
  * Types that can be used by both the backend and frontend files
  */
@@ -31,12 +29,14 @@ export const AuthFlowStates = {
     REAUTHNEEDED: 'REAUTHNEEDED',
     /**  Reauthentication is currently in progress */
     REAUTHENTICATING: 'REAUTHENTICATING',
+    PENDING_PROFILE_SELECTION: 'PENDING_PROFILE_SELECTION',
 } as const
 export type AuthFlowState = (typeof AuthFlowStates)[keyof typeof AuthFlowStates]
 
 export enum LoginOption {
     NONE,
     BUILDER_ID,
+    CONSOLE_CREDENTIAL,
     ENTERPRISE_SSO,
     IAM_CREDENTIAL,
     IMPORTED_LOGINS,
@@ -54,6 +54,7 @@ export type AuthUiClick =
     | 'auth_builderIdOption'
     | 'auth_credentialsOption'
     | 'auth_codecatalystOption'
+    | 'auth_consoleCredentialsOption'
     | 'auth_existingAuthOption'
     | 'auth_regionSelection'
     | 'auth_codeCatalystSignIn'
@@ -67,8 +68,6 @@ export const userCancelled = 'userCancelled'
 
 export type AuthEnabledFeatures = 'awsExplorer' | 'codewhisperer' | 'codecatalyst'
 
-type Writeable<T> = { -readonly [U in keyof T]: T[U] }
-export type TelemetryMetadata = Partial<Writeable<AuthAddConnection>>
 export type AuthError = { id: string; text: string }
 
 export type ServiceItemId = 'awsExplorer' | 'codewhisperer' | 'codecatalyst'
@@ -85,5 +84,4 @@ export type AuthFormId =
     | 'identityCenterCodeWhisperer'
     | 'identityCenterCodeCatalyst'
     | 'identityCenterExplorer'
-    | 'aggregateExplorer'
     | 'unknown'

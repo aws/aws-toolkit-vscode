@@ -6,23 +6,23 @@
 import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
+import path from 'path'
 import xml2js = require('xml2js')
-import { CloudFormation, Lambda } from 'aws-sdk'
+import { FunctionConfiguration, LayerVersionsListItem } from '@aws-sdk/client-lambda'
 import * as vscode from 'vscode'
-import { CloudFormationClient } from '../shared/clients/cloudFormationClient'
-import { LambdaClient } from '../shared/clients/lambdaClient'
+import { CloudFormationClient, StackSummary } from '../shared/clients/cloudFormation'
+import { DefaultLambdaClient, LambdaClient } from '../shared/clients/lambdaClient'
 import { getFamily, getNodeMajorVersion, RuntimeFamily } from './models/samLambdaRuntime'
-import { getLogger } from '../shared/logger'
-import { ResourceFetcher } from '../shared/resourcefetcher/resourcefetcher'
-import { CompositeResourceFetcher } from '../shared/resourcefetcher/compositeResourceFetcher'
+import { getLogger } from '../shared/logger/logger'
 import { HttpResourceFetcher } from '../shared/resourcefetcher/httpResourceFetcher'
 import { FileResourceFetcher } from '../shared/resourcefetcher/fileResourceFetcher'
 import { sampleRequestManifestPath } from './constants'
 import globals from '../shared/extensionGlobals'
+import { tempDirPath } from '../shared/filesystemUtilities'
+import { LambdaFunction } from './commands/uploadLambda'
+import { fs } from '../shared/fs/fs'
 
-export async function* listCloudFormationStacks(
-    client: CloudFormationClient
-): AsyncIterableIterator<CloudFormation.StackSummary> {
+export async function* listCloudFormationStacks(client: CloudFormationClient): AsyncIterableIterator<StackSummary> {
     // TODO: this 'loading' message needs to go under each regional entry
     // in the explorer, and be removed when that region's query completes
     const status = vscode.window.setStatusBarMessage(
@@ -36,7 +36,7 @@ export async function* listCloudFormationStacks(
     }
 }
 
-export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableIterator<Lambda.FunctionConfiguration> {
+export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableIterator<FunctionConfiguration> {
     const status = vscode.window.setStatusBarMessage(
         localize('AWS.message.statusBar.loading.lambda', 'Loading Lambdas...')
     )
@@ -50,12 +50,29 @@ export async function* listLambdaFunctions(client: LambdaClient): AsyncIterableI
     }
 }
 
+export async function* listLayerVersions(
+    client: LambdaClient,
+    name: string
+): AsyncIterableIterator<LayerVersionsListItem> {
+    const status = vscode.window.setStatusBarMessage(
+        localize('AWS.message.statusBar.loading.lambda', 'Loading Lambda Layer Versions...')
+    )
+
+    try {
+        yield* client.listLayerVersions(name)
+    } finally {
+        if (status) {
+            status.dispose()
+        }
+    }
+}
+
 /**
  * Returns filename and function name corresponding to a Lambda.FunctionConfiguration
  * Only works for supported languages (Python/JS)
  * @param configuration Lambda configuration object from getFunction
  */
-export function getLambdaDetails(configuration: Lambda.FunctionConfiguration): {
+export function getLambdaDetails(configuration: FunctionConfiguration): {
     fileName: string
     functionName: string
 } {
@@ -74,6 +91,9 @@ export function getLambdaDetails(configuration: Lambda.FunctionConfiguration): {
             }
             break
         }
+        case RuntimeFamily.Ruby:
+            runtimeExtension = 'rb'
+            break
         default:
             throw new Error(`Toolkit does not currently support imports for runtime: ${configuration.Runtime}`)
     }
@@ -99,7 +119,7 @@ interface SampleRequestManifest {
 
 export async function getSampleLambdaPayloads(): Promise<SampleRequest[]> {
     const logger = getLogger()
-    const sampleInput = await makeSampleRequestManifestResourceFetcher().get()
+    const sampleInput = await getSampleRequestManifest()
 
     if (!sampleInput) {
         throw new Error('Unable to retrieve Sample Request manifest')
@@ -120,9 +140,75 @@ export async function getSampleLambdaPayloads(): Promise<SampleRequest[]> {
     return inputs
 }
 
-function makeSampleRequestManifestResourceFetcher(): ResourceFetcher {
-    return new CompositeResourceFetcher(
-        new HttpResourceFetcher(sampleRequestManifestPath, { showUrl: true }),
-        new FileResourceFetcher(globals.manifestPaths.lambdaSampleRequests)
-    )
+async function getSampleRequestManifest(): Promise<string | undefined> {
+    const httpResp = await new HttpResourceFetcher(sampleRequestManifestPath, { showUrl: true }).get()
+    if (!httpResp) {
+        const fileResp = new FileResourceFetcher(globals.manifestPaths.lambdaSampleRequests)
+        return fileResp.get()
+    }
+    return httpResp.text()
+}
+
+function getInfoLocation(lambda: LambdaFunction): string {
+    return path.join(getTempRegionLocation(lambda.region), `.${lambda.name}`)
+}
+
+export async function getCodeShaLive(lambda: LambdaFunction): Promise<string | undefined> {
+    const lambdaClient = new DefaultLambdaClient(lambda.region)
+    const func = await lambdaClient.getFunction(lambda.name)
+    return func.Configuration?.CodeSha256
+}
+
+export async function compareCodeSha(lambda: LambdaFunction): Promise<boolean> {
+    const local = await getFunctionInfo(lambda, 'sha')
+    const remote = await getCodeShaLive(lambda)
+    getLogger().info(`local: ${local}, remote: ${remote}`)
+    return local === remote
+}
+
+export interface FunctionInfo {
+    lastDeployed?: number
+    undeployed?: boolean
+    sha?: string
+    handlerFile?: string
+}
+
+export async function getFunctionInfo<K extends keyof FunctionInfo>(lambda: LambdaFunction, field?: K) {
+    try {
+        const data = JSON.parse(await fs.readFileText(getInfoLocation(lambda)))
+        getLogger().debug('Data returned from getFunctionInfo for %s: %O', lambda.name, data)
+        return field ? data[field] : data
+    } catch {
+        return field ? undefined : {}
+    }
+}
+
+export async function setFunctionInfo(lambda: LambdaFunction, info: Partial<FunctionInfo>) {
+    try {
+        const existing = await getFunctionInfo(lambda)
+        const updated: FunctionInfo = {
+            lastDeployed: info.lastDeployed ?? existing.lastDeployed,
+            undeployed: info.undeployed ?? true,
+            sha: info.sha ?? (await getCodeShaLive(lambda)),
+            handlerFile: info.handlerFile ?? existing.handlerFile,
+        }
+        await fs.writeFile(getInfoLocation(lambda), JSON.stringify(updated))
+    } catch (err) {
+        getLogger().warn(`codesha: unable to save information at key "${lambda.name}: %s"`, err)
+    }
+}
+
+export const lambdaTempPath = path.join(tempDirPath, 'lambda')
+
+export function getTempRegionLocation(region: string) {
+    return path.join(lambdaTempPath, region)
+}
+
+export function getTempLocation(functionName: string, region: string) {
+    return path.join(getTempRegionLocation(region), functionName)
+}
+
+// LocalStack hot-reloading: https://docs.localstack.cloud/aws/tooling/lambda-tools/hot-reloading/
+export function isHotReloadingFunction(codeSha256: string | undefined): boolean {
+    return codeSha256?.startsWith('hot-reloading') ?? false
 }

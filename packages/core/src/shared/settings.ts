@@ -5,9 +5,7 @@
 
 import * as vscode from 'vscode'
 import * as codecatalyst from './clients/codecatalystClient'
-import * as codewhisperer from '../codewhisperer/client/codewhisperer'
-import packageJson from '../../package.json'
-import { getLogger } from './logger'
+import { getLogger } from './logger/logger'
 import {
     cast,
     FromDescriptor,
@@ -22,6 +20,9 @@ import { once, onceChanged } from './utilities/functionUtils'
 import { ToolkitError } from './errors'
 import { telemetry } from './telemetry/telemetry'
 import globals from './extensionGlobals'
+import toolkitSettings from './settings-toolkit.gen'
+import amazonQSettings from './settings-amazonq.gen'
+import { CodeWhispererConfig } from '../codewhisperer/models/model'
 
 type Workspace = Pick<typeof vscode.workspace, 'getConfiguration' | 'onDidChangeConfiguration'>
 
@@ -388,6 +389,10 @@ function createSettingsClass<T extends TypeDescriptor>(section: string, descript
         public _getOrThrow<K extends keyof Inner>(key: K & string, defaultValue?: Inner[K]) {
             const value = this.#config.get(key, defaultValue)
 
+            if (defaultValue !== undefined && (value === undefined || value === null)) {
+                return defaultValue
+            }
+
             return cast<Inner[K]>(value, descriptor[key])
         }
 
@@ -484,7 +489,7 @@ export interface ResetableMemento extends vscode.Memento {
 // from implementations. Using types requires basically no logic but lacks
 // precision. We still need to manually specify what type something should be,
 // at least for anything beyond primitive types.
-const settingsProps = packageJson.contributes.configuration.properties
+const settingsProps = { ...toolkitSettings, ...amazonQSettings }
 
 type SettingsProps = typeof settingsProps
 
@@ -599,7 +604,7 @@ export function fromExtensionManifest<T extends TypeDescriptor & Partial<Section
  *
  * ### Usage:
  * ```
- * if (await settings.isPromptEnabled('myPromptName')) {
+ * if (settings.isPromptEnabled('myPromptName')) {
  *     // Show some sort of prompt
  *     const userResponse = await promptUser()
  *
@@ -617,25 +622,28 @@ export function fromExtensionManifest<T extends TypeDescriptor & Partial<Section
  * TODO: Settings should be defined in individual extensions, and passed to the
  * core lib as necessary.
  */
-export const toolkitPrompts = settingsProps['aws.suppressPrompts'].properties
+export const toolkitPrompts = settingsProps['aws.suppressPrompts']
 type toolkitPromptName = keyof typeof toolkitPrompts
-export class ToolkitPromptSettings extends Settings.define(
-    'aws.suppressPrompts',
-    toRecord(keys(toolkitPrompts), () => Boolean)
-) {
-    public async isPromptEnabled(promptName: toolkitPromptName): Promise<boolean> {
+export class ToolkitPromptSettings
+    extends Settings.define(
+        'aws.suppressPrompts',
+        toRecord(keys(toolkitPrompts), () => Boolean)
+    )
+    implements PromptSettings
+{
+    public isPromptEnabled(promptName: toolkitPromptName): boolean {
         try {
             return !this._getOrThrow(promptName, false)
         } catch (e) {
             this._log('prompt check for "%s" failed: %s', promptName, (e as Error).message)
-            await this.reset()
+            this.reset().catch((e) => getLogger().error(`failed to reset prompt settings: %O`, (e as Error).message))
 
             return true
         }
     }
 
     public async disablePrompt(promptName: toolkitPromptName): Promise<void> {
-        if (await this.isPromptEnabled(promptName)) {
+        if (this.isPromptEnabled(promptName)) {
             await this.update(promptName, true)
         }
     }
@@ -647,25 +655,43 @@ export class ToolkitPromptSettings extends Settings.define(
     }
 }
 
-export const amazonQPrompts = settingsProps['amazonQ.suppressPrompts'].properties
+export const amazonQPrompts = settingsProps['amazonQ.suppressPrompts']
 type amazonQPromptName = keyof typeof amazonQPrompts
-export class AmazonQPromptSettings extends Settings.define(
-    'amazonQ.suppressPrompts',
-    toRecord(keys(amazonQPrompts), () => Boolean)
-) {
-    public async isPromptEnabled(promptName: amazonQPromptName): Promise<boolean> {
+export class AmazonQPromptSettings
+    extends Settings.define(
+        'amazonQ.suppressPrompts',
+        toRecord(keys(amazonQPrompts), () => Boolean)
+    )
+    implements PromptSettings
+{
+    public isPromptEnabled(promptName: amazonQPromptName): boolean {
         try {
+            // Legacy migration for old globalState settings:
+            if (promptName === 'amazonQChatDisclaimer') {
+                const acknowledged = globals.globalState.tryGet('aws.amazonq.disclaimerAcknowledged', Boolean, false)
+                if (acknowledged) {
+                    void this.update(promptName, true)
+                    globals.globalState.tryUpdate('aws.amazonq.disclaimerAcknowledged', undefined)
+                }
+            }
+
             return !this._getOrThrow(promptName, false)
         } catch (e) {
             this._log('prompt check for "%s" failed: %s', promptName, (e as Error).message)
-            await this.reset()
+            this.reset().catch((e) => getLogger().error(`isPromptEnabled: reset() failed: %O`, (e as Error).message))
 
             return true
         }
     }
 
+    public async enablePrompt(promptName: amazonQPromptName): Promise<void> {
+        if (!this.isPromptEnabled(promptName)) {
+            await this.update(promptName, false)
+        }
+    }
+
     public async disablePrompt(promptName: amazonQPromptName): Promise<void> {
-        if (await this.isPromptEnabled(promptName)) {
+        if (this.isPromptEnabled(promptName)) {
             await this.update(promptName, true)
         }
     }
@@ -677,7 +703,19 @@ export class AmazonQPromptSettings extends Settings.define(
     }
 }
 
-const experiments = settingsProps['aws.experiments'].properties
+/**
+ * Use cautiously as this is misleading. Ideally we create a type
+ * which is the intersection of the types (only the values that occur
+ * in each are selected), but idk how to do that.
+ */
+type AllPromptNames = amazonQPromptName | toolkitPromptName
+
+export interface PromptSettings {
+    isPromptEnabled(promptName: AllPromptNames): boolean
+    disablePrompt(promptName: AllPromptNames): Promise<void>
+}
+
+const experiments = settingsProps['aws.experiments']
 type ExperimentName = keyof typeof experiments
 
 /**
@@ -707,12 +745,12 @@ export class Experiments extends Settings.define(
     'aws.experiments',
     toRecord(keys(experiments), () => Boolean)
 ) {
-    public async isExperimentEnabled(name: ExperimentName): Promise<boolean> {
+    public isExperimentEnabled(name: ExperimentName): boolean {
         try {
             return this._getOrThrow(name, false)
         } catch (error) {
             this._log(`experiment check for ${name} failed: %s`, error)
-            await this.reset()
+            this.reset().catch((e) => getLogger().error(`failed to reset experiment settings: %O`, e))
 
             return false
         }
@@ -726,10 +764,11 @@ export class Experiments extends Settings.define(
 }
 
 const devSettings = {
+    crashCheckInterval: Number,
     logfile: String,
-    forceCloud9: Boolean,
     forceDevMode: Boolean,
     forceInstallTools: Boolean,
+    forceResolveEnv: Boolean,
     telemetryEndpoint: String,
     telemetryUserPool: String,
     renderDebugDetails: Boolean,
@@ -737,9 +776,14 @@ const devSettings = {
     endpoints: Record(String, String),
     codecatalystService: Record(String, String),
     codewhispererService: Record(String, String),
+    amazonqLsp: Record(String, String),
+    amazonqWorkspaceLsp: Record(String, String),
+    cloudformationLsp: Record(String, String),
     ssoCacheDirectory: String,
     autofillStartUrl: String,
     webAuth: Boolean,
+    notificationsPollInterval: Number,
+    datazoneScope: String,
 }
 type ResolvedDevSettings = FromDescriptor<typeof devSettings>
 type AwsDevSetting = keyof ResolvedDevSettings
@@ -747,7 +791,10 @@ type AwsDevSetting = keyof ResolvedDevSettings
 type ServiceClients = keyof ServiceTypeMap
 interface ServiceTypeMap {
     codecatalystService: codecatalyst.CodeCatalystConfig
-    codewhispererService: codewhisperer.CodeWhispererConfig
+    amazonqLsp: object // type is provided inside of amazon q
+    amazonqWorkspaceLsp: object // type is provided inside of amazon q
+    codewhispererService: CodeWhispererConfig
+    cloudformationLsp: object // type is provided inside of cloudformation lsp
 }
 
 /**
@@ -764,6 +811,11 @@ interface ServiceTypeMap {
  * ensure that behavior is well-defined and isolated. Calls to {@link get} will not throw
  * an error, even for bad types, unless the code is ran from automated tests. The supplied
  * default will be used in case any errors occur in non-testing environment.
+ *
+ * Developer settings are only read from user-level settings. Workspace and workspace-folder values
+ * (e.g. a cloned repository's `.vscode/settings.json`) are ignored, because they could otherwise
+ * redirect authenticated requests to an arbitrary host, or change the paths and code the extension
+ * loads.
  *
  * ### Usage:
  * ```
@@ -826,7 +878,28 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
         return devConfig as unknown as ServiceTypeMap[T]
     }
 
+    private isSetByWorkspace(key: string): boolean {
+        const info = vscode.workspace.getConfiguration('aws.dev').inspect(key)
+        return info?.workspaceValue !== undefined || info?.workspaceFolderValue !== undefined
+    }
+
+    private getUserScopedValue(key: string): unknown {
+        return vscode.workspace.getConfiguration('aws.dev').inspect(key)?.globalValue
+    }
+
+    /**
+     * Checks if `key` is set, ignoring workspace-scoped values: a setting that is only set by the
+     * workspace is treated as unset.
+     */
+    public override _isSet(key: AwsDevSetting) {
+        return this.isSetByWorkspace(key) ? this.getUserScopedValue(key) !== undefined : super._isSet(key)
+    }
+
     public override get<K extends AwsDevSetting>(key: K, defaultValue: ResolvedDevSettings[K]) {
+        if (this.isSetByWorkspace(key)) {
+            return this.getUserValue(key, defaultValue)
+        }
+
         if (!this._isSet(key)) {
             this.unset(key)
 
@@ -837,6 +910,32 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
         this.trap(key, result)
 
         return result
+    }
+
+    /**
+     * Reads only the user-level value of `key`. VS Code merges object-valued settings across scopes,
+     * so the effective value cannot be used once any workspace-scoped value is present.
+     */
+    private getUserValue<K extends AwsDevSetting>(key: K, defaultValue: ResolvedDevSettings[K]) {
+        this.logWorkspaceOverrideIgnoredOnce(key)
+
+        const userValue = this.getUserScopedValue(key)
+        if (userValue === undefined) {
+            this.unset(key)
+
+            return defaultValue
+        }
+
+        try {
+            const result = cast<ResolvedDevSettings[K]>(userValue, devSettings[key])
+            this.trap(key, result)
+
+            return result
+        } catch (e) {
+            this._logErr('failed to read "%s": %s', key, (e as Error).message)
+
+            return defaultValue
+        }
     }
 
     private trap<K extends AwsDevSetting>(key: K, value: ResolvedDevSettings[K]) {
@@ -856,6 +955,18 @@ export class DevSettings extends Settings.define('aws.dev', devSettings) {
     private logConfigOnce = onceChanged((serviceName, val) => {
         getLogger().info(`using ${serviceName} service configuration: ${val}`)
     })
+
+    private readonly loggedWorkspaceOverrides = new Set<AwsDevSetting>()
+
+    private logWorkspaceOverrideIgnoredOnce(key: AwsDevSetting) {
+        if (this.loggedWorkspaceOverrides.has(key)) {
+            return
+        }
+        this.loggedWorkspaceOverrides.add(key)
+        getLogger().warn(
+            `Ignoring workspace-scoped value of dev setting 'aws.dev.${key}': it is only read from user-level settings`
+        )
+    }
 
     static #instance: DevSettings
 

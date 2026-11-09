@@ -10,22 +10,15 @@
         },
         {
             "label": "watch",
-            "type": "npm",
-            "script": "watch",
+            "type": "shell",
+            "command": "npm",
+            "args": ["run", "watch"],
             "problemMatcher": "$tsc-watch",
             "isBackground": true
         },
         {
             "label": "webpackWatch",
             "command": "npm run webpackDev -- --watch",
-            "type": "shell",
-            "isBackground": true,
-            "problemMatcher": "$ts-webpack-watch"
-        },
-        {
-            "label": "testsBuildWatch",
-            "command": "npm run compileDev -- --watch",
-            "detail": "Build that is sufficient for Web mode tests",
             "type": "shell",
             "isBackground": true,
             "problemMatcher": "$ts-webpack-watch"

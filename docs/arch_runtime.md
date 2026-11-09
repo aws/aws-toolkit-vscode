@@ -20,7 +20,6 @@ If you must define a new key (is it _really_ necessary?), follow these guideline
 -   Choose a prefix as follows (as [recommended](https://code.visualstudio.com/api/extension-guides/command#using-a-custom-when-clause-context)):
     -   `packages/core/` should use `aws.` prefix
     -   `packages/toolkit/` should use `aws.toolkit.` prefix
-    -   `packages/amazonq/` should use `amazonq.` prefix
 -   Use brevity. Less is more.
 -   Document it in the list below.
 
@@ -31,8 +30,6 @@ If you must define a new key (is it _really_ necessary?), follow these guideline
 These keys are currently set by the core/ package, but many of them may eventually be migrated to
 toolkit/ or amazonq/ if appropriate.
 
--   `isCloud9`: This is hardcoded by Cloud9 itself, not the Toolkit.
-    -   Cloud9 _does not support setContext_. So this is the only usable key there.
 -   `aws.codecatalyst.connected`: CodeCatalyst connection is active.
 -   `aws.codewhisperer.connected`: CodeWhisperer connection is active.
 -   `aws.codewhisperer.connectionExpired`: CodeWhisperer connection is active, but the connection is expired.
@@ -44,10 +41,6 @@ toolkit/ or amazonq/ if appropriate.
 -   `aws.isSageMaker`: AWS Toolkit is running in the SageMaker Code Editor.
 
 #### setContext keys owned by packages/toolkit/
-
--   TODO
-
-#### setContext keys owned by packages/amazonq/
 
 -   TODO
 

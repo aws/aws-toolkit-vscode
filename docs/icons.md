@@ -1,15 +1,16 @@
 # Icons
 
-All icons that are used in the Toolkit can be found in `resources/icons`.
+All icons that are used in the extensions can be found in `resources/icons`.
 
-A [build script](../../scripts/build/generateIcons.ts) generates Toolkit artifacts:
+A [build script](../scripts/generateIcons.ts) generates extension artifacts in [core/](../packages/core/):
 
--   `resources/icons/cloud9/generated`
 -   `resources/fonts/aws-toolkit-icons.woff`
 -   `resources/css/icons.css`
--   `contributes.icons` in [package.json](../../package.json)
+-   `contributes.icons` in [toolkit package.json](../packages/toolkit/package.json)
 
-This script should be ran using `npm run generatePackage` after making updates. Any changes made to `package.json` should be committed with the relevant icons.
+This script should be ran using `npm run generateIcons` after making updates. Any changes made to `package.json` should be committed with the relevant icons. Type checking in `core/` relies on the entries in `core/package.json`. However, the individual extensions require entries in their `package.json`s as well. Currently, resources (including icons) are shared between `core/` and the individual extensions. If `contributes.icons` in each of the extensions does not match the entry in `core/`, then CI will fail.
+
+To sync the icons to the individual extensions, run `npm run copyFiles && npm run generateIcons` for each extension.
 
 ## Fonts
 
@@ -29,7 +30,7 @@ If your desired icon does not work well as a font, see [Theme Overrides](#theme-
 
 ## Identifiers
 
-Icons (except those in `cloud9`) can be referenced within the Toolkit by concatenating the icon path with hyphens, omitting the 'theme' if applicable.
+Icons can be referenced within the Toolkit by concatenating the icon path with hyphens, omitting the 'theme' if applicable.
 
 Examples:
 
@@ -47,11 +48,6 @@ For example, if I wanted to use a special App Runner service icon, then I need t
 
 -   `resources/icons/aws/dark/apprunner-service.svg`
 -   `resources/icons/aws/light/apprunner-service.svg`
-
-A similar format is used for overriding icons only on Cloud9:
-
--   `resources/icons/cloud9/dark/aws-apprunner-service.svg`
--   `resources/icons/cloud9/light/aws-apprunner-service.svg`
 
 These icons will **not** be usuable as Codicons or as font icons.
 

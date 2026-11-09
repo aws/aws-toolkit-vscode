@@ -6,12 +6,7 @@
 import * as vscode from 'vscode'
 import { CLOUDWATCH_LOGS_SCHEME } from '../../../shared/constants'
 import { CloudWatchLogsGroupInfo, LogDataRegistry } from '../registry/logDataRegistry'
-import {
-    CloudWatchLogsSettings,
-    createURIFromArgs,
-    isLogStreamUri,
-    parseCloudWatchLogsUri,
-} from '../cloudWatchLogsUtils'
+import { CloudWatchLogsSettings, cwlUriSchema, isLogStreamUri } from '../cloudWatchLogsUtils'
 import { LogDataDocumentProvider } from './logDataDocumentProvider'
 
 type IdWithLine = { streamId: string; lineNum: number }
@@ -43,7 +38,7 @@ export class LogStreamCodeLensProvider implements vscode.CodeLensProvider {
             return []
         }
 
-        const logGroupInfo = parseCloudWatchLogsUri(uri).logGroupInfo
+        const logGroupInfo = cwlUriSchema.parse(uri).logGroupInfo
 
         if (logGroupInfo.streamName) {
             // This means we have a stream file not a log search.
@@ -55,16 +50,20 @@ export class LogStreamCodeLensProvider implements vscode.CodeLensProvider {
         const linesToGenerateCodeLens = await this.getStartingLineOfEachStreamId(document)
 
         // Create a code lens at the start of each Log Stream in the document
-        linesToGenerateCodeLens.forEach((idWithLine) => {
+        for (const idWithLine of linesToGenerateCodeLens) {
             codelenses.push(this.createLogStreamCodeLens(logGroupInfo, idWithLine))
-        })
+        }
         return codelenses
     }
 
     createLogStreamCodeLens(logGroupInfo: CloudWatchLogsGroupInfo, idWithLine: IdWithLine): vscode.CodeLens {
         const settings = new CloudWatchLogsSettings()
         const limit = settings.get('limit', 1000)
-        const streamUri = createURIFromArgs({ ...logGroupInfo, streamName: idWithLine.streamId }, { limit: limit })
+        const cwlArgs = {
+            logGroupInfo: { ...logGroupInfo, streamName: idWithLine.streamId },
+            parameters: { limit: limit },
+        }
+        const streamUri = cwlUriSchema.form(cwlArgs)
         const cmd: vscode.Command = {
             command: 'aws.loadLogStreamFile',
             arguments: [streamUri, this.registry],

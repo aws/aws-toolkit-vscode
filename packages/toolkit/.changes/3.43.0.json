@@ -1,0 +1,18 @@
+{
+	"date": "2025-01-23",
+	"version": "3.43.0",
+	"entries": [
+		{
+			"type": "Bug Fix",
+			"description": "AppBuilder: Update error messaging to make more legible and actionable"
+		},
+		{
+			"type": "Bug Fix",
+			"description": "Notifications: 'Dismiss' command visible in command palette."
+		},
+		{
+			"type": "Removal",
+			"description": "Cloud9: remove special-case logic."
+		}
+	]
+}

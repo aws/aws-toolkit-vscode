@@ -18,7 +18,7 @@ export async function pauseService(node: AppRunnerServiceNode): Promise<void> {
 
     try {
         const prompts = ToolkitPromptSettings.instance
-        const shouldNotify = await prompts.isPromptEnabled('apprunnerNotifyPause')
+        const shouldNotify = prompts.isPromptEnabled('apprunnerNotifyPause')
         const notifyPrompt = localize(
             'aws.apprunner.pauseService.notify',
             'Your service will be unavailable while paused. ' +

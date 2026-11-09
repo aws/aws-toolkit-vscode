@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Runtime } from 'aws-sdk/clients/lambda'
+import { Runtime } from '@aws-sdk/client-lambda'
 import { Set as ImmutableSet } from 'immutable'
 import { goRuntimes } from '../../lambda/models/samLambdaRuntime'
 
@@ -54,7 +54,17 @@ export function getLanguageDetails(language: SchemaCodeLangs): {
 }
 
 export function supportsEventBridgeTemplates(runtime: Runtime): boolean {
-    return ['python3.7', 'python3.8', 'python3.9', 'python3.10', 'python3.11', 'python3.12', 'go1.x'].includes(runtime)
+    return [
+        'python3.7',
+        'python3.8',
+        'python3.9',
+        'python3.10',
+        'python3.11',
+        'python3.12',
+        'python3.13',
+        'python3.14',
+        'go1.x',
+    ].includes(runtime)
 }
 
 export function getApiValueForSchemasDownload(runtime: Runtime): string {

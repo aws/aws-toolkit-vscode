@@ -9,8 +9,8 @@ import vscode from 'vscode'
 import * as GitTypes from '../../../../types/git'
 import { GitExtension, Repository } from '../../../shared/extensions/git'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
-import { realpath } from 'fs-extra'
-import { execFileSync } from 'child_process'
+import { realpathSync } from 'fs' // eslint-disable-line no-restricted-imports
+import { execFileSync } from 'child_process' // eslint-disable-line no-restricted-imports
 import { sleep } from '../../../shared/utilities/timeoutUtils'
 import { getLogger } from '../../../shared/logger/logger'
 import { getMinVscodeVersion } from '../../../shared/vscode/env'
@@ -78,7 +78,7 @@ describe.skip('GitExtension', function () {
         await initConfig()
 
         // realpath is used in case of symlinks
-        const tmpDirUri = vscode.Uri.file(await realpath(await makeTemporaryToolkitFolder()))
+        const tmpDirUri = vscode.Uri.file(realpathSync(await makeTemporaryToolkitFolder()))
         const repo = await git.$api.init(tmpDirUri).catch(parseGitError)
         if (!repo) {
             throw new Error(`Failed to create test repository: ${tmpDirUri.fsPath}`)
@@ -100,7 +100,7 @@ describe.skip('GitExtension', function () {
     })
 
     it('can detect opening a repository', async function () {
-        const newRepoUri = vscode.Uri.file(await realpath(await makeTemporaryToolkitFolder()))
+        const newRepoUri = vscode.Uri.file(realpathSync(await makeTemporaryToolkitFolder()))
         const onOpen = new Promise<Repository>((resolve, reject) => {
             git.onDidOpenRepository((repo) => {
                 if (repo.rootUri.fsPath === newRepoUri.fsPath) {

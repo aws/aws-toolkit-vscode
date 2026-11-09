@@ -4,7 +4,6 @@
  */
 
 import * as vscode from 'vscode'
-import { isCloud9 } from '../../shared/extensionUtilities'
 import { Recommendation } from '../client/codewhisperer'
 import { CodeWhispererSettings } from '../util/codewhispererSettings'
 import { findLineToInsertImportStatement } from '../util/importAdderUtil'
@@ -55,6 +54,7 @@ export class ImportAdderProvider implements vscode.CodeLensProvider {
         ) {
             const line = findLineToInsertImportStatement(editor, firstLineOfRecommendation)
             let mergedStatements = ``
+            // eslint-disable-next-line unicorn/no-array-for-each
             r.mostRelevantMissingImports?.forEach(async (i) => {
                 // trust service response that this to-be-added import is necessary
                 if (i.statement) {
@@ -73,8 +73,7 @@ export class ImportAdderProvider implements vscode.CodeLensProvider {
     private isNotEnabled(languageId: string): boolean {
         return (
             !this.supportedLanguages.includes(languageId) ||
-            !CodeWhispererSettings.instance.isImportRecommendationEnabled() ||
-            isCloud9()
+            !CodeWhispererSettings.instance.isImportRecommendationEnabled()
         )
     }
 

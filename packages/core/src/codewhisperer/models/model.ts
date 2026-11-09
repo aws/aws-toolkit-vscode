@@ -4,7 +4,7 @@
  */
 import * as vscode from 'vscode'
 import { ToolkitError } from '../../shared/errors'
-import { getIcon } from '../../shared/icons'
+import { getIcon, Icon } from '../../shared/icons'
 import {
     CodewhispererCodeScanScope,
     CodewhispererCompletionType,
@@ -15,10 +15,11 @@ import {
 } from '../../shared/telemetry/telemetry'
 import { References } from '../client/codewhisperer'
 import globals from '../../shared/extensionGlobals'
-import { autoScansEnabledKey, autoTriggerEnabledKey } from './constants'
-import { get, set } from '../util/commonUtil'
 import { ChatControllerEventEmitters } from '../../amazonqGumby/chat/controller/controller'
 import { TransformationSteps } from '../client/codewhispereruserclient'
+import { Messenger } from '../../amazonqGumby/chat/controller/messenger/messenger'
+import { ScanChatControllerEventEmitters } from '../../amazonqScan/controller'
+import { localize } from '../../shared/utilities/vsCodeUtils'
 
 // unavoidable global variables
 interface VsCodeState {
@@ -32,25 +33,47 @@ interface VsCodeState {
      */
     isCodeWhispererEditing: boolean
     /**
+     * Keeps track of whether or not recommendations are currently running
+     */
+    isRecommendationsActive: boolean
+    /**
      * Timestamp of previous user edit
      */
     lastUserModificationTime: number
 
     isFreeTierLimitReached: boolean
+
+    lastManualTriggerTime: number
 }
 
 export const vsCodeState: VsCodeState = {
     isIntelliSenseActive: false,
     isCodeWhispererEditing: false,
+    // hack to globally keep track of whether or not recommendations are currently running. This allows us to know
+    // when recommendations have ran during e2e tests
+    isRecommendationsActive: false,
     lastUserModificationTime: 0,
     isFreeTierLimitReached: false,
+    lastManualTriggerTime: 0,
 }
 
-export type UtgStrategy = 'ByName' | 'ByContent'
+export interface CodeWhispererConfig {
+    readonly region: string
+    readonly endpoint: string
+}
 
-export type CrossFileStrategy = 'OpenTabs_BM25'
+export interface RegionProfile {
+    name: string
+    region: string
+    arn: string
+    description: string
+}
 
-export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'Empty'
+export type UtgStrategy = 'byName' | 'byContent'
+
+export type CrossFileStrategy = 'opentabs' | 'codemap' | 'bm25' | 'default'
+
+export type SupplementalContextStrategy = CrossFileStrategy | UtgStrategy | 'empty'
 
 export interface CodeWhispererSupplementalContext {
     isUtg: boolean
@@ -76,7 +99,6 @@ export interface GetRecommendationsResponse {
 
 /** Manages the state of CodeWhisperer code suggestions */
 export class CodeSuggestionsState {
-    #context: vscode.Memento
     /** The initial state if suggestion state was not defined */
     #fallback: boolean
     #onDidChangeState = new vscode.EventEmitter<boolean>()
@@ -88,15 +110,14 @@ export class CodeSuggestionsState {
         return (this.#instance ??= new this())
     }
 
-    protected constructor(context: vscode.Memento = globals.context.globalState, fallback: boolean = false) {
-        this.#context = context
+    protected constructor(fallback: boolean = true) {
         this.#fallback = fallback
     }
 
     async toggleSuggestions() {
         const autoTriggerEnabled = this.isSuggestionsEnabled()
         const toSet: boolean = !autoTriggerEnabled
-        await set(autoTriggerEnabledKey, toSet, this.#context)
+        await globals.globalState.update('CODEWHISPERER_AUTO_TRIGGER_ENABLED', toSet)
         this.#onDidChangeState.fire(toSet)
         return toSet
     }
@@ -108,65 +129,8 @@ export class CodeSuggestionsState {
     }
 
     isSuggestionsEnabled(): boolean {
-        const isEnabled = get(autoTriggerEnabledKey, this.#context)
+        const isEnabled = globals.globalState.tryGet('CODEWHISPERER_AUTO_TRIGGER_ENABLED', Boolean)
         return isEnabled !== undefined ? isEnabled : this.#fallback
-    }
-}
-
-export class CodeScansState {
-    #context: vscode.Memento
-    /** The initial state if scan state was not defined */
-    #fallback: boolean
-    #onDidChangeState = new vscode.EventEmitter<boolean>()
-    /** Set a callback for when state of code scans changes */
-    onDidChangeState = this.#onDidChangeState.event
-
-    private exceedsMonthlyQuota = false
-    private latestScanTime: number | undefined = undefined
-
-    static #instance: CodeScansState
-    static get instance() {
-        return (this.#instance ??= new this())
-    }
-
-    protected constructor(context: vscode.Memento = globals.context.globalState, fallback: boolean = true) {
-        this.#context = context
-        this.#fallback = fallback
-    }
-
-    async toggleScans() {
-        const autoScansEnabled = this.isScansEnabled()
-        const toSet: boolean = !autoScansEnabled
-        await set(autoScansEnabledKey, toSet, this.#context)
-        this.#onDidChangeState.fire(toSet)
-        return toSet
-    }
-
-    async setScansEnabled(isEnabled: boolean) {
-        if (this.isScansEnabled() !== isEnabled) {
-            await this.toggleScans()
-        }
-    }
-
-    isScansEnabled(): boolean {
-        const isEnabled = get(autoScansEnabledKey, this.#context)
-        return isEnabled !== undefined ? isEnabled : this.#fallback
-    }
-
-    setMonthlyQuotaExceeded() {
-        this.exceedsMonthlyQuota = true
-    }
-
-    isMonthlyQuotaExceeded() {
-        return this.exceedsMonthlyQuota
-    }
-
-    setLatestScanTime(time: number) {
-        this.latestScanTime = time
-    }
-
-    getLatestScanTime() {
-        return this.latestScanTime
     }
 }
 
@@ -211,72 +175,408 @@ export interface InlineCompletionItem {
 }
 
 /**
- * Security Scan Interfaces
+ *  Q Security Scans
  */
-enum CodeScanStatus {
+
+enum ScanStatus {
     NotStarted,
     Running,
     Cancelling,
 }
 
-export class CodeScanState {
-    // Define a constructor for this class
-    private codeScanState: CodeScanStatus = CodeScanStatus.NotStarted
+type IconPath = { light: vscode.Uri; dark: vscode.Uri; toString: () => string } | Icon
 
-    public isNotStarted() {
-        return this.codeScanState === CodeScanStatus.NotStarted
+abstract class BaseScanState {
+    protected scanState: ScanStatus = ScanStatus.NotStarted
+
+    protected chatControllers: ScanChatControllerEventEmitters | undefined = undefined
+
+    public isNotStarted(): boolean {
+        return this.scanState === ScanStatus.NotStarted
     }
 
-    public isRunning() {
-        return this.codeScanState === CodeScanStatus.Running
+    public isRunning(): boolean {
+        return this.scanState === ScanStatus.Running
     }
 
-    public isCancelling() {
-        return this.codeScanState === CodeScanStatus.Cancelling
+    public isCancelling(): boolean {
+        return this.scanState === ScanStatus.Cancelling
     }
 
-    public setToNotStarted() {
-        this.codeScanState = CodeScanStatus.NotStarted
+    public setToNotStarted(): void {
+        this.scanState = ScanStatus.NotStarted
     }
 
-    public setToCancelling() {
-        this.codeScanState = CodeScanStatus.Cancelling
+    public setToCancelling(): void {
+        this.scanState = ScanStatus.Cancelling
     }
 
-    public setToRunning() {
-        this.codeScanState = CodeScanStatus.Running
+    public setToRunning(): void {
+        this.scanState = ScanStatus.Running
     }
 
-    public getPrefixTextForButton() {
-        switch (this.codeScanState) {
-            case CodeScanStatus.NotStarted:
+    public getPrefixTextForButton(): string {
+        switch (this.scanState) {
+            case ScanStatus.NotStarted:
                 return 'Run'
-            case CodeScanStatus.Running:
+            case ScanStatus.Running:
                 return 'Stop'
-            case CodeScanStatus.Cancelling:
+            case ScanStatus.Cancelling:
                 return 'Stopping'
         }
     }
 
-    public getIconForButton() {
-        switch (this.codeScanState) {
-            case CodeScanStatus.NotStarted:
+    public setChatControllers(controllers: ScanChatControllerEventEmitters) {
+        this.chatControllers = controllers
+    }
+    public getChatControllers() {
+        return this.chatControllers
+    }
+
+    public abstract getIconForButton(): IconPath
+}
+
+export class CodeScanState extends BaseScanState {
+    public getIconForButton(): IconPath {
+        switch (this.scanState) {
+            case ScanStatus.NotStarted:
                 return getIcon('vscode-debug-all')
-            case CodeScanStatus.Running:
+            case ScanStatus.Running:
                 return getIcon('vscode-stop-circle')
-            case CodeScanStatus.Cancelling:
-                return getIcon('vscode-icons:loading~spin')
+            case ScanStatus.Cancelling:
+                return getIcon('vscode-loading~spin')
         }
     }
 }
 
+export class OnDemandFileScanState extends BaseScanState {
+    public getIconForButton(): IconPath {
+        switch (this.scanState) {
+            case ScanStatus.NotStarted:
+                return getIcon('vscode-debug-all')
+            case ScanStatus.Running:
+                return getIcon('vscode-stop-circle')
+            case ScanStatus.Cancelling:
+                return getIcon('vscode-icons:loading~spin')
+        }
+    }
+}
 export const codeScanState: CodeScanState = new CodeScanState()
+export const onDemandFileScanState: OnDemandFileScanState = new OnDemandFileScanState()
+
+export class CodeScansState {
+    /** The initial state if scan state was not defined */
+    #fallback: boolean
+    #onDidChangeState = new vscode.EventEmitter<boolean>()
+    /** Set a callback for when state of code scans changes */
+    onDidChangeState = this.#onDidChangeState.event
+
+    private exceedsMonthlyQuota = false
+    private latestScanTime: number | undefined = undefined
+
+    static #instance: CodeScansState
+    static get instance() {
+        return (this.#instance ??= new this())
+    }
+
+    protected constructor(fallback: boolean = false) {
+        this.#fallback = fallback
+    }
+
+    async toggleScans() {
+        const autoScansEnabled = this.isScansEnabled()
+        const toSet: boolean = !autoScansEnabled
+        await globals.globalState.update('CODEWHISPERER_AUTO_SCANS_ENABLED', toSet)
+        this.#onDidChangeState.fire(toSet)
+        return toSet
+    }
+
+    async setScansEnabled(isEnabled: boolean) {
+        if (this.isScansEnabled() !== isEnabled) {
+            await this.toggleScans()
+        }
+    }
+
+    isScansEnabled(): boolean {
+        const isEnabled = globals.globalState.tryGet('CODEWHISPERER_AUTO_SCANS_ENABLED', Boolean)
+        return isEnabled !== undefined ? isEnabled : this.#fallback
+    }
+
+    setMonthlyQuotaExceeded() {
+        this.exceedsMonthlyQuota = true
+    }
+
+    isMonthlyQuotaExceeded() {
+        return this.exceedsMonthlyQuota
+    }
+
+    setLatestScanTime(time: number) {
+        this.latestScanTime = time
+    }
+
+    getLatestScanTime() {
+        return this.latestScanTime
+    }
+}
 
 export class CodeScanStoppedError extends ToolkitError {
     constructor() {
         super('Security scan stopped by user.', { cancelled: true })
     }
 }
+
+export interface CodeScanTelemetryEntry extends MetricBase {
+    codewhispererCodeScanJobId?: string
+    codewhispererLanguage: CodewhispererLanguage
+    codewhispererCodeScanProjectBytes?: number
+    codewhispererCodeScanSrcPayloadBytes: number
+    codewhispererCodeScanBuildPayloadBytes?: number
+    codewhispererCodeScanSrcZipFileBytes: number
+    codewhispererCodeScanBuildZipFileBytes?: number
+    codewhispererCodeScanLines: number
+    duration: number
+    contextTruncationDuration: number
+    artifactsUploadDuration: number
+    codeScanServiceInvocationsDuration: number
+    result: Result
+    reason?: string
+    reasonDesc?: string
+    codewhispererCodeScanTotalIssues: number
+    codewhispererCodeScanIssuesWithFixes: number
+    credentialStartUrl: string | undefined
+    codewhispererCodeScanScope: CodewhispererCodeScanScope
+    source?: string
+}
+
+export interface RecommendationDescription {
+    text: string
+    markdown: string
+}
+
+export interface Recommendation {
+    text: string
+    url: string
+}
+
+export interface SuggestedFix {
+    description: string
+    code?: string
+    references?: References
+}
+
+export interface Remediation {
+    recommendation: Recommendation
+    suggestedFixes: SuggestedFix[]
+}
+
+export interface CodeLine {
+    content: string
+    number: number
+}
+
+enum CodeFixStatus {
+    NotStarted,
+    Running,
+    Cancelling,
+}
+
+export class CodeFixState {
+    // Define a constructor for this class
+    private codeFixState: CodeFixStatus = CodeFixStatus.NotStarted
+
+    public isNotStarted() {
+        return this.codeFixState === CodeFixStatus.NotStarted
+    }
+
+    public isRunning() {
+        return this.codeFixState === CodeFixStatus.Running
+    }
+
+    public isCancelling() {
+        return this.codeFixState === CodeFixStatus.Cancelling
+    }
+
+    public setToNotStarted() {
+        this.codeFixState = CodeFixStatus.NotStarted
+    }
+
+    public setToCancelling() {
+        this.codeFixState = CodeFixStatus.Cancelling
+    }
+
+    public setToRunning() {
+        this.codeFixState = CodeFixStatus.Running
+    }
+}
+
+export const codeFixState: CodeFixState = new CodeFixState()
+
+/**
+ * Security Scan Interfaces
+ */
+
+export interface RawCodeScanIssue {
+    filePath: string
+    startLine: number
+    endLine: number
+    title: string
+    description: RecommendationDescription
+    detectorId: string
+    detectorName: string
+    findingId: string
+    ruleId?: string
+    relatedVulnerabilities: string[]
+    severity: string
+    remediation: Remediation
+    codeSnippet: CodeLine[]
+}
+
+export interface CodeScanIssue {
+    startLine: number
+    endLine: number
+    comment: string
+    title: string
+    description: RecommendationDescription
+    detectorId: string
+    detectorName: string
+    findingId: string
+    ruleId?: string
+    relatedVulnerabilities: string[]
+    severity: string
+    recommendation: Recommendation
+    suggestedFixes: SuggestedFix[]
+    visible: boolean
+    scanJobId: string
+    language: string
+    fixJobId?: string
+    autoDetected?: boolean
+}
+
+export interface AggregatedCodeScanIssue {
+    filePath: string
+    issues: CodeScanIssue[]
+}
+
+export interface SecurityPanelItem {
+    path: string
+    range: vscode.Range
+    severity: vscode.DiagnosticSeverity
+    message: string
+    issue: CodeScanIssue
+    decoration: vscode.DecorationOptions
+}
+
+export interface SecurityPanelSet {
+    path: string
+    uri: vscode.Uri
+    items: SecurityPanelItem[]
+}
+
+export const severities = ['Critical', 'High', 'Medium', 'Low', 'Info'] as const
+export type Severity = (typeof severities)[number]
+
+export interface SecurityIssueFilters {
+    severity: {
+        Critical: boolean
+        High: boolean
+        Medium: boolean
+        Low: boolean
+        Info: boolean
+    }
+}
+const defaultVisibilityState: SecurityIssueFilters = {
+    severity: {
+        Critical: true,
+        High: true,
+        Medium: true,
+        Low: true,
+        Info: true,
+    },
+}
+
+export class SecurityTreeViewFilterState {
+    #fallback: SecurityIssueFilters
+    #onDidChangeState = new vscode.EventEmitter<SecurityIssueFilters>()
+    onDidChangeState = this.#onDidChangeState.event
+
+    static #instance: SecurityTreeViewFilterState
+    static get instance() {
+        return (this.#instance ??= new this())
+    }
+
+    protected constructor(fallback: SecurityIssueFilters = defaultVisibilityState) {
+        this.#fallback = fallback
+    }
+
+    public getState(): SecurityIssueFilters {
+        return globals.globalState.tryGet('aws.amazonq.securityIssueFilters', Object) ?? this.#fallback
+    }
+
+    public async setState(state: SecurityIssueFilters) {
+        await globals.globalState.update('aws.amazonq.securityIssueFilters', state)
+        this.#onDidChangeState.fire(state)
+    }
+
+    public getHiddenSeverities() {
+        return Object.entries(this.getState().severity)
+            .filter(([_, value]) => !value)
+            .map(([key]) => key)
+    }
+
+    public resetFilters() {
+        return this.setState(defaultVisibilityState)
+    }
+}
+
+export enum CodeIssueGroupingStrategy {
+    Severity = 'Severity',
+    FileLocation = 'FileLocation',
+}
+const defaultCodeIssueGroupingStrategy = CodeIssueGroupingStrategy.Severity
+
+export const codeIssueGroupingStrategies = Object.values(CodeIssueGroupingStrategy)
+export const codeIssueGroupingStrategyLabel: Record<CodeIssueGroupingStrategy, string> = {
+    [CodeIssueGroupingStrategy.Severity]: localize('AWS.amazonq.scans.severity', 'Severity'),
+    [CodeIssueGroupingStrategy.FileLocation]: localize('AWS.amazonq.scans.fileLocation', 'File Location'),
+}
+
+export class CodeIssueGroupingStrategyState {
+    #fallback: CodeIssueGroupingStrategy
+    #onDidChangeState = new vscode.EventEmitter<CodeIssueGroupingStrategy>()
+    onDidChangeState = this.#onDidChangeState.event
+
+    static #instance: CodeIssueGroupingStrategyState
+    static get instance() {
+        return (this.#instance ??= new this())
+    }
+
+    protected constructor(fallback: CodeIssueGroupingStrategy = defaultCodeIssueGroupingStrategy) {
+        this.#fallback = fallback
+    }
+
+    public getState(): CodeIssueGroupingStrategy {
+        const state = globals.globalState.tryGet('aws.amazonq.codescan.groupingStrategy', String)
+        return this.isValidGroupingStrategy(state) ? state : this.#fallback
+    }
+
+    public async setState(_state: unknown) {
+        const state = this.isValidGroupingStrategy(_state) ? _state : this.#fallback
+        await globals.globalState.update('aws.amazonq.codescan.groupingStrategy', state)
+        this.#onDidChangeState.fire(state)
+    }
+
+    private isValidGroupingStrategy(strategy: unknown): strategy is CodeIssueGroupingStrategy {
+        return Object.values(CodeIssueGroupingStrategy).includes(strategy as CodeIssueGroupingStrategy)
+    }
+
+    public reset() {
+        return this.setState(this.#fallback)
+    }
+}
+
+/**
+ *  Q - Transform
+ */
 
 // for internal use; store status of job
 export enum TransformByQStatus {
@@ -287,6 +587,11 @@ export enum TransformByQStatus {
     Failed = 'Failed', // if job is rejected or if any other error experienced; user will receive specific error message
     Succeeded = 'Succeeded',
     PartiallySucceeded = 'Partially Succeeded',
+}
+
+export enum TransformationType {
+    LANGUAGE_UPGRADE = 'Language Upgrade',
+    SQL_CONVERSION = 'SQL Conversion',
 }
 
 export enum TransformByQReviewStatus {
@@ -306,7 +611,15 @@ export enum JDKVersion {
     JDK8 = '8',
     JDK11 = '11',
     JDK17 = '17',
+    JDK21 = '21',
     UNSUPPORTED = 'UNSUPPORTED',
+}
+
+export enum DB {
+    ORACLE = 'ORACLE',
+    RDS_POSTGRESQL = 'POSTGRESQL',
+    AURORA_POSTGRESQL = 'AURORA_POSTGRESQL',
+    OTHER = 'OTHER',
 }
 
 export enum BuildSystem {
@@ -317,11 +630,23 @@ export enum BuildSystem {
 
 export class ZipManifest {
     sourcesRoot: string = 'sources/'
-    dependenciesRoot: string | undefined = 'dependencies/'
-    buildLogs: string = 'build-logs.txt'
+    dependenciesRoot: string = 'dependencies/'
     version: string = '1.0'
     hilCapabilities: string[] = ['HIL_1pDependency_VersionUpgrade']
-    transformCapabilities: string[] = ['EXPLAINABILITY_V1']
+    transformCapabilities: string[] = ['EXPLAINABILITY_V1', 'SELECTIVE_TRANSFORMATION_V2', 'CLIENT_SIDE_BUILD', 'IDE']
+    noInteractiveMode: boolean = true
+    dependencyUpgradeConfigFile?: string = undefined
+    compilationsJsonFile: string = 'compilations.json'
+    customBuildCommand: string = 'clean test'
+    requestedConversions?: {
+        sqlConversion?: {
+            source?: string
+            target?: string
+            schema?: string
+            host?: string
+            sctFileName?: string
+        }
+    }
 }
 
 export interface IHilZipManifestParams {
@@ -363,11 +688,23 @@ export const jobPlanProgress: {
 }
 
 export let sessionJobHistory: {
-    [jobId: string]: { startTime: string; projectName: string; status: string; duration: string }
+    [jobId: string]: {
+        startTime: string
+        projectName: string
+        status: string
+        duration: string
+        transformationType: string
+        sourceJDKVersion: string
+        targetJDKVersion: string
+        customDependencyVersionsFilePath: string
+        customBuildCommand: string
+    }
 } = {}
 
 export class TransformByQState {
     private transformByQState: TransformByQStatus = TransformByQStatus.NotStarted
+
+    private transformationType: TransformationType | undefined = undefined
 
     private projectName: string = ''
     private projectPath: string = ''
@@ -378,18 +715,39 @@ export class TransformByQState {
 
     private sourceJDKVersion: JDKVersion | undefined = undefined
 
-    private targetJDKVersion: JDKVersion = JDKVersion.JDK17
+    private targetJDKVersion: JDKVersion | undefined = undefined
+
+    private jdkVersionToPath: Map<JDKVersion, string> = new Map()
+
+    private customBuildCommand: string = ''
+
+    private sourceDB: DB | undefined = undefined
+
+    private targetDB: DB | undefined = undefined
+
+    private schema: string = ''
+
+    private schemaOptions: Set<string> = new Set()
+
+    private sourceServerName: string = ''
+
+    private metadataPathSQL: string = ''
+
+    private customVersionPath: string = ''
+
+    private linesOfCodeSubmitted: number | undefined = undefined
 
     private planFilePath: string = ''
     private summaryFilePath: string = ''
     private preBuildLogFilePath: string = ''
+    private jobHistoryPath: string = ''
 
     private resultArchiveFilePath: string = ''
     private projectCopyFilePath: string = ''
 
     private polledJobStatus: string = ''
 
-    private jobFailureMetadata: string = ''
+    private hasSeenTransforming: boolean = false
 
     private payloadFilePath: string = ''
 
@@ -397,19 +755,24 @@ export class TransformByQState {
 
     private jobFailureErrorChatMessage: string | undefined = undefined
 
-    private errorLog: string = ''
+    private buildLog: string = ''
 
     private mavenName: string = ''
 
-    private javaHome: string | undefined = undefined
+    private sourceJavaHome: string | undefined = undefined
+
+    private targetJavaHome: string | undefined = undefined
 
     private chatControllers: ChatControllerEventEmitters | undefined = undefined
+    private chatMessenger: Messenger | undefined = undefined
 
     private dependencyFolderInfo: FolderInfo | undefined = undefined
 
     private planSteps: TransformationSteps | undefined = undefined
 
     private intervalId: NodeJS.Timeout | undefined = undefined
+
+    private refreshInProgress: boolean = false
 
     public isNotStarted() {
         return this.transformByQState === TransformByQStatus.NotStarted
@@ -435,12 +798,32 @@ export class TransformByQState {
         return this.transformByQState === TransformByQStatus.PartiallySucceeded
     }
 
+    public isRefreshInProgress() {
+        return this.refreshInProgress
+    }
+
+    public getHasSeenTransforming() {
+        return this.hasSeenTransforming
+    }
+
+    public getTransformationType() {
+        return this.transformationType
+    }
+
     public getProjectName() {
         return this.projectName
     }
 
     public getProjectPath() {
         return this.projectPath
+    }
+
+    public getCustomBuildCommand() {
+        return this.customBuildCommand
+    }
+
+    public getLinesOfCodeSubmitted() {
+        return this.linesOfCodeSubmitted
     }
 
     public getPreBuildLogFilePath() {
@@ -463,6 +846,42 @@ export class TransformByQState {
         return this.targetJDKVersion
     }
 
+    public getPathFromJdkVersion(version: JDKVersion | undefined) {
+        if (version) {
+            return this.jdkVersionToPath.get(version)
+        } else {
+            return undefined
+        }
+    }
+
+    public getSourceDB() {
+        return this.sourceDB
+    }
+
+    public getTargetDB() {
+        return this.targetDB
+    }
+
+    public getSchema() {
+        return this.schema
+    }
+
+    public getSchemaOptions() {
+        return this.schemaOptions
+    }
+
+    public getSourceServerName() {
+        return this.sourceServerName
+    }
+
+    public getMetadataPathSQL() {
+        return this.metadataPathSQL
+    }
+
+    public getCustomDependencyVersionFilePath() {
+        return this.customVersionPath
+    }
+
     public getStatus() {
         return this.transformByQState
     }
@@ -479,16 +898,16 @@ export class TransformByQState {
         return this.summaryFilePath
     }
 
+    public getJobHistoryPath() {
+        return this.jobHistoryPath
+    }
+
     public getResultArchiveFilePath() {
         return this.resultArchiveFilePath
     }
 
     public getProjectCopyFilePath() {
         return this.projectCopyFilePath
-    }
-
-    public getJobFailureMetadata() {
-        return this.jobFailureMetadata
     }
 
     public getPayloadFilePath() {
@@ -503,20 +922,34 @@ export class TransformByQState {
         return this.jobFailureErrorChatMessage
     }
 
-    public getErrorLog() {
-        return this.errorLog
+    public getBuildLog() {
+        return this.buildLog
     }
 
     public getMavenName() {
         return this.mavenName
     }
 
-    public getJavaHome() {
-        return this.javaHome
+    public getSourceJavaHome() {
+        return this.sourceJavaHome
+    }
+
+    public getTargetJavaHome() {
+        return this.targetJavaHome
+    }
+
+    public setJdkVersionToPath(jdkVersion: JDKVersion | undefined, path: string) {
+        if (jdkVersion) {
+            this.jdkVersionToPath.set(jdkVersion, path)
+        }
     }
 
     public getChatControllers() {
         return this.chatControllers
+    }
+
+    public getChatMessenger() {
+        return this.chatMessenger
     }
 
     public getDependencyFolderInfo(): FolderInfo | undefined {
@@ -531,8 +964,12 @@ export class TransformByQState {
         return this.intervalId
     }
 
-    public appendToErrorLog(message: string) {
-        this.errorLog += `${message}\n\n`
+    public appendToBuildLog(message: string) {
+        this.buildLog += `${message}\n\n`
+    }
+
+    public clearBuildLog() {
+        this.buildLog = ''
     }
 
     public setToNotStarted() {
@@ -559,12 +996,32 @@ export class TransformByQState {
         this.transformByQState = TransformByQStatus.PartiallySucceeded
     }
 
+    public setRefreshInProgress(inProgress: boolean) {
+        this.refreshInProgress = inProgress
+    }
+
+    public setHasSeenTransforming(hasSeen: boolean) {
+        this.hasSeenTransforming = hasSeen
+    }
+
+    public setTransformationType(type: TransformationType) {
+        this.transformationType = type
+    }
+
     public setProjectName(name: string) {
         this.projectName = name
     }
 
     public setProjectPath(path: string) {
         this.projectPath = path
+    }
+
+    public setCustomBuildCommand(command: string) {
+        this.customBuildCommand = command
+    }
+
+    public setLinesOfCodeSubmitted(lines: number) {
+        this.linesOfCodeSubmitted = lines
     }
 
     public setStartTime(time: string) {
@@ -583,6 +1040,34 @@ export class TransformByQState {
         this.targetJDKVersion = version
     }
 
+    public setSourceDB(db: DB) {
+        this.sourceDB = db
+    }
+
+    public setTargetDB(db: DB) {
+        this.targetDB = db
+    }
+
+    public setSchema(schema: string) {
+        this.schema = schema
+    }
+
+    public setSchemaOptions(schemaOptions: Set<string>) {
+        this.schemaOptions = schemaOptions
+    }
+
+    public setSourceServerName(serverName: string) {
+        this.sourceServerName = serverName
+    }
+
+    public setMetadataPathSQL(path: string) {
+        this.metadataPathSQL = path
+    }
+
+    public setCustomDependencyVersionFilePath(path: string) {
+        this.customVersionPath = path
+    }
+
     public setPlanFilePath(filePath: string) {
         this.planFilePath = filePath
     }
@@ -595,16 +1080,16 @@ export class TransformByQState {
         this.summaryFilePath = filePath
     }
 
+    public setJobHistoryPath(filePath: string) {
+        this.jobHistoryPath = filePath
+    }
+
     public setResultArchiveFilePath(filePath: string) {
         this.resultArchiveFilePath = filePath
     }
 
     public setProjectCopyFilePath(filePath: string) {
         this.projectCopyFilePath = filePath
-    }
-
-    public setJobFailureMetadata(data: string) {
-        this.jobFailureMetadata = data
     }
 
     public setPayloadFilePath(payloadFilePath: string) {
@@ -623,12 +1108,20 @@ export class TransformByQState {
         this.mavenName = mavenName
     }
 
-    public setJavaHome(javaHome: string) {
-        this.javaHome = javaHome
+    public setSourceJavaHome(javaHome: string) {
+        this.sourceJavaHome = javaHome
+    }
+
+    public setTargetJavaHome(javaHome: string) {
+        this.targetJavaHome = javaHome
     }
 
     public setChatControllers(controllers: ChatControllerEventEmitters) {
         this.chatControllers = controllers
+    }
+
+    public setChatMessenger(messenger: Messenger) {
+        this.chatMessenger = messenger
     }
 
     public setDependencyFolderInfo(folderInfo: FolderInfo) {
@@ -657,12 +1150,24 @@ export class TransformByQState {
 
     public setJobDefaults() {
         this.setToNotStarted()
+        this.refreshInProgress = false
+        this.hasSeenTransforming = false
         this.jobFailureErrorNotification = undefined
         this.jobFailureErrorChatMessage = undefined
-        this.jobFailureMetadata = ''
         this.payloadFilePath = ''
-        this.errorLog = ''
+        this.metadataPathSQL = ''
+        this.customVersionPath = ''
+        this.sourceJDKVersion = undefined
+        this.targetJDKVersion = undefined
+        this.sourceDB = undefined
+        this.targetDB = undefined
+        this.sourceServerName = ''
+        this.schemaOptions.clear()
+        this.schema = ''
+        this.buildLog = ''
+        this.customBuildCommand = ''
         this.intervalId = undefined
+        this.jobHistoryPath = ''
     }
 }
 
@@ -674,111 +1179,6 @@ export class TransformByQStoppedError extends ToolkitError {
     }
 }
 
-export interface CodeScanTelemetryEntry extends MetricBase {
-    codewhispererCodeScanJobId?: string
-    codewhispererLanguage: CodewhispererLanguage
-    codewhispererCodeScanProjectBytes?: number
-    codewhispererCodeScanSrcPayloadBytes: number
-    codewhispererCodeScanBuildPayloadBytes?: number
-    codewhispererCodeScanSrcZipFileBytes: number
-    codewhispererCodeScanBuildZipFileBytes?: number
-    codewhispererCodeScanLines: number
-    duration: number
-    contextTruncationDuration: number
-    artifactsUploadDuration: number
-    codeScanServiceInvocationsDuration: number
-    result: Result
-    reason?: string
-    reasonDesc?: string
-    codewhispererCodeScanTotalIssues: number
-    codewhispererCodeScanIssuesWithFixes: number
-    credentialStartUrl: string | undefined
-    codewhispererCodeScanScope: CodewhispererCodeScanScope
-}
-
-export interface RecommendationDescription {
-    text: string
-    markdown: string
-}
-
-export interface Recommendation {
-    text: string
-    url: string
-}
-
-export interface SuggestedFix {
-    description: string
-    code: string
-}
-
-export interface Remediation {
-    recommendation: Recommendation
-    suggestedFixes: SuggestedFix[]
-}
-
-export interface CodeLine {
-    content: string
-    number: number
-}
-
-export interface RawCodeScanIssue {
-    filePath: string
-    startLine: number
-    endLine: number
-    title: string
-    description: RecommendationDescription
-    detectorId: string
-    detectorName: string
-    findingId: string
-    ruleId?: string
-    relatedVulnerabilities: string[]
-    severity: string
-    remediation: Remediation
-    codeSnippet: CodeLine[]
-}
-
-export interface CodeScanIssue {
-    startLine: number
-    endLine: number
-    comment: string
-    title: string
-    description: RecommendationDescription
-    detectorId: string
-    detectorName: string
-    findingId: string
-    ruleId?: string
-    relatedVulnerabilities: string[]
-    severity: string
-    recommendation: Recommendation
-    suggestedFixes: SuggestedFix[]
-}
-
-export interface AggregatedCodeScanIssue {
-    filePath: string
-    issues: CodeScanIssue[]
-}
-
-export interface SecurityPanelItem {
-    path: string
-    range: vscode.Range
-    severity: vscode.DiagnosticSeverity
-    message: string
-    issue: CodeScanIssue
-    decoration: vscode.DecorationOptions
-}
-
-export interface SecurityPanelSet {
-    path: string
-    uri: vscode.Uri
-    items: SecurityPanelItem[]
-}
-
-export enum Cloud9AccessState {
-    NoAccess,
-    RequestedAccess,
-    HasAccess,
-}
-
 export interface TransformationCandidateProject {
     name: string
     path: string
@@ -788,4 +1188,29 @@ export interface TransformationCandidateProject {
 export interface FolderInfo {
     path: string
     name: string
+}
+
+export interface Reference {
+    licenseName?: string
+    repository?: string
+    url?: string
+    recommendationContentSpan?: {
+        start: number
+        end: number
+    }
+}
+
+// TODO: remove ShortAnswer because it will be deprecated
+export interface ShortAnswer {
+    testFilePath: string
+    buildCommands: string[]
+    planSummary: string
+    sourceFilePath?: string
+    testFramework?: string
+    executionCommands?: string[]
+    testCoverage?: number
+    stopIteration?: string
+    errorMessage?: string
+    codeReferences?: References
+    numberOfTestMethods?: number
 }

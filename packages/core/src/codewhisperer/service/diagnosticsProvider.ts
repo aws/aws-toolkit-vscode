@@ -4,10 +4,10 @@
  */
 
 import * as vscode from 'vscode'
-import { CodeScanIssue, AggregatedCodeScanIssue, CodeScansState } from '../models/model'
-import { SecurityIssueHoverProvider } from './securityIssueHoverProvider'
-import { SecurityIssueCodeActionProvider } from './securityIssueCodeActionProvider'
+import { CodeScanIssue, AggregatedCodeScanIssue } from '../models/model'
 import { CodeAnalysisScope, codewhispererDiagnosticSourceLabel } from '../models/constants'
+import { SecurityIssueTreeViewProvider } from './securityIssueTreeViewProvider'
+import { SecurityIssueProvider } from './securityIssueProvider'
 
 export interface SecurityDiagnostic extends vscode.Diagnostic {
     findingId?: string
@@ -25,32 +25,38 @@ export const securityScanRender: SecurityScanRender = {
 
 export function initSecurityScanRender(
     securityRecommendationList: AggregatedCodeScanIssue[],
-    context: vscode.ExtensionContext,
     editor: vscode.TextEditor | undefined,
-    scope: CodeAnalysisScope
+    scope: CodeAnalysisScope,
+    fromQCA: boolean = true
 ) {
+    // fromQCA parameter is used to determine if the findings are coming from QCA or from displayFindings tool.
+    // if the incoming findings are from QCA review, then keep only existing findings from displayFindings
+    // if the incoming findings are not from QCA review, then keep only the existing QCA findings
+    securityScanRender.securityDiagnosticCollection = createSecurityDiagnosticCollection()
     securityScanRender.initialized = false
-    if (scope === CodeAnalysisScope.FILE && editor) {
+    if (scope === CodeAnalysisScope.FILE_ON_DEMAND && editor) {
         securityScanRender.securityDiagnosticCollection?.delete(editor.document.uri)
     } else if (scope === CodeAnalysisScope.PROJECT) {
         securityScanRender.securityDiagnosticCollection?.clear()
     }
-    securityRecommendationList.forEach((securityRecommendation) => {
+    for (const securityRecommendation of securityRecommendationList) {
         updateSecurityDiagnosticCollection(securityRecommendation)
-        updateSecurityIssueHoverAndCodeActions(securityRecommendation)
-    })
+        updateSecurityIssuesForProviders(securityRecommendation, scope === CodeAnalysisScope.FILE_AUTO, fromQCA)
+    }
     securityScanRender.initialized = true
 }
 
-function updateSecurityIssueHoverAndCodeActions(securityRecommendation: AggregatedCodeScanIssue) {
-    const updatedSecurityRecommendationList = [
-        ...SecurityIssueHoverProvider.instance.issues.filter(
-            (group) => group.filePath !== securityRecommendation.filePath
-        ),
-        securityRecommendation,
-    ]
-    SecurityIssueHoverProvider.instance.issues = updatedSecurityRecommendationList
-    SecurityIssueCodeActionProvider.instance.issues = updatedSecurityRecommendationList
+function updateSecurityIssuesForProviders(
+    securityRecommendation: AggregatedCodeScanIssue,
+    isAutoScope?: boolean,
+    fromQCA: boolean = true
+) {
+    if (isAutoScope) {
+        SecurityIssueProvider.instance.mergeIssues(securityRecommendation)
+    } else {
+        SecurityIssueProvider.instance.mergeIssuesDisplayFindings(securityRecommendation, fromQCA)
+    }
+    SecurityIssueTreeViewProvider.instance.refresh()
 }
 
 export function updateSecurityDiagnosticCollection(securityRecommendation: AggregatedCodeScanIssue) {
@@ -60,9 +66,23 @@ export function updateSecurityDiagnosticCollection(securityRecommendation: Aggre
     const securityDiagnostics: vscode.Diagnostic[] = vscode.languages
         .getDiagnostics(uri)
         .filter((diagnostic) => diagnostic.source === codewhispererDiagnosticSourceLabel)
-    securityRecommendation.issues.forEach((securityIssue) => {
-        securityDiagnostics.push(createSecurityDiagnostic(securityIssue))
-    })
+    for (const securityIssue of securityRecommendation.issues) {
+        const existingDiagnosticIndex = securityDiagnostics.findIndex(
+            (diagnostic) =>
+                (diagnostic.message === securityIssue.title &&
+                    diagnostic.range.start.line === securityIssue.startLine &&
+                    diagnostic.range.end.line === securityIssue.endLine) ||
+                (diagnostic.message === 'Re-scan to validate the fix: ' + securityIssue.title &&
+                    diagnostic.range.start.line === securityIssue.startLine &&
+                    diagnostic.range.end.line === securityIssue.startLine)
+        )
+        if (existingDiagnosticIndex !== -1) {
+            securityDiagnostics.splice(existingDiagnosticIndex, 1)
+        }
+        if (securityIssue.visible) {
+            securityDiagnostics.push(createSecurityDiagnostic(securityIssue))
+        }
+    }
     securityDiagnosticCollection.set(uri, securityDiagnostics)
 }
 
@@ -74,10 +94,7 @@ export function createSecurityDiagnostic(securityIssue: CodeScanIssue) {
         vscode.DiagnosticSeverity.Warning
     )
     securityDiagnostic.source = codewhispererDiagnosticSourceLabel
-    securityDiagnostic.code = {
-        value: securityIssue.detectorId,
-        target: vscode.Uri.parse(securityIssue.recommendation.url),
-    }
+    securityDiagnostic.code = securityIssue.ruleId
     securityDiagnostic.findingId = securityIssue.findingId
     return securityDiagnostic
 }
@@ -111,27 +128,28 @@ export function disposeSecurityDiagnostic(event: vscode.TextDocumentChangeEvent)
         }
     )
 
-    currentSecurityDiagnostics?.forEach((issue) => {
-        const intersection = changedRange.intersection(issue.range)
-        if (
-            issue.severity === vscode.DiagnosticSeverity.Warning &&
-            intersection &&
-            (/\S/.test(changedText) || changedText === '') &&
-            !CodeScansState.instance.isScansEnabled()
-        ) {
-            issue.severity = vscode.DiagnosticSeverity.Information
-            issue.message = 'Re-scan to validate the fix: ' + issue.message
-            issue.range = new vscode.Range(intersection.start, intersection.start)
-        } else if (issue.range.start.line >= changedRange.end.line) {
-            issue.range = new vscode.Range(
-                issue.range.start.line + lineOffset,
-                issue.range.start.character,
-                issue.range.end.line + lineOffset,
-                issue.range.end.character
-            )
+    if (currentSecurityDiagnostics) {
+        for (const issue of currentSecurityDiagnostics) {
+            const intersection = changedRange.intersection(issue.range)
+            if (
+                issue.severity === vscode.DiagnosticSeverity.Warning &&
+                intersection &&
+                (/\S/.test(changedText) || changedText === '')
+            ) {
+                issue.severity = vscode.DiagnosticSeverity.Information
+                issue.message = 'Re-scan to validate the fix: ' + issue.message
+                issue.range = new vscode.Range(intersection.start, intersection.start)
+            } else if (issue.range.start.line >= changedRange.end.line) {
+                issue.range = new vscode.Range(
+                    issue.range.start.line + lineOffset,
+                    issue.range.start.character,
+                    issue.range.end.line + lineOffset,
+                    issue.range.end.character
+                )
+            }
+            newSecurityDiagnostics.push(issue)
         }
-        newSecurityDiagnostics.push(issue)
-    })
+    }
     securityScanRender.securityDiagnosticCollection?.set(uri, newSecurityDiagnostics)
 }
 

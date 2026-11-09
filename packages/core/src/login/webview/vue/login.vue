@@ -108,8 +108,8 @@
                     @toggle="toggleItemSelection"
                     :isSelected="selectedLoginOption === LoginOption.BUILDER_ID"
                     :itemId="LoginOption.BUILDER_ID"
-                    :itemText="'with Builder ID, a personal profile from AWS'"
-                    :itemTitle="'Use for Free'"
+                    :itemText="'Free to start with a Builder ID.'"
+                    :itemTitle="'Personal account'"
                     :itemType="LoginOption.BUILDER_ID"
                     class="selectable-item bottomMargin"
                 ></SelectableItem>
@@ -118,9 +118,20 @@
                     @toggle="toggleItemSelection"
                     :isSelected="selectedLoginOption === LoginOption.ENTERPRISE_SSO"
                     :itemId="LoginOption.ENTERPRISE_SSO"
-                    :itemText="''"
-                    :itemTitle="'Use with Pro license'"
+                    :itemText="'Best for individual teams or organizations.'"
+                    :itemTitle="'Company account'"
                     :itemType="LoginOption.ENTERPRISE_SSO"
+                    class="selectable-item bottomMargin"
+                ></SelectableItem>
+                <SelectableItem
+                    v-if="app === 'TOOLKIT'"
+                    @toggle="toggleItemSelection"
+                    :isSelected="selectedLoginOption === LoginOption.CONSOLE_CREDENTIAL"
+                    :itemId="LoginOption.CONSOLE_CREDENTIAL"
+                    :itemText="'Use credentials from the AWS Console'"
+                    :itemTitle="'Console credentials'"
+                    :itemSubTitle="'recommended'"
+                    :itemType="LoginOption.CONSOLE_CREDENTIAL"
                     class="selectable-item bottomMargin"
                 ></SelectableItem>
                 <SelectableItem
@@ -139,12 +150,13 @@
                     :isSelected="selectedLoginOption === LoginOption.IAM_CREDENTIAL"
                     :itemId="LoginOption.IAM_CREDENTIAL"
                     :itemText="'Store keys for use with AWS CLI tools'"
-                    :itemTitle="'IAM Credentials'"
+                    :itemTitle="'IAM credentials'"
                     :itemType="LoginOption.IAM_CREDENTIAL"
                     class="selectable-item bottomMargin"
                 ></SelectableItem>
                 <button
                     class="continue-button"
+                    id="connection-selection-continue-button"
                     :disabled="selectedLoginOption === 0"
                     v-on:click="handleContinueClick()"
                 >
@@ -193,6 +205,7 @@
                     @keydown.enter="handleContinueClick()"
                 />
                 <h4 class="start-url-error">{{ startUrlError }}</h4>
+                <h4 class="start-url-warning">{{ startUrlWarning }}</h4>
                 <div class="title topMargin">Region</div>
                 <div class="hint">AWS Region that hosts identity directory</div>
                 <select
@@ -218,8 +231,26 @@
 
         <template v-if="stage === 'AUTHENTICATING'">
             <div class="auth-container-section">
-                <div v-if="app === 'TOOLKIT' && profileName.length > 0" class="header bottomMargin">
+                <div
+                    v-if="app === 'TOOLKIT' && profileName.length > 0 && previousStage === 'AWS_PROFILE'"
+                    class="header bottomMargin"
+                >
                     Connecting to IAM...
+                </div>
+                <div
+                    v-else-if="app === 'TOOLKIT' && profileName.length > 0 && previousStage === 'CONSOLE_PROFILE'"
+                    class="bottomMargin"
+                >
+                    <div class="header">Opening AWS sign-in in your default browser...</div>
+                    <div class="hint">
+                        If you're already signed in to AWS Console, you can select that session. Otherwise, follow the
+                        steps to sign in with your AWS account.
+                    </div>
+                    <a
+                        class="hint"
+                        href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sign-in.html#cli-configure-sign-in-prerequisites"
+                        >Need help? Check setup requirements</a
+                    >
                 </div>
                 <div v-else class="header bottomMargin">Authenticating in browser...</div>
                 <button class="continue-button" v-on:click="handleCancelButton()">Cancel</button>
@@ -235,9 +266,14 @@
                     />
                 </svg>
             </button>
-            <div class="header">IAM Credentials:</div>
+            <div class="header">IAM credentials:</div>
             <div class="hint">Credentials will be added to the appropriate ~/.aws/ files</div>
-            <div class="title topMargin">Profile Name</div>
+            <a
+                class="hint"
+                href="https://docs.aws.amazon.com/sdkref/latest/guide/access-iam-users.html#step1authIamUser"
+                >Learn More</a
+            >
+            <div class="title topMargin">Profile name</div>
             <div class="hint">The identifier for these credentials</div>
             <input
                 class="iamInput bottomMargin"
@@ -247,7 +283,7 @@
                 v-model="profileName"
                 @keydown.enter="handleContinueClick()"
             />
-            <div class="title">Access Key</div>
+            <div class="title">Access key</div>
             <input
                 class="iamInput bottomMargin"
                 type="text"
@@ -256,7 +292,7 @@
                 v-model="accessKey"
                 @keydown.enter="handleContinueClick()"
             />
-            <div class="title">Secret Key</div>
+            <div class="title">Secret key</div>
             <input
                 class="iamInput bottomMargin"
                 type="text"
@@ -269,6 +305,56 @@
                 Continue
             </button>
         </template>
+        <template v-if="stage === 'CONSOLE_PROFILE'">
+            <button class="back-button bottomMargin" @click="handleBackButtonClick">
+                <svg width="13" height="11" viewBox="0 0 13 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M4.98667 0.0933332L5.73333 0.786666L1.57333 4.94667H12.0267V5.96H1.57333L5.73333 10.0667L4.98667 10.8133L0.0266666 5.8V5.10667L4.98667 0.0933332Z"
+                        fill="#21A2FF"
+                    />
+                </svg>
+            </button>
+            <div class="header">Use your AWS Console credentials</div>
+            <div class="hint">
+                (Recommended) Use your AWS Console sign-in to get secure, temporary credentials for local development.
+                No need to create or manage access keys.
+            </div>
+            <a class="hint" href="https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sign-in.html"
+                >Learn More</a
+            >
+            <div class="title topMargin">Profile name</div>
+            <div class="hint">Use letters, numbers, underscores, or hyphens</div>
+            <input
+                class="iamInput bottomMargin"
+                type="text"
+                id="profileName"
+                name="profileName"
+                v-model="profileName"
+                placeholder="profile-name"
+                @input="validateProfileName"
+                @keydown.enter="handleContinueClick()"
+                @keydown="preventInvalidChars"
+            />
+            <div class="title topMargin">Region (optional)</div>
+            <select
+                class="regionSelect"
+                id="regions"
+                name="regions"
+                v-model="selectedRegion"
+                @change="handleRegionInput($event)"
+            >
+                <option v-for="region in regions" :key="region.id" :value="region.id">
+                    {{ `${region.name} (${region.id})` }}
+                </option>
+            </select>
+            <button
+                class="continue-button"
+                :disabled="shouldDisableConsoleSessionContinue()"
+                v-on:click="handleContinueClick()"
+            >
+                Continue
+            </button>
+        </template>
     </div>
 </template>
 <script lang="ts">
@@ -278,17 +364,12 @@ import { LoginOption } from './types'
 import { CommonAuthWebview } from './backend'
 import { WebviewClientFactory } from '../../../webviews/client'
 import { Region } from '../../../shared/regions/endpoints'
+import { ssoUrlFormatRegex, ssoUrlFormatMessage, urlInvalidFormatMessage } from '../../../auth/sso/constants'
 
 const client = WebviewClientFactory.create<CommonAuthWebview>()
 
 /** Where the user is currently in the builder id setup process */
-type Stage = 'START' | 'SSO_FORM' | 'CONNECTED' | 'AUTHENTICATING' | 'AWS_PROFILE'
-
-function validateSsoUrlFormat(url: string) {
-    const regex =
-        /^(https?:\/\/(.+)\.awsapps\.com\/start|https?:\/\/identitycenter\.amazonaws\.com\/ssoins-[\da-zA-Z]{16})$/
-    return regex.test(url)
-}
+type Stage = 'START' | 'SSO_FORM' | 'CONNECTED' | 'AUTHENTICATING' | 'AWS_PROFILE' | 'CONSOLE_PROFILE'
 
 function getCredentialId(loginOption: LoginOption) {
     switch (loginOption) {
@@ -298,6 +379,8 @@ function getCredentialId(loginOption: LoginOption) {
             return 'iamIdentityCenter'
         case LoginOption.IAM_CREDENTIAL:
             return 'sharedCredentials'
+        case LoginOption.CONSOLE_CREDENTIAL:
+            return 'consoleCredentials'
         default:
             return undefined
     }
@@ -305,6 +388,7 @@ function getCredentialId(loginOption: LoginOption) {
 
 const authUiClickOptionMap = {
     [LoginOption.BUILDER_ID]: 'auth_builderIdOption',
+    [LoginOption.CONSOLE_CREDENTIAL]: 'auth_consoleCredentialsOption',
     [LoginOption.ENTERPRISE_SSO]: 'auth_idcOption',
     [LoginOption.IAM_CREDENTIAL]: 'auth_credentialsOption',
     [LoginOption.IMPORTED_LOGINS]: 'auth_existingAuthOption',
@@ -343,9 +427,11 @@ export default defineComponent({
             importedLogins: [] as ImportedLogin[],
             selectedLoginOption: LoginOption.NONE,
             stage: 'START' as Stage,
+            previousStage: '' as Stage,
             regions: [] as Region[],
             startUrlError: '',
-            selectedRegion: 'us-east-1',
+            startUrlWarning: '',
+            selectedRegion: '',
             startUrl: '',
             app: this.app,
             LoginOption,
@@ -355,7 +441,9 @@ export default defineComponent({
         }
     },
     async created() {
-        this.startUrl = await this.getDefaultStartUrl()
+        const defaultSso = await this.getDefaultSso()
+        this.startUrl = defaultSso.startUrl
+        this.selectedRegion = defaultSso.region
         await this.emitUpdate('created')
     },
 
@@ -370,7 +458,7 @@ export default defineComponent({
 
         // Pre-select the first available login option
         await this.preselectLoginOption()
-        this.handleUrlInput() // validate the default startUrl
+        await this.handleUrlInput() // validate the default startUrl
     },
     methods: {
         toggleItemSelection(itemId: number) {
@@ -440,11 +528,16 @@ export default defineComponent({
                 } else if (this.selectedLoginOption === LoginOption.IAM_CREDENTIAL) {
                     this.stage = 'AWS_PROFILE'
                     this.$nextTick(() => document.getElementById('profileName')!.focus())
+                } else if (this.selectedLoginOption === LoginOption.CONSOLE_CREDENTIAL) {
+                    this.stage = 'CONSOLE_PROFILE'
+                    this.$nextTick(() => document.getElementById('profileName')!.focus())
+                    await client.storeMetricMetadata({ awsRegion: this.selectedRegion })
                 }
             } else if (this.stage === 'SSO_FORM') {
                 if (this.shouldDisableSsoContinue()) {
                     return
                 }
+                this.previousStage = this.stage
                 this.stage = 'AUTHENTICATING'
 
                 const error = await client.startEnterpriseSetup(this.startUrl, this.selectedRegion, this.app)
@@ -458,8 +551,22 @@ export default defineComponent({
                 if (this.shouldDisableIamContinue()) {
                     return
                 }
+                this.previousStage = this.stage
                 this.stage = 'AUTHENTICATING'
                 const error = await client.startIamCredentialSetup(this.profileName, this.accessKey, this.secretKey)
+                if (error) {
+                    this.stage = 'START'
+                    void client.errorNotification(error)
+                } else {
+                    this.stage = 'CONNECTED'
+                }
+            } else if (this.stage === 'CONSOLE_PROFILE') {
+                if (this.shouldDisableConsoleSessionContinue()) {
+                    return
+                }
+                this.previousStage = this.stage
+                this.stage = 'AUTHENTICATING'
+                const error = await client.startConsoleCredentialSetup(this.profileName, this.selectedRegion)
                 if (error) {
                     this.stage = 'START'
                     void client.errorNotification(error)
@@ -480,18 +587,47 @@ export default defineComponent({
                 this.stage = 'CONNECTED'
             }
         },
-        handleUrlInput() {
-            if (this.startUrl && !validateSsoUrlFormat(this.startUrl)) {
-                this.startUrlError =
-                    'URLs must start with http:// or https://. Example: https://d-xxxxxxxxxx.awsapps.com/start'
-            } else if (this.startUrl && this.existingStartUrls.some(url => url === this.startUrl)) {
-                this.startUrlError =
-                    'A connection for this start URL already exists. Sign out before creating a new one.'
-            } else {
-                this.startUrlError = ''
+        async handleUrlInput() {
+            const messages = await resolveStartUrlMessages(this.startUrl, this.existingStartUrls)
+            this.startUrlError = messages.error
+            this.startUrlWarning = messages.warning
+
+            if (!messages.error && !messages.warning) {
                 void client.storeMetricMetadata({
                     credentialStartUrl: this.startUrl,
                 })
+            }
+
+            async function resolveStartUrlMessages(
+                startUrl: string | undefined,
+                existingStartUrls: string[]
+            ): Promise<{ warning: string; error: string }> {
+                // No URL
+                if (!startUrl) {
+                    return { error: '', warning: '' }
+                }
+
+                // Validate URL format
+                if (!ssoUrlFormatRegex.test(startUrl)) {
+                    console.log('Before Validate')
+                    if (await client.validateUrl(startUrl)) {
+                        console.log('After Validate')
+                        return { error: '', warning: ssoUrlFormatMessage }
+                    } else {
+                        return { error: urlInvalidFormatMessage, warning: '' }
+                    }
+                }
+
+                // Ensure that URL does not exist yet
+                if (existingStartUrls.some((url) => url === startUrl)) {
+                    return {
+                        error: 'A connection for this start URL already exists. Sign out before creating a new one.',
+                        warning: '',
+                    }
+                }
+
+                // URL is valid
+                return { error: '', warning: '' }
             }
         },
         handleRegionInput(event: any) {
@@ -520,7 +656,7 @@ export default defineComponent({
             // to reuse connections in AWS Toolkit & Amazon Q
             const sharedConnections = await client.fetchConnections()
             sharedConnections
-                ?.filter(c => !this.existingStartUrls.includes(c.startUrl))
+                ?.filter((c) => !this.existingStartUrls.includes(c.startUrl))
                 .forEach((connection, index) => {
                     this.importedLogins.push({
                         id: LoginOption.IMPORTED_LOGINS + index,
@@ -535,10 +671,10 @@ export default defineComponent({
             this.$forceUpdate()
         },
         async updateExistingStartUrls() {
-            this.existingStartUrls = (await client.listSsoConnections()).map(conn => conn.startUrl)
+            this.existingStartUrls = (await client.listSsoConnections()).map((conn) => conn.startUrl)
         },
-        async getDefaultStartUrl() {
-            return await client.getDefaultStartUrl()
+        async getDefaultSso() {
+            return await client.getDefaultSsoProfile()
         },
         handleHelpLinkClick() {
             void client.emitUiClick('auth_helpLink')
@@ -550,7 +686,7 @@ export default defineComponent({
             } else if (this.app === 'AMAZONQ') {
                 this.selectedLoginOption = LoginOption.BUILDER_ID
             } else if (this.app === 'TOOLKIT') {
-                this.selectedLoginOption = LoginOption.ENTERPRISE_SSO
+                this.selectedLoginOption = LoginOption.CONSOLE_CREDENTIAL
             }
             this.$forceUpdate()
         },
@@ -560,11 +696,44 @@ export default defineComponent({
         shouldDisableIamContinue() {
             return this.profileName.length <= 0 || this.accessKey.length <= 0 || this.secretKey.length <= 0
         },
+        shouldDisableConsoleSessionContinue() {
+            return this.profileName.length <= 0 || !this.selectedRegion || !/^[a-zA-Z0-9_-]+$/.test(this.profileName)
+        },
+        validateProfileName(event: Event) {
+            const input = event.target as HTMLInputElement
+            // Replaces all invalid characters from both keypress and paste events
+            const validValue = input.value.replace(/[^a-zA-Z0-9_-]/g, '')
+            if (validValue !== input.value) {
+                this.profileName = validValue
+            }
+        },
+        preventInvalidChars(event: KeyboardEvent) {
+            // Allow control keys (backspace, delete, arrows, etc)
+            if (event.key.length === 1) {
+                // Only check single characters
+                // Only allow letters, numbers, underscore, and hyphen
+                if (!/^[a-zA-Z0-9_-]+$/.test(event.key)) {
+                    event.preventDefault()
+                }
+            }
+        },
     },
 })
+
+/**
+ * The ID of the element we will use to determine that the UI has completed its initial load.
+ *
+ * This makes assumptions that we will be in a certain state of the UI (eg showing a form vs. a loading bar).
+ * So if the UI flow changes, this may need to be updated.
+ */
+export function getReadyElementId() {
+    // On every initial load, we ASSUME that the user will always be in the connection selection state,
+    // which is why we specifically look for this button.
+    return 'connection-selection-continue-button'
+}
 </script>
 
-<style>
+<style scoped>
 @import './base.css';
 
 .selectable-item {
@@ -575,7 +744,7 @@ export default defineComponent({
 .logoIcon {
     display: flex;
     flex-direction: row;
-    justify-content: left;
+    justify-content: center;
     align-items: flex-start;
     height: auto;
 }
@@ -598,7 +767,8 @@ export default defineComponent({
     margin: auto;
     position: absolute;
     top: var(--auth-container-top);
-    width: 260px;
+    max-width: 260px;
+    width: 90vw;
 }
 
 .header {
@@ -746,6 +916,10 @@ body.vscode-high-contrast:not(body.vscode-high-contrast-light) .regionSelect {
 }
 .start-url-error {
     color: #ff0000;
+    font-size: var(--font-size-sm);
+}
+.start-url-warning {
+    color: #dfe216;
     font-size: var(--font-size-sm);
 }
 #logo {

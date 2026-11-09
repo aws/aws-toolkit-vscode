@@ -6,8 +6,8 @@
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
 import fs from '../shared/fs/fs'
-import request from '../common/request'
-import { getLogger } from '../shared/logger'
+import request from '../shared/request'
+import { getLogger } from '../shared/logger/logger'
 import { ThreatComposerEditor } from './threatComposerEditor'
 import { ToolkitError } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
@@ -20,7 +20,11 @@ const localize = nls.loadMessageBundle()
 // Change this to true for local dev
 const isLocalDev = false
 const localhost = 'http://127.0.0.1:3000'
-const cdn = 'https://ide-toolkits.threat-composer.aws.dev'
+function getCdn(): string {
+    return vscode.workspace
+        .getConfiguration('aws.threatComposer')
+        .get('cdn', 'https://ide-toolkits.threat-composer.aws.dev')
+}
 let clientId = ''
 
 /**
@@ -39,6 +43,25 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
      */
     public static register(context: vscode.ExtensionContext): vscode.Disposable {
         const provider = new ThreatComposerEditorProvider(context)
+
+        context.subscriptions.push(
+            vscode.workspace.onDidChangeConfiguration(
+                async (configurationChangeEvent: vscode.ConfigurationChangeEvent) => {
+                    if (configurationChangeEvent.affectsConfiguration('aws.threatComposer.cdn')) {
+                        // Clear cached content
+                        provider.webviewHtml = ''
+                        // Closed all open Threat Composer editors
+                        for (const visualization of provider.managedVisualizations.values()) {
+                            const panel = visualization.getPanel()
+                            if (panel) {
+                                panel.dispose()
+                            }
+                        }
+                    }
+                }
+            )
+        )
+
         return vscode.window.registerCustomEditorProvider(ThreatComposerEditorProvider.viewType, provider, {
             webviewOptions: {
                 enableFindWidget: true,
@@ -63,7 +86,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
      * @private
      */
     private async fetchWebviewHtml() {
-        const source = isLocalDev ? localhost : cdn
+        const source = isLocalDev ? localhost : getCdn()
         const response = await request.fetch('GET', `${source}/index.html`).response
         this.webviewHtml = await response.text()
 
@@ -83,7 +106,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         let htmlFileSplit = this.webviewHtml.split('<head>')
 
         // Set asset source to CDN
-        const source = isLocalDev ? localhost : cdn
+        const source = isLocalDev ? localhost : getCdn()
         const baseTag = `<base href='${source}'/>`
 
         // Set dark mode, locale, and feature flags
@@ -105,7 +128,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
         html = `${htmlFileSplit[0]} script-src 'self' 'nonce-${nonce}' ${localDevURL} ${htmlFileSplit[1]}`
 
         htmlFileSplit = html.split('<body>')
-        const script = await fs.readFileAsString(
+        const script = await fs.readFileText(
             vscode.Uri.joinPath(this.extensionContext.extensionUri, 'resources', 'js', 'vsCodeExtensionInterface.js')
         )
 
@@ -130,7 +153,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
             }
 
             if (clientId === '') {
-                clientId = getClientId(globals.context.globalState)
+                clientId = getClientId(globals.globalState)
             }
             // Attempt to retrieve existing visualization if it exists.
             const existingVisualization = this.getExistingVisualization(document.uri.fsPath)
@@ -148,6 +171,7 @@ export class ThreatComposerEditorProvider implements vscode.CustomTextEditorProv
                         this.getWebviewContent
                     )
                     this.handleNewVisualization(document.uri.fsPath, newVisualization)
+                    span.record({ id: fileId })
                 } catch (err) {
                     this.handleErr(err as Error)
                     throw new ToolkitError((err as Error).message, { code: 'Failed to Open Threat Composer' })

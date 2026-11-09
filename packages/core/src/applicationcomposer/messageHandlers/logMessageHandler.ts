@@ -4,7 +4,7 @@
  */
 
 import { LogMessage } from '../types'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 
 export function logMessageHandler(message: LogMessage) {
     const logger = getLogger()

@@ -4,7 +4,7 @@
  */
 
 import * as vscode from 'vscode'
-import { Bucket, CreateFolderRequest, CreateFolderResponse, Folder, S3Client } from '../../../shared/clients/s3Client'
+import { S3Bucket, CreateFolderRequest, CreateFolderResponse, Folder, S3Client } from '../../../shared/clients/s3'
 import { AWSResourceNode } from '../../../shared/treeview/nodes/awsResourceNode'
 import { AWSTreeNodeBase } from '../../../shared/treeview/nodes/awsTreeNodeBase'
 import { LoadMoreNode } from '../../../shared/treeview/nodes/loadMoreNode'
@@ -15,7 +15,7 @@ import { ChildNodeLoader } from '../../../awsexplorer/childNodeLoader'
 import { ChildNodePage } from '../../../awsexplorer/childNodeLoader'
 import { S3FileNode } from './s3FileNode'
 import { inspect } from 'util'
-import { getLogger } from '../../../shared/logger'
+import { getLogger } from '../../../shared/logger/logger'
 import { getIcon } from '../../../shared/icons'
 import { Settings } from '../../../shared/settings'
 import { ClassToInterfaceType } from '../../../shared/utilities/tsUtils'
@@ -27,7 +27,7 @@ export class S3FolderNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
     private readonly childLoader = new ChildNodeLoader(this, (token) => this.loadPage(token))
 
     public constructor(
-        public readonly bucket: Bucket,
+        public readonly bucket: S3Bucket,
         public readonly folder: Folder,
         public readonly s3: S3Client,
         protected readonly settings: ClassToInterfaceType<Settings> = Settings.instance
@@ -61,7 +61,7 @@ export class S3FolderNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
     private async loadPage(continuationToken: string | undefined): Promise<ChildNodePage<S3FolderNode | S3FileNode>> {
         getLogger().debug(`Loading page for %O using continuationToken %s`, this, continuationToken)
         const response = await this.s3.listFiles({
-            bucketName: this.bucket.name,
+            bucketName: this.bucket.Name,
             folderPath: this.folder.path,
             continuationToken,
             maxResults: this.getMaxItemsPerPage(),
@@ -97,7 +97,7 @@ export class S3FolderNode extends AWSTreeNodeBase implements AWSResourceNode, Lo
     }
 
     public [inspect.custom](): string {
-        return `S3FolderNode (bucket=${this.bucket.name}, folder=${this.folder.path})`
+        return `S3FolderNode (bucket=${this.bucket.Name}, folder=${this.folder.path})`
     }
 
     private getMaxItemsPerPage(): number | undefined {

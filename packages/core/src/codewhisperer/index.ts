@@ -3,20 +3,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export * from './indexCommon'
-
+export { activate, shutdown } from './activation'
+export * from './util/authUtil'
 export * from './models/model'
-export * as model from './models/model'
-export * as CodeWhispererConstants from './models/constants'
+export * from './models/constants'
 export * from './commands/basicCommands'
 export * from './commands/types'
-export {
-    AutotriggerState,
-    EndState,
-    ManualtriggerState,
-    PressTabState,
-    TryMoreExState,
-} from './views/lineAnnotationController'
 export type {
     TransformationProgressUpdate,
     TransformationStep,
@@ -26,19 +18,12 @@ export type {
     Completion,
     SendTelemetryEventResponse,
     TelemetryEvent,
+    InlineChatEvent,
+    Customization,
 } from './client/codewhispereruserclient.d.ts'
 export type { default as CodeWhispererUserClient } from './client/codewhispereruserclient.d.ts'
-export { HumanInTheLoopManager } from './service/transformByQ/humanInTheLoopManager'
-export * from './service/transformByQ/transformApiHandler'
-export {
-    DiffModel,
-    AddedChangeNode,
-    ModifiedChangeNode,
-} from './service/transformByQ/transformationResultsViewProvider'
-export { parseVersionsListFromPomFile } from './service/transformByQ/transformFileHandler'
 export { SecurityPanelViewProvider } from './views/securityPanelViewProvider'
-export { get, set, isInlineCompletionEnabled } from './util/commonUtil'
-export { validateOpenProjects, getOpenProjects } from './service/transformByQ/transformProjectValidationHandler'
+export { isInlineCompletionEnabled } from './util/commonUtil'
 export {
     DefaultCodeWhispererClient,
     Recommendation,
@@ -51,48 +36,73 @@ export {
     codeWhispererClient,
 } from './client/codewhisperer'
 export { listCodeWhispererCommands, listCodeWhispererCommandsId } from './ui/statusBarMenu'
-export { refreshStatusBar, CodeWhispererStatusBar, InlineCompletionService } from './service/inlineCompletionService'
+export { InlineCompletionService } from './service/inlineCompletionService'
+export { refreshStatusBar, CodeWhispererStatusBarManager } from './service/statusBar'
 export { SecurityIssueHoverProvider } from './service/securityIssueHoverProvider'
 export { SecurityIssueCodeActionProvider } from './service/securityIssueCodeActionProvider'
-export { invokeRecommendation } from './commands/invokeRecommendation'
+export {
+    SecurityIssueTreeViewProvider,
+    SecurityViewTreeItem,
+    FileItem,
+    IssueItem,
+    SeverityItem,
+} from './service/securityIssueTreeViewProvider'
 export { onAcceptance } from './commands/onAcceptance'
 export { CodeWhispererTracker } from './tracker/codewhispererTracker'
-export { RecommendationHandler } from './service/recommendationHandler'
 export { CodeWhispererUserGroupSettings } from './util/userGroupUtil'
 export { session } from './util/codeWhispererSession'
 export { onInlineAcceptance } from './commands/onInlineAcceptance'
 export { stopTransformByQ } from './commands/startTransformByQ'
-export { getCompletionItems, getCompletionItem, getLabel } from './service/completionProvider'
-export { featureDefinitions, FeatureConfigProvider } from './service/featureConfigProvider'
+export { featureDefinitions, FeatureConfigProvider } from '../shared/featureConfig'
 export { ReferenceInlineProvider } from './service/referenceInlineProvider'
 export { ReferenceHoverProvider } from './service/referenceHoverProvider'
 export { CWInlineCompletionItemProvider } from './service/inlineCompletionItemProvider'
-export { RecommendationService } from './service/recommendationService'
 export { ClassifierTrigger } from './service/classifierTrigger'
-export { DocumentChangedSource, KeyStrokeHandler, DefaultDocumentChangedType } from './service/keyStrokeHandler'
 export { ReferenceLogViewProvider } from './service/referenceLogViewProvider'
+export { RecommendationService } from './service/recommendationService'
+export { ImportAdderProvider } from './service/importAdderProvider'
 export { LicenseUtil } from './util/licenseUtil'
 export { SecurityIssueProvider } from './service/securityIssueProvider'
-export { listScanResults, mapToAggregatedList } from './service/securityScanHandler'
-export { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
+export { listScanResults, mapToAggregatedList, pollScanJobStatus } from './service/securityScanHandler'
 export { TelemetryHelper } from './util/telemetryHelper'
 export { LineSelection, LineTracker } from './tracker/lineTracker'
 export { BM25Okapi } from './util/supplementalContext/rankBm25'
-export { handleExtraBrackets } from './util/closingBracketUtil'
 export { runtimeLanguageContext, RuntimeLanguageContext } from './util/runtimeLanguageContext'
 export * as startSecurityScan from './commands/startSecurityScan'
 export * from './util/supplementalContext/utgUtils'
 export * from './util/supplementalContext/crossFileContextUtil'
 export * from './util/editorContext'
+export { acceptSuggestion } from './commands/onInlineAcceptance'
 export * from './util/showSsoPrompt'
 export * from './util/securityScanLanguageContext'
 export * from './util/importAdderUtil'
 export * from './util/globalStateUtil'
 export * from './util/zipUtil'
+export * from './util/diagnosticsUtil'
 export * from './util/commonUtil'
+export * from './util/closingBracketUtil'
 export * from './util/supplementalContext/codeParsingUtil'
 export * from './util/supplementalContext/supplementalContextUtil'
+export * from './util/codewhispererSettings'
 export * as supplementalContextUtil from './util/supplementalContext/supplementalContextUtil'
 export * from './service/diagnosticsProvider'
 export * as diagnosticsProvider from './service/diagnosticsProvider'
 export * from './ui/codeWhispererNodes'
+export { SecurityScanError, SecurityScanTimedOutError } from '../codewhisperer/models/errors'
+export * as CodeWhispererConstants from '../codewhisperer/models/constants'
+export {
+    getSelectedCustomization,
+    setSelectedCustomization,
+    baseCustomization,
+    onProfileChangedListener,
+    CustomizationProvider,
+} from './util/customizationUtil'
+export { Container } from './service/serviceContainer'
+export * from './util/gitUtil'
+export * from './ui/prompters'
+export { UserWrittenCodeTracker } from './tracker/userWrittenCodeTracker'
+export { RegionProfileManager, defaultServiceConfig } from './region/regionProfileManager'
+export { DocumentChangedSource, KeyStrokeHandler, DefaultDocumentChangedType } from './service/keyStrokeHandler'
+export { RecommendationHandler } from './service/recommendationHandler'
+export { CodeWhispererCodeCoverageTracker } from './tracker/codewhispererCodeCoverageTracker'
+export { invokeRecommendation } from './commands/invokeRecommendation'

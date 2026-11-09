@@ -5,13 +5,11 @@
 import assert from 'assert'
 import * as sinon from 'sinon'
 import * as path from 'path'
-import * as vscode from 'vscode'
 import * as http from 'http'
 import { ToolkitError } from '../../shared/errors'
 import { Result } from '../../shared/utilities/result'
-import { ChildProcess, ChildProcessResult } from '../../shared/utilities/childProcess'
+import { ChildProcess, ChildProcessResult } from '../../shared/utilities/processUtils'
 import { SshConfig, ensureConnectScript, sshLogFileLocation } from '../../shared/sshConfig'
-import { FakeExtensionContext } from '../fakeExtensionContext'
 import { fileExists, makeTemporaryToolkitFolder } from '../../shared/filesystemUtilities'
 import {
     DevEnvironmentId,
@@ -19,14 +17,16 @@ import {
     connectScriptPrefix,
     getCodeCatalystSsmEnv,
 } from '../../codecatalyst/model'
-import { StartDevEnvironmentSessionRequest } from 'aws-sdk/clients/codecatalyst'
-import { mkdir, readFile, writeFile } from 'fs/promises'
+import { StartDevEnvironmentSessionRequest } from '@aws-sdk/client-codecatalyst'
+import { mkdir, readFile } from 'fs/promises'
 import fs from '../../shared/fs/fs'
+import { globals } from '../../shared'
 
 class MockSshConfig extends SshConfig {
     // State variables to track logic flow.
     public testIsWin: boolean = false
     public configSection: string = ''
+    public exitCodeOverride: number = 0
 
     public async getProxyCommandWrapper(command: string): Promise<Result<string, ToolkitError>> {
         return await this.getProxyCommand(command)
@@ -52,7 +52,7 @@ class MockSshConfig extends SshConfig {
 
     protected override async checkSshOnHost(): Promise<ChildProcessResult> {
         return {
-            exitCode: 0,
+            exitCode: this.exitCodeOverride,
             error: undefined,
             stdout: this.configSection,
             stderr: '',
@@ -83,9 +83,33 @@ describe('VscodeRemoteSshConfig', async function () {
             const command = result.unwrap()
             assert.strictEqual(command, testProxyCommand)
         })
+
+        it('uses %n token for sagemaker_connect to preserve hostname case', async function () {
+            const sagemakerConfig = new MockSshConfig('sshPath', 'testHostNamePrefix', 'sagemaker_connect')
+            sagemakerConfig.testIsWin = false
+
+            const result = await sagemakerConfig.getProxyCommandWrapper('sagemaker_connect')
+            assert.ok(result.isOk())
+            const command = result.unwrap()
+            assert.strictEqual(command, `'sagemaker_connect' '%n'`)
+        })
+
+        it('uses %h token for hyperpod_connect', async function () {
+            const hyperpodConfig = new MockSshConfig('sshPath', 'testHostNamePrefix', 'hyperpod_connect')
+            hyperpodConfig.testIsWin = false
+
+            const result = await hyperpodConfig.getProxyCommandWrapper('hyperpod_connect')
+            assert.ok(result.isOk())
+            const command = result.unwrap()
+            assert.strictEqual(command, `'hyperpod_connect' '%h'`)
+        })
     })
 
     describe('matchSshSection', async function () {
+        beforeEach(function () {
+            config.exitCodeOverride = 0
+        })
+
         it('returns ok with match when proxycommand is present', async function () {
             const testSection = `proxycommandfdsafdsafd${testProxyCommand}sa342432`
             const result = await config.testMatchSshSection(testSection)
@@ -101,6 +125,16 @@ describe('VscodeRemoteSshConfig', async function () {
             const match = result.unwrap()
             assert.strictEqual(match, undefined)
         })
+
+        it('returns error when ssh check fails with non-zero exit code', async function () {
+            config.exitCodeOverride = 255
+            const testSection = `some config`
+            const result = await config.testMatchSshSection(testSection)
+            assert.ok(result.isErr())
+            const error = result.err()
+            assert.ok(error.message.includes('ssh check against host failed'))
+            assert.ok(error.message.includes('255'))
+        })
     })
 
     describe('verifySSHHost', async function () {
@@ -113,6 +147,7 @@ describe('VscodeRemoteSshConfig', async function () {
         })
 
         beforeEach(function () {
+            config.exitCodeOverride = 0
             promptUserToConfigureSshConfigStub.resetHistory()
         })
 
@@ -165,6 +200,14 @@ describe('VscodeRemoteSshConfig', async function () {
             assert.ok(!section.match(expectedUserString))
             assert.ok(!section.match(expectedIdentityFileString))
         })
+
+        it('uses SageMaker SSH config for hyperpod_connect (no IdentitiesOnly)', function () {
+            const hyperpodConfig = new MockSshConfig('sshPath', 'smhp_', 'hyperpod_connect')
+            const section = hyperpodConfig.createSSHConfigSectionWrapper('proxyCommand')
+            assert.ok(!section.includes('IdentitiesOnly'))
+            assert.ok(section.includes('proxyCommand'))
+            assert.ok(section.includes('ForwardAgent yes'))
+        })
     })
 
     describe('sshLogFileLocation', async function () {
@@ -181,22 +224,15 @@ describe('VscodeRemoteSshConfig', async function () {
 })
 
 describe('CodeCatalyst Connect Script', function () {
-    let context: FakeExtensionContext
-
     function isWithin(path1: string, path2: string): boolean {
         const rel = path.relative(path1, path2)
         return !path.isAbsolute(rel) && !rel.startsWith('..') && !!rel
     }
 
-    beforeEach(async function () {
-        context = await FakeExtensionContext.create()
-        context.globalStorageUri = vscode.Uri.file(await makeTemporaryToolkitFolder())
-    })
-
     it('can get a connect script path, adding a copy to global storage', async function () {
-        const script = (await ensureConnectScript(connectScriptPrefix, context)).unwrap().fsPath
+        const script = (await ensureConnectScript(connectScriptPrefix, globals.context)).unwrap().fsPath
         assert.ok(await fileExists(script))
-        assert.ok(isWithin(context.globalStorageUri.fsPath, script))
+        assert.ok(isWithin(globals.context.globalStorageUri.fsPath, script))
     })
 
     function createFakeServer(testDevEnv: DevEnvironmentId) {
@@ -247,8 +283,8 @@ describe('CodeCatalyst Connect Script', function () {
             server.listen({ host: 'localhost', port: 28142 }, () => resolve(`http://localhost:28142`))
         })
 
-        await writeFile(bearerTokenCacheLocation(testDevEnv.id), 'token')
-        const script = (await ensureConnectScript(connectScriptPrefix, context)).unwrap().fsPath
+        await fs.writeFile(bearerTokenCacheLocation(testDevEnv.id), 'token')
+        const script = (await ensureConnectScript(connectScriptPrefix, globals.context)).unwrap().fsPath
         const env = getCodeCatalystSsmEnv('us-weast-1', 'echo', testDevEnv)
         env.CODECATALYST_ENDPOINT = address
 
@@ -280,12 +316,12 @@ describe('CodeCatalyst Connect Script', function () {
         })
 
         it('works if the .ssh directory is missing', async function () {
-            ;(await ensureConnectScript(connectScriptPrefix, context)).unwrap()
+            ;(await ensureConnectScript(connectScriptPrefix, globals.context)).unwrap()
         })
 
         it('works if the .ssh directory exists but has different perms', async function () {
             await mkdir(path.join(tmpDir, '.ssh'), 0o777)
-            ;(await ensureConnectScript(connectScriptPrefix, context)).unwrap()
+            ;(await ensureConnectScript(connectScriptPrefix, globals.context)).unwrap()
         })
     })
 })

@@ -6,7 +6,7 @@
 import globals from '../../../shared/extensionGlobals'
 
 import os from 'os'
-import { promises as fsPromises } from 'fs'
+import { promises as fsPromises } from 'fs' // eslint-disable-line no-restricted-imports
 import fs from '../../../shared/fs/fs'
 import * as sinon from 'sinon'
 import assert from 'assert'
@@ -17,7 +17,6 @@ import { assertTelemetry, getMetrics, installFakeClock } from '../../testUtil'
 import { getTestWindow } from '../../shared/vscode/window'
 import { makeTemporaryToolkitFolder } from '../../../shared'
 import path from 'path'
-import * as env from '../../../shared/vscode/env'
 import { fakeErrorChain, getAwsServiceError } from '../errors.test'
 
 async function throwMe(errorOrFn?: Error | (() => Promise<never>)): Promise<void | never> {
@@ -104,19 +103,12 @@ describe('runCommand', function () {
         }
 
         it('vscode ISDIR', async function () {
-            if (env.isMinVscode('1.83.0')) {
-                this.skip()
-            }
-
             const pat = (() => {
                 switch (os.platform()) {
-                    case 'linux':
-                        // vscode error not raised on linux? 💩
-                        return /EISDIR: illegal operation on a directory/
                     case 'win32':
                         return /EPERM: operation not permitted/
                     default:
-                        return /EEXIST: file already exists/
+                        return /EISDIR: illegal operation on a directory/
                 }
             })()
             await runAndWaitForMessage(pat, async () => {

@@ -1,121 +1,49 @@
-# github actions: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+# github actions: https://docs.github.com/en/actions/use-cases-and-examples/building-and-testing/building-and-testing-nodejs
 # setup-node: https://github.com/actions/setup-node
 
 name: CI
 
 on:
     push:
-        branches: [master]
+        branches: [master, staging]
     pull_request:
-        branches: [master, feature/*, mynah-dev]
+        # By default, CI will trigger on opened/synchronize/reopened event types.
+        # https://docs.github.com/en/actions/writing-workflows/choosing-when-your-workflow-runs/events-that-trigger-workflows#pull_request
+        # Note: To re-run `lint-commits` after fixing the PR title, close-and-reopen the PR.
+        branches: [master, feature/*, staging]
+
+# Cancel old jobs when a pull request is updated.
+concurrency:
+    group: ${{ github.head_ref || github.run_id }}
+    cancel-in-progress: true
 
 jobs:
-    macos:
-        name: test macOS
-        runs-on: macos-latest
-        strategy:
-            fail-fast: false
-            matrix:
-                node-version: [16.x]
-                vscode-version: [minimum, stable, insiders]
-        env:
-            VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
-            NODE_OPTIONS: '--max-old-space-size=8192'
-        steps:
-            - uses: actions/checkout@v4
-            - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v4
-              with:
-                  node-version: ${{ matrix.node-version }}
-            - run: npm ci
-            - name: Tests
-              uses: coactions/setup-xvfb@v1
-              with:
-                  run: npm test
-            - name: Code coverage
-              env:
-                  # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
-                  NODE_OPTIONS: ''
-              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
-              uses: codecov/codecov-action@v4
-              with:
-                  flags: macos-unittests
-                  verbose: true
-                  file: ./coverage/lcov.info
-                  token: ${{ secrets.CODECOV_TOKEN }}
-            - name: Code coverage (CodeWhisperer)
-              env:
-                  # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
-                  NODE_OPTIONS: ''
-              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
-              uses: codecov/codecov-action@v4
-              with:
-                  flags: codewhisperer
-                  verbose: true
-                  file: ./coverage/lcov.info
-                  token: ${{ secrets.CODECOV_TOKEN }}
-
-    web:
-        name: test Web
+    lint-commits:
+        # Note: To re-run `lint-commits` after fixing the PR title, close-and-reopen the PR.
         runs-on: ubuntu-latest
-        strategy:
-            fail-fast: true
-            matrix:
-                node-version: [16.x]
-                vscode-version: [stable, insiders]
-        env:
-            VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
-            NODE_OPTIONS: '--max-old-space-size=8192'
         steps:
             - uses: actions/checkout@v4
-            - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v4
               with:
-                  node-version: ${{ matrix.node-version }}
-            - run: npm ci
-            - name: Tests
-              uses: coactions/setup-xvfb@v1
+                  fetch-depth: 20
+            - uses: actions/setup-node@v4
               with:
-                  run: npm run testWeb
-
-    windows:
-        name: test Windows
-        runs-on: windows-2019
-        strategy:
-            fail-fast: false
-            matrix:
-                node-version: [16.x]
-                vscode-version: [stable, insiders]
-        env:
-            VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
-            NODE_OPTIONS: '--max-old-space-size=8192'
-        steps:
-            - uses: actions/checkout@v4
-            - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v4
-              with:
-                  node-version: ${{ matrix.node-version }}
-            - run: npm ci
-            - name: Tests
-              run: npm test
-            - name: Code coverage
+                  node-version: '20'
+            - name: Validate Branch name
+              if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref != ''}}
               env:
-                  # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
-                  NODE_OPTIONS: ''
-              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && ( github.ref == 'master' || github.event_name == 'pull_request' ) }}
-              uses: codecov/codecov-action@v4
-              with:
-                  flags: windows-unittests
-                  verbose: true
-                  file: ./coverage/lcov.info
-                  token: ${{ secrets.CODECOV_TOKEN }}
+                  BRANCH_NAME: ${{ github.event.pull_request.head.ref }}
+              run: |
+                  node "$GITHUB_WORKSPACE/.github/workflows/lintbranch.js" run "$BRANCH_NAME"
+            - name: Check PR title
+              run: |
+                  node "$GITHUB_WORKSPACE/.github/workflows/lintcommit.js"
 
     lint:
-        name: Lint
+        needs: lint-commits
         runs-on: ubuntu-latest
         strategy:
             matrix:
-                node-version: [16.x]
+                node-version: [18.x]
                 vscode-version: [stable]
         env:
             NODE_OPTIONS: '--max-old-space-size=8192'
@@ -128,3 +56,290 @@ jobs:
             - run: npm ci
             - run: npm run testCompile
             - run: npm run lint
+
+    lint-duplicate-code:
+        needs: lint-commits
+        if: ${{ github.event_name == 'pull_request'}}
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                node-version: [18.x]
+        env:
+            NODE_OPTIONS: '--max-old-space-size=8192'
+
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+
+            - name: Fetch fork upstream
+              env:
+                  REPO_NAME: ${{ github.event.pull_request.head.repo.full_name }}
+              run: |
+                  git remote add forkUpstream https://github.com/$REPO_NAME  # URL of the fork
+                  git fetch forkUpstream  # Fetch fork
+
+            - name: Merge in target branch to avoid false negatives.
+              env:
+                  TARGET_BRANCH: ${{ github.event.pull_request.base.ref }}
+              # Note: "git merge" should always succeed here, because GHA won't
+              # start the job if there are merge conflicts. https://github.com/orgs/community/discussions/11265
+              # Also, because `git merge` makes a commit, we need to establish an identity to avoid 'Committer identity unknown' error
+              run: |
+                  git config --global user.name "aws-toolkit-automation"
+                  git config --global user.email "<>"
+                  git merge origin/$TARGET_BRANCH
+
+            - name: Compute git diff
+              env:
+                  CURRENT_BRANCH: ${{ github.head_ref }}
+                  TARGET_BRANCH: ${{ github.event.pull_request.base.ref }}
+              run: git diff origin/$TARGET_BRANCH forkUpstream/$CURRENT_BRANCH > diff_output.txt
+
+            - run: npm install -g jscpd
+
+            - run: jscpd --config "$GITHUB_WORKSPACE/.github/workflows/jscpd.json"
+
+            - if: always()
+              uses: actions/upload-artifact@v4
+              with:
+                  name: unfiltered-jscpd-report
+                  path: ./jscpd-report.json
+
+            - name: Check for Duplicates
+              env:
+                  COMMIT_HASH: ${{ github.sha}}
+                  REPO_NAME: ${{ github.repository }}
+              run: node "$GITHUB_WORKSPACE/.github/workflows/filterDuplicates.js" run diff_output.txt jscpd-report.json $COMMIT_HASH $REPO_NAME
+
+    macos:
+        needs: lint-commits
+        name: test macOS
+        runs-on: macos-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                node-version: [18.x]
+                vscode-version: [minimum, stable, insiders]
+                package: [toolkit]
+        env:
+            VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
+            NODE_OPTIONS: '--max-old-space-size=8192'
+            AWS_TOOLKIT_TEST_CACHE_DIR: '/tmp/.vscode-test/'
+            AWS_TOOLKIT_TEST_USER_DIR: '/tmp/.vscode-test/user-data/'
+        steps:
+            - uses: actions/checkout@v4
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - run: npm ci
+            - name: Tests
+              uses: coactions/setup-xvfb@v1
+              with:
+                  run: npm run test -w packages/${{ matrix.package }}
+            - name: Code coverage for ${{ matrix.package }}
+              env:
+                  # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
+                  NODE_OPTIONS: ''
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.event_name == 'pull_request' && github.base_ref == 'master' }}
+              uses: codecov/codecov-action@v5
+              with:
+                  flags: macos-${{ matrix.package }}-unittests
+                  verbose: true
+                  file: ./coverage/${{ matrix.package }}/lcov.info
+                  token: ${{ secrets.CODECOV_TOKEN }}
+
+    web:
+        needs: lint-commits
+        name: test Web
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: true
+            matrix:
+                node-version: [18.x]
+                vscode-version: [stable, insiders]
+        env:
+            VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
+            NODE_OPTIONS: '--max-old-space-size=8192'
+            AWS_TOOLKIT_TEST_CACHE_DIR: '/tmp/.vscode-test/'
+            AWS_TOOLKIT_TEST_USER_DIR: '/tmp/.vscode-test/user-data/'
+        steps:
+            - uses: actions/checkout@v4
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - run: npm ci
+            - name: Tests
+              uses: coactions/setup-xvfb@v1
+              with:
+                  run: npm run testWeb
+
+    cloudformation-integ:
+        needs: lint-commits
+        name: CloudFormation LSP E2E Tests
+        runs-on: ${{ matrix.os }}
+        strategy:
+            fail-fast: false
+            matrix:
+                # Windows runs on Node 20.x because the node-gyp@12 workaround below
+                # (needed for Visual Studio 2026) requires Node >= 20.17; ubuntu/macos
+                # stay on 18.x. See the node-gyp step below.
+                include:
+                    - os: ubuntu-latest
+                      node-version: 18.x
+                      vscode-version: stable
+                    - os: macos-latest
+                      node-version: 18.x
+                      vscode-version: stable
+                      test-user-dir: '/tmp/.vscode-test/user-data/'
+                    - os: windows-latest
+                      node-version: 20.x
+                      vscode-version: stable
+        env:
+            VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
+            NODE_OPTIONS: '--max-old-space-size=8192'
+            # Keep the VS Code user-data-dir path short on the POSIX runners. The default
+            # path under the checkout dir exceeds the Unix-domain-socket path limit (~103
+            # on macOS), so VS Code fails to launch with "listen EINVAL".
+            # Honored by launchTestUtilities.ts (adds --user-data-dir); empty = unset.
+            AWS_TOOLKIT_TEST_USER_DIR: ${{ matrix.test-user-dir }}
+        steps:
+            - uses: actions/checkout@v4
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+            - name: Setup CloudFormation LSP
+              shell: bash
+              run: bash packages/core/src/testE2E/cloudformation/setup-local-lsp.sh
+            # registry-js (a native dependency) builds via `prebuild-install ||
+            # node-gyp rebuild`. npm's bundled node-gyp (v10/11) cannot detect Visual
+            # Studio 2026 (version major 18 -> toolset v145); support landed in
+            # node-gyp 12.1.0, and the PowerShell VS-detection maxBuffer crash was
+            # fixed in 12.3.0 (Add-Type -IgnoreWarnings). npm_config_node_gyp is NOT
+            # honored for a package's own install script, and `npm install` inside
+            # npm's own dir fails (npm's internal deps aren't public), so install
+            # node-gyp@12 in isolation (nested deps = self-contained) and drop it onto
+            # the path npm resolves for native builds. node-gyp >= 12 needs Node >=
+            # 20.17 (hence Node 20.x above). Remove once npm bundles node-gyp >= 12.1.0.
+            - name: Replace npm's bundled node-gyp with v12 (Visual Studio 2026 support)
+              if: runner.os == 'Windows'
+              shell: bash
+              run: |
+                  set -eo pipefail
+                  WORK=/tmp/ng12
+                  rm -rf "$WORK"; mkdir -p "$WORK"
+                  ( cd "$WORK" && npm install node-gyp@12 --no-save --no-audit --no-fund --install-strategy=nested )
+                  NPM_DIR="$(dirname "$(command -v node)")/node_modules/npm"
+                  echo "Bundled npm dir: $NPM_DIR"
+                  test -d "$NPM_DIR/node_modules/node-gyp"
+                  rm -rf "$NPM_DIR/node_modules/node-gyp"
+                  cp -r "$WORK/node_modules/node-gyp" "$NPM_DIR/node_modules/node-gyp"
+                  echo "node-gyp version now in use:"
+                  node "$NPM_DIR/node_modules/node-gyp/bin/node-gyp.js" --version
+            - run: npm ci
+            - name: Run CloudFormation E2E Tests (Unix)
+              if: runner.os != 'Windows'
+              uses: coactions/setup-xvfb@v1
+              with:
+                  run: npm run testE2ECfn -w packages/toolkit
+            - name: Run CloudFormation E2E Tests (Windows)
+              if: runner.os == 'Windows'
+              run: npm run testE2ECfn -w packages/toolkit
+            - name: Print Extension Logs
+              if: failure()
+              shell: bash
+              run: |
+                  echo "=== AWS Toolkit Extension Logs ==="
+                  find packages/toolkit/.vscode-test/user-data/logs -name "*.log" -type f 2>/dev/null | while read logfile; do
+                    echo "--- $logfile ---"
+                    cat "$logfile" || echo "Could not read log file"
+                  done || echo "No extension logs found"
+
+                  echo ""
+                  echo "=== CloudFormation LSP Server Logs ==="
+                  echo "LSP Path: $__CLOUDFORMATIONLSP_PATH"
+                  if [ -n "$__CLOUDFORMATIONLSP_PATH" ]; then
+                    LSP_LOG_DIR="$__CLOUDFORMATIONLSP_PATH/.aws-cfn-storage/logs"
+                    echo "Checking directory: $LSP_LOG_DIR"
+                    if [ -d "$LSP_LOG_DIR" ]; then
+                      find "$LSP_LOG_DIR" -name "*.log" -type f 2>/dev/null | while read logfile; do
+                        echo "--- $logfile ---"
+                        cat "$logfile" || echo "Could not read log file"
+                      done
+                    else
+                      echo "LSP logs directory does not exist: $LSP_LOG_DIR"
+                      echo "Contents of LSP path:"
+                      ls -la "$__CLOUDFORMATIONLSP_PATH" 2>/dev/null || echo "Cannot list LSP path"
+                    fi
+                  else
+                    echo "Environment variable __CLOUDFORMATIONLSP_PATH is not set"
+                  fi
+
+    windows:
+        needs: lint-commits
+        name: test Windows
+        runs-on: windows-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                # node-gyp >= 12.1.0 is required to detect Visual Studio 2026, but
+                # node-gyp >= 12 requires Node >= 20.17, so this job runs on Node 20.x
+                # (the rest of the matrix stays on 18.x). See the node-gyp step below.
+                node-version: [20.x]
+                vscode-version: [stable, insiders]
+                package: [toolkit]
+        env:
+            VSCODE_TEST_VERSION: ${{ matrix.vscode-version }}
+            NODE_OPTIONS: '--max-old-space-size=8192'
+        steps:
+            - uses: actions/checkout@v4
+            - name: Use Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+            # registry-js (a native dependency) builds via `prebuild-install ||
+            # node-gyp rebuild`. npm's bundled node-gyp (v10/11) cannot detect Visual
+            # Studio 2026 (version major 18 -> toolset v145); support landed in
+            # node-gyp 12.1.0, and the PowerShell VS-detection maxBuffer crash was
+            # fixed in 12.3.0 (Add-Type -IgnoreWarnings). npm_config_node_gyp is NOT
+            # honored for a package's own install script, and `npm install` inside
+            # npm's own dir fails (npm's internal deps aren't public), so install
+            # node-gyp@12 in isolation (nested deps = self-contained) and drop it onto
+            # the path npm resolves for native builds. node-gyp >= 12 needs Node >=
+            # 20.17 (hence Node 20.x above). Remove once npm bundles node-gyp >= 12.1.0.
+            - name: Replace npm's bundled node-gyp with v12 (Visual Studio 2026 support)
+              shell: bash
+              run: |
+                  set -eo pipefail
+                  WORK=/tmp/ng12
+                  rm -rf "$WORK"; mkdir -p "$WORK"
+                  ( cd "$WORK" && npm install node-gyp@12 --no-save --no-audit --no-fund --install-strategy=nested )
+                  NPM_DIR="$(dirname "$(command -v node)")/node_modules/npm"
+                  echo "Bundled npm dir: $NPM_DIR"
+                  test -d "$NPM_DIR/node_modules/node-gyp"
+                  rm -rf "$NPM_DIR/node_modules/node-gyp"
+                  cp -r "$WORK/node_modules/node-gyp" "$NPM_DIR/node_modules/node-gyp"
+                  echo "node-gyp version now in use:"
+                  node "$NPM_DIR/node_modules/node-gyp/bin/node-gyp.js" --version
+            - run: npm ci
+            - name: Tests
+              run: npm run test -w packages/${{ matrix.package }}
+            - name: Code coverage for ${{ matrix.package }}
+              env:
+                  # Unset NODE_OPTIONS because of https://github.com/codecov/uploader/issues/475
+                  NODE_OPTIONS: ''
+              if: ${{ github.repository == 'aws/aws-toolkit-vscode' && github.event_name == 'pull_request' && github.base_ref == 'master' }}
+              uses: codecov/codecov-action@v5
+              with:
+                  flags: windows-${{ matrix.package }}-unittests
+                  verbose: true
+                  file: ./coverage/${{ matrix.package }}/lcov.info
+                  token: ${{ secrets.CODECOV_TOKEN }}

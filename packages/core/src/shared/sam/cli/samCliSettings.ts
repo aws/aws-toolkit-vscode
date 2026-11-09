@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger } from '../../logger'
+import { getLogger } from '../../logger/logger'
 import { fromExtensionManifest, Settings } from '../../settings'
 import { stripUndefined, toRecord } from '../../utilities/collectionUtils'
 import { ClassToInterfaceType, keys } from '../../utilities/tsUtils'
@@ -83,7 +83,6 @@ export class SamCliSettings extends fromExtensionManifest('aws.samcli', descript
             SamCliSettings.logIfChanged(`SAM CLI location (from settings): ${fromConfig}`)
             return { path: fromConfig, autoDetected: false }
         }
-
         const fromSearch = await this.locationProvider.getLocation(forceSearch)
         SamCliSettings.logIfChanged(`SAM CLI location (version: ${fromSearch?.version}): ${fromSearch?.path}`)
         return { path: fromSearch?.path, autoDetected: true }

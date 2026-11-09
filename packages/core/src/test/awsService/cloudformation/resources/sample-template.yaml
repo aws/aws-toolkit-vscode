@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Sample CloudFormation template for testing'
+
+Parameters:
+    InstanceType:
+        Type: String
+        Default: t2.micro
+        Description: EC2 instance type
+
+Resources:
+    MyInstance:
+        Type: AWS::EC2::Instance
+        Properties:
+            ImageId: ami-12345678
+            InstanceType: !Ref InstanceType
+            SecurityGroups:
+                - !Ref MySecurityGroup
+            UserData:
+                Fn::Base64: !Sub |
+                    #!/bin/bash
+                    echo "Hello World"
+
+    MySecurityGroup:
+        Type: 'AWS::EC2::SecurityGroup'
+        Properties:
+            GroupDescription: Security group for testing
+            SecurityGroupIngress:
+                - IpProtocol: tcp
+                  FromPort: 80
+                  ToPort: 80
+                  CidrIp: 0.0.0.0/0
+
+    MyBucket:
+        Type: AWS::S3::Bucket
+        Properties:
+            BucketName: !Sub '${AWS::StackName}-test-bucket'
+            VersioningConfiguration:
+                Status: Enabled
+            PublicAccessBlockConfiguration:
+                BlockPublicAcls: true
+                BlockPublicPolicy: true
+                IgnorePublicAcls: true
+                RestrictPublicBuckets: true
+
+Outputs:
+    InstanceId:
+        Description: Instance ID
+        Value: !Ref MyInstance
+        Export:
+            Name: !Sub '${AWS::StackName}-InstanceId'
+
+    BucketName:
+        Description: S3 Bucket Name
+        Value: !Ref MyBucket

@@ -1,0 +1,38 @@
+{
+	"date": "2024-10-30",
+	"version": "3.31.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "SAM: Added support for Java 21 Lambda runtime"
+		},
+		{
+			"type": "Feature",
+			"description": "AWS Lambda: AWS Explorer command palette actions and hover buttons to build, local invoke, deploy, and remote invoke"
+		},
+		{
+			"type": "Feature",
+			"description": "AWS Lambda: Improved local test and debug and remote invoke to streamline creating and sharing sample events"
+		},
+		{
+			"type": "Feature",
+			"description": "AWS Lambda: 'Application Builder' is a new sidebar view for viewing application resources and links to create, build, debug, and test serverless applications"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM: Added support for Ruby 3.3 Lambda runtime"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM: Added support for Ruby 3.2 Lambda runtime"
+		},
+		{
+			"type": "Feature",
+			"description": "AWS Lambda: Guided walkthrough contains links to set up local IDE environment, install required tools, several starter templates, and guidance on how to get started building serverless applications"
+		},
+		{
+			"type": "Feature",
+			"description": "SAM: Added support for .NET 8.0 Lambda runtime"
+		}
+	]
+}

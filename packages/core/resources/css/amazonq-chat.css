@@ -1,0 +1,25 @@
+/* Pulsating effect */
+@keyframes pulsate {
+    0% {
+        opacity: 0;
+    }
+    50% {
+        opacity: 0.15;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+body[data-feature-viewdiffinchat='TREATMENT'] {
+    .mynah-syntax-highlighter-copy-buttons button:nth-of-type(2)::after, /* Accept Diff and Insert At Cursor */
+    .mynah-syntax-highlighter-copy-buttons button:nth-of-type(3)::after {
+        /* View Diff */
+        content: '';
+        animation-name: pulsate;
+        animation-duration: 1.5s;
+        animation-timing-function: ease-in-out;
+        animation-iteration-count: 2;
+        transform: translate3d(0%, 0, 0);
+    }
+}

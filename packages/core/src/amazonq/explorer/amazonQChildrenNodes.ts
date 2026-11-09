@@ -11,8 +11,10 @@ import { installAmazonQExtension } from '../../codewhisperer/commands/basicComma
 import { amazonQHelpUrl } from '../../shared/constants'
 import { cwTreeNodeSource } from '../../codewhisperer/commands/types'
 import { VSCODE_EXTENSION_ID } from '../../shared/extensions'
-import { globals, setContext } from '../../shared'
-import { ExtStartUpSources, telemetry } from '../../shared/telemetry'
+import globals from '../../shared/extensionGlobals'
+import { setContext } from '../../shared/vscode/setContext'
+import { telemetry } from '../../shared/telemetry/telemetry'
+import { ExtStartUpSources } from '../../shared/telemetry/util'
 import { ExtensionUse } from '../../auth/utils'
 
 const localize = nls.loadMessageBundle()

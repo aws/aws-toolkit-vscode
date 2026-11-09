@@ -5,7 +5,7 @@
 
 import * as vscode from 'vscode'
 import { ResourceTreeDataProvider, TreeNode } from '../../shared/treeview/resourceTreeDataProvider'
-import { AuthState, isPreviousQUser } from '../../codewhisperer/util/authUtil'
+import { AuthState } from '../../codewhisperer/util/authUtil'
 import { createLearnMoreNode, createInstallQNode, createDismissNode } from './amazonQChildrenNodes'
 import { Commands } from '../../shared/vscode/commands2'
 
@@ -40,10 +40,7 @@ export class AmazonQNode implements TreeNode {
     }
 
     public getChildren() {
-        const children = [createInstallQNode(), createLearnMoreNode()]
-        if (!isPreviousQUser()) {
-            children.push(createDismissNode())
-        }
+        const children = [createInstallQNode(), createLearnMoreNode(), createDismissNode()]
         return children
     }
 

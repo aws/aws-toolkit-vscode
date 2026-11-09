@@ -10,6 +10,7 @@ import * as env from '../shared/vscode/env'
 // Checks project config and dependencies, to remind us to remove old things
 // when possible.
 describe('tech debt', function () {
+    // @ts-ignore
     function fixByDate(date: string, msg: string) {
         const now = Date.now()
         const cutoffDate = Date.parse(date)
@@ -18,15 +19,11 @@ describe('tech debt', function () {
 
     it('vscode minimum version', async function () {
         const minVscode = env.getMinVscodeVersion()
+        assert.ok(semver.lt(minVscode, '1.84.0'))
 
         assert.ok(
-            semver.lt(minVscode, '1.75.0'),
-            'remove filesystemUtilities.findFile(), use vscode.workspace.findFiles() instead (after Cloud9 VFS fixes bug)'
-        )
-
-        assert.ok(
-            semver.lt(minVscode, '1.75.0'),
-            'remove AsyncLocalStorage polyfill used in `spans.ts` if Cloud9 is on node 14+'
+            semver.lt(minVscode, '1.110.0'),
+            'Check to see if https://github.com/microsoft/vscode/issues/173861 is resolved. Allows us to remove work done by https://github.com/aws/aws-toolkit-vscode-staging/pull/1214 and part of https://github.com/aws/aws-toolkit-vscode/pull/6664'
         )
     })
 
@@ -38,15 +35,7 @@ describe('tech debt', function () {
             semver.lt(minNodejs, '18.0.0'),
             'with node16+, we can now use AbortController to cancel Node things (child processes, HTTP requests, etc.)'
         )
-    })
-
-    it('remove missing Amazon Q scopes edge case handling', async function () {
-        fixByDate('2024-07-30', 'Remove the edge case code from the commit that this test is a part of.')
-    })
-
-    it('remove separate sessions login edge cases', async function () {
-        // src/auth/auth.ts:SessionSeparationPrompt
-        // forgetConnection() function and calls
-        fixByDate('2024-07-30', 'Remove the edge case code from the commit that this test is a part of.')
+        // This is relevant for the use of `fs.cpSync` in the copyFiles scripts.
+        assert.ok(semver.lt(minNodejs, '18.0.0'), 'with node18+, we can remove the dependency on @types/node@18')
     })
 })

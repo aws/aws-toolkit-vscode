@@ -10,9 +10,14 @@ import { FeedbackWebview } from '../../../feedback/vue/submitFeedback'
 import sinon from 'sinon'
 import { waitUntil } from '../../../shared'
 
-const comment = 'comment'
+const comment =
+    'This is a detailed feedback comment that meets the minimum length requirement. ' +
+    'It includes specific information about the issue, steps to reproduce, expected behavior, and actual behavior. ' +
+    'This comment is long enough to pass the 188 character validation rule.'
 const sentiment = 'Positive'
 const message = { command: 'submitFeedback', comment: comment, sentiment: sentiment }
+const shortComment = 'This is a short comment'
+const shortMessage = { command: 'submitFeedback', comment: shortComment, sentiment: sentiment }
 
 describe('submitFeedbackListener', function () {
     let mockTelemetry: TelemetryService
@@ -25,7 +30,7 @@ describe('submitFeedbackListener', function () {
         { productName: 'Amazon Q', expectedError: 'Expected failure' },
         { productName: 'AWS Toolkit', expectedError: 'Expected failure' },
     ]
-    testCases.forEach(({ productName, expectedError }) => {
+    for (const { productName, expectedError } of testCases) {
         it(`submits ${productName} feedback, disposes, and shows message on success`, async function () {
             const postStub = sinon.stub()
             mockTelemetry.postFeedback = postStub
@@ -47,5 +52,14 @@ describe('submitFeedbackListener', function () {
             const result = await webview.submit(message)
             assert.strictEqual(result, expectedError)
         })
-    })
+
+        it(`validates ${productName} feedback comment length is at least 188 characters`, async function () {
+            const postStub = sinon.stub()
+            mockTelemetry.postFeedback = postStub
+            const webview = new FeedbackWebview(mockTelemetry, productName)
+            const result = await webview.submit(shortMessage)
+            assert.strictEqual(result, 'Please add atleast 100 characters in the template describing your issue.')
+            assert.strictEqual(postStub.called, false, 'postFeedback should not be called for short comments')
+        })
+    }
 })

@@ -5,10 +5,9 @@
 
 import * as vscode from 'vscode'
 import * as path from 'path'
-import * as fs from 'fs-extra'
 import * as nls from 'vscode-nls'
-import { getLogger } from './logger'
-import { ChildProcess, ChildProcessResult } from './utilities/childProcess'
+import { getLogger } from './logger/logger'
+import { ChildProcess, ChildProcessResult } from './utilities/processUtils'
 import { Result } from './utilities/result'
 import { ToolkitError } from './errors'
 import { getIdeProperties } from './extensionUtilities'
@@ -17,6 +16,8 @@ import { CancellationError } from './utilities/timeoutUtils'
 import { getSshConfigPath } from './extensions/ssh'
 import globals from './extensionGlobals'
 import { fileExists, readFileAsString } from './filesystemUtilities'
+import { chmodSync } from 'fs' // eslint-disable-line no-restricted-imports
+import fs from './fs/fs'
 
 const localize = nls.loadMessageBundle()
 
@@ -39,6 +40,9 @@ export class SshConfig {
     }
 
     protected async getProxyCommand(command: string): Promise<Result<string, ToolkitError>> {
+        // Use %n to preserve original hostname (avoids SSH canonicalization lowercasing and DNS lookup)
+        const hostnameToken = this.scriptPrefix === 'sagemaker_connect' ? '%n' : '%h'
+
         if (this.isWin()) {
             // Some older versions of OpenSSH (7.8 and below) have a bug where attempting to use powershell.exe directly will fail without an absolute path
             const proc = new ChildProcess('powershell.exe', ['-Command', '(get-command powershell.exe).Path'])
@@ -46,9 +50,9 @@ export class SshConfig {
             if (r.exitCode !== 0) {
                 return Result.err(new ToolkitError('Failed to get absolute path for powershell', { cause: r.error }))
             }
-            return Result.ok(`"${r.stdout}" -ExecutionPolicy RemoteSigned -File "${command}" %h`)
+            return Result.ok(`"${r.stdout}" -ExecutionPolicy RemoteSigned -File "${command}" ${hostnameToken}`)
         } else {
-            return Result.ok(`'${command}' '%h'`)
+            return Result.ok(`'${command}' '${hostnameToken}'`)
         }
     }
 
@@ -81,7 +85,20 @@ export class SshConfig {
     protected async matchSshSection() {
         const result = await this.checkSshOnHost()
         if (result.exitCode !== 0) {
-            return Result.err(result.error ?? new Error(`ssh check against host failed: ${result.exitCode}`))
+            // Format stderr error message for display to user
+            let errorMessage = result.stderr?.trim() || `ssh check against host failed: ${result.exitCode}`
+            const sshConfigPath = getSshConfigPath()
+            // Remove the SSH config file path prefix from error messages to make them more readable
+            // SSH errors often include the full path like "/Users/name/.ssh/config: line 5: Bad configuration option"
+            errorMessage = errorMessage.replace(new RegExp(`${sshConfigPath}:? `, 'g'), '').trim()
+
+            if (result.error) {
+                // System level error
+                return Result.err(ToolkitError.chain(result.error, errorMessage))
+            }
+
+            // SSH ran but returned error exit code
+            return Result.err(new ToolkitError(errorMessage, { code: 'SshCheckFailed' }))
         }
         const matches = result.stdout.match(this.proxyCommandRegExp)
         return Result.ok(matches?.[0])
@@ -109,9 +126,17 @@ export class SshConfig {
         const sshConfigPath = getSshConfigPath()
         const section = this.createSSHConfigSection(proxyCommand)
         try {
-            await fs.ensureDir(path.dirname(path.dirname(sshConfigPath)), { mode: 0o755 })
-            await fs.ensureDir(path.dirname(sshConfigPath), 0o700)
-            await fs.appendFile(sshConfigPath, section, { mode: 0o600 })
+            const parentsDir = path.dirname(sshConfigPath)
+            const grandParentsDir = path.dirname(parentsDir)
+            // TODO: replace w/ fs.chmod once stub is merged.
+            await fs.mkdir(grandParentsDir)
+            chmodSync(grandParentsDir, 0o755)
+
+            await fs.mkdir(parentsDir)
+            chmodSync(parentsDir, 0o700)
+
+            await fs.appendFile(sshConfigPath, section)
+            chmodSync(sshConfigPath, 0o600)
         } catch (e) {
             const message = localize(
                 'AWS.sshConfig.error.writeFail',
@@ -170,7 +195,20 @@ export class SshConfig {
     private getBaseSSHConfig(proxyCommand: string): string {
         // "AddKeysToAgent" will automatically add keys used on the server to the local agent. If not set, then `ssh-add`
         // must be done locally. It's mostly a convenience thing; private keys are _not_ shared with the server.
+        // "IdentitiesOnly yes" forces agent to only use provided identity file.
+        // More details: https://www.ssh.com/academy/ssh/config
+        return `
+# Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
+Host ${this.configHostName}
+    ForwardAgent yes
+    AddKeysToAgent yes
+    StrictHostKeyChecking accept-new
+    ProxyCommand ${proxyCommand}
+    IdentitiesOnly yes
+    `
+    }
 
+    private getSageMakerSSHConfig(proxyCommand: string): string {
         return `
 # Created by AWS Toolkit for VSCode. https://github.com/aws/aws-toolkit-vscode
 Host ${this.configHostName}
@@ -182,7 +220,9 @@ Host ${this.configHostName}
     }
 
     protected createSSHConfigSection(proxyCommand: string): string {
-        if (this.keyPath) {
+        if (this.scriptPrefix === 'sagemaker_connect' || this.scriptPrefix === 'hyperpod_connect') {
+            return `${this.getSageMakerSSHConfig(proxyCommand)}`
+        } else if (this.keyPath) {
             return `${this.getBaseSSHConfig(proxyCommand)}IdentityFile '${this.keyPath}'\n    User '%r'\n`
         }
         return this.getBaseSSHConfig(proxyCommand)
@@ -216,7 +256,7 @@ export async function ensureConnectScript(
         const isOutdated = contents1 !== contents2
 
         if (isOutdated) {
-            await fs.copyFile(versionedScript.fsPath, connectScript.fsPath)
+            await fs.copy(versionedScript.fsPath, connectScript.fsPath)
             getLogger().info('ssh: updated connect script')
         }
 

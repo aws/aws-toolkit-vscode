@@ -18,7 +18,7 @@ import { tryGetAbsolutePath } from '../../shared/utilities/workspaceUtils'
 import { Architecture, RuntimeFamily } from '../models/samLambdaRuntime'
 import { SamLaunchRequestArgs } from '../../shared/sam/debugger/awsSamDebugger'
 
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import globals from '../../shared/extensionGlobals'
 
 /**
@@ -52,20 +52,6 @@ export interface PythonDebugConfiguration extends SamLaunchRequestArgs {
     readonly host: string
     readonly port: number
     readonly pathMappings: PythonPathMapping[]
-}
-
-/** Alternative (Cloud9) Python debugger: ikp3db */
-export interface PythonCloud9DebugConfiguration extends SamLaunchRequestArgs {
-    readonly runtimeFamily: RuntimeFamily.Python
-    /** Passed to "sam build --manifest …" */
-    readonly manifestPath: string | undefined
-
-    // Fields expected by the Cloud9 debug adapter.
-    // (Cloud9 sourcefile: debugger-vscode-mainthread-adapter.ts)
-    readonly port: number
-    readonly address: string
-    readonly localRoot: string
-    readonly remoteRoot: string
 }
 
 export interface DotNetDebugConfiguration extends SamLaunchRequestArgs {
@@ -256,7 +242,7 @@ export function getArchitecture(
         const isArch = isArchitecture(arch)
 
         if (!isArch) {
-            getLogger('channel').warn('SAM Invoke: Invalid architecture. Defaulting to x86_64.')
+            getLogger().warn('SAM Invoke: Invalid architecture. Defaulting to x86_64.')
             void vscode.window.showWarningMessage(
                 localize(
                     'AWS.output.sam.invalidArchitecture',

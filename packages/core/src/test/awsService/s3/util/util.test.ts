@@ -13,13 +13,13 @@ describe('messages', function () {
         const objectPath = 'path/to/object'
 
         it('creates a readable path for an S3 bucket', function () {
-            const path = readablePath({ bucket: { name: bucketName }, path: bucketPath })
+            const path = readablePath({ bucket: { Name: bucketName }, path: bucketPath })
 
             assert.strictEqual(path, 's3://bucket-name')
         })
 
         it('creates a readable path for an object in an S3 bucket', function () {
-            const path = readablePath({ bucket: { name: bucketName }, path: objectPath })
+            const path = readablePath({ bucket: { Name: bucketName }, path: objectPath })
 
             assert.strictEqual(path, 's3://bucket-name/path/to/object')
         })

@@ -5,17 +5,12 @@
 
 import * as vscode from 'vscode'
 import * as nls from 'vscode-nls'
-import request from '../common/request'
+import request from '../shared/request'
 import { ApplicationComposer } from './composerWebview'
-import { getLogger } from '../shared/logger'
+import { isLocalDev, localhost, cdn } from './constants'
+import { getLogger } from '../shared/logger/logger'
 
 const localize = nls.loadMessageBundle()
-
-// TODO turn this into a flag to make local dev easier
-// Change this to true for local dev
-const isLocalDev = false
-const localhost = 'http://127.0.0.1:3000'
-const cdn = 'https://ide-toolkits.app-composer.aws.dev'
 
 const enabledFeatures = ['ide-only', 'anything-resource', 'sfnV2', 'starling']
 
@@ -23,13 +18,15 @@ export class ApplicationComposerManager {
     protected readonly name: string = 'ApplicationComposerManager'
 
     protected readonly managedVisualizations = new Map<string, ApplicationComposer>()
-    protected extensionContext: vscode.ExtensionContext
     protected webviewHtml?: string
     protected readonly logger = getLogger()
 
-    public constructor(extensionContext: vscode.ExtensionContext) {
-        this.extensionContext = extensionContext
-        void this.fetchWebviewHtml()
+    private constructor(protected extensionContext: vscode.ExtensionContext) {}
+
+    public static async create(extensionContext: vscode.ExtensionContext): Promise<ApplicationComposerManager> {
+        const obj = new ApplicationComposerManager(extensionContext)
+        await obj.fetchWebviewHtml()
+        return obj
     }
 
     private async fetchWebviewHtml() {
@@ -41,7 +38,7 @@ export class ApplicationComposerManager {
         }
     }
 
-    private getWebviewContent = () => {
+    private getWebviewContent = async () => {
         if (!this.webviewHtml) {
             void this.fetchWebviewHtml()
             return ''
@@ -76,7 +73,11 @@ export class ApplicationComposerManager {
 
         // Existing visualization does not exist, construct new visualization
         try {
-            const newVisualization = new ApplicationComposer(document, this.extensionContext, this.getWebviewContent)
+            const newVisualization = await ApplicationComposer.create(
+                document,
+                this.extensionContext,
+                this.getWebviewContent
+            )
             this.handleNewVisualization(document.uri.fsPath, newVisualization)
 
             if (vscode.version === '1.91.0') {
@@ -99,7 +100,11 @@ export class ApplicationComposerManager {
             const document = await vscode.workspace.openTextDocument({
                 language: 'yaml',
             })
-            const newVisualization = new ApplicationComposer(document, this.extensionContext, this.getWebviewContent)
+            const newVisualization = await ApplicationComposer.create(
+                document,
+                this.extensionContext,
+                this.getWebviewContent
+            )
             this.handleNewVisualization(document.uri.fsPath, newVisualization)
 
             return newVisualization.getPanel()
@@ -116,7 +121,7 @@ export class ApplicationComposerManager {
         void vscode.window.showInformationMessage(
             localize(
                 'AWS.applicationComposer.visualisation.errors.rendering',
-                'There was an error rendering Application Composer, check logs for details.'
+                'There was an error rendering Infrastructure Composer, check logs for details.'
             )
         )
         this.logger.error(`${this.name}: Unable to show App Composer webview: ${err}`)

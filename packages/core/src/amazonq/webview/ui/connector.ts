@@ -3,16 +3,32 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, FeedbackPayload, Engagement, ChatItemAction } from '@aws/mynah-ui'
+import {
+    ChatItem,
+    FeedbackPayload,
+    Engagement,
+    ChatItemAction,
+    CodeSelectionType,
+    ProgressField,
+    ReferenceTrackerInformation,
+    ChatPrompt,
+    MynahUIDataModel,
+    QuickActionCommand,
+    ChatItemFormItem,
+    ChatItemButton,
+    DetailedList,
+} from '@aws/mynah-ui'
 import { Connector as CWChatConnector } from './apps/cwChatConnector'
-import { Connector as FeatureDevChatConnector } from './apps/featureDevChatConnector'
 import { Connector as AmazonQCommonsConnector } from './apps/amazonqCommonsConnector'
 import { Connector as GumbyChatConnector } from './apps/gumbyChatConnector'
+import { Connector as ScanChatConnector } from './apps/scanChatConnector'
 import { ExtensionMessage } from './commands'
 import { TabType, TabsStorage } from './storages/tabsStorage'
 import { WelcomeFollowupType } from './apps/amazonqCommonsConnector'
 import { AuthFollowUpType } from './followUps/generator'
 import { DiffTreeFileInfo } from './diffTree/types'
+import { UserIntent } from '@amzn/codewhisperer-streaming'
+import { DetailedListSheetProps } from '@aws/mynah-ui/dist/components/detailed-list/detailed-list-sheet'
 
 export interface CodeReference {
     licenseName?: string
@@ -24,16 +40,41 @@ export interface CodeReference {
     }
 }
 
+export interface UploadHistory {
+    [key: string]: {
+        uploadId: string
+        timestamp: number
+        tabId: string
+        filePaths: DiffTreeFileInfo[]
+        deletedFiles: DiffTreeFileInfo[]
+    }
+}
+
 export interface ChatPayload {
     chatMessage: string
     chatCommand?: string
+    chatContext?: string[] | QuickActionCommand[] | undefined
+}
+
+// Adding userIntent param by extending ChatItem to send userIntent as part of amazonq_interactWithMessage telemetry event
+export interface CWCChatItem extends ChatItem {
+    traceId?: string
+    userIntent?: UserIntent
+    codeBlockLanguage?: string
+    contextList?: Context[]
+}
+
+export interface Context {
+    relativeFilePath: string
+    lineRanges: Array<{ first: number; second: number }> // List of [startLine, endLine] tuples
 }
 
 export interface ConnectorProps {
     sendMessageToExtension: (message: ExtensionMessage) => void
     onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
+    onRunTestMessageReceived?: (tabID: string, showRunTestMessage: boolean) => void
     onChatAnswerUpdated?: (tabID: string, message: ChatItem) => void
-    onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
+    onChatAnswerReceived?: (tabID: string, message: ChatItem, messageData: any) => void
     onWelcomeFollowUpClicked: (tabID: string, welcomeFollowUpType: WelcomeFollowupType) => void
     onAsyncEventProgress: (tabID: string, inProgress: boolean, message: string | undefined) => void
     onQuickHandlerCommand: (tabID: string, command?: string, eventId?: string) => void
@@ -45,13 +86,33 @@ export interface ConnectorProps {
         tabID: string,
         filePaths: DiffTreeFileInfo[],
         deletedFiles: DiffTreeFileInfo[],
-        messageId: string
+        messageId: string,
+        disableFileActions: boolean
     ) => void
     onUpdatePlaceholder: (tabID: string, newPlaceholder: string) => void
+    onUpdatePromptProgress: (tabID: string, progressField: ProgressField) => void
     onChatInputEnabled: (tabID: string, enabled: boolean) => void
     onUpdateAuthentication: (featureDevEnabled: boolean, authenticatingTabIDs: string[]) => void
-    onNewTab: (tabType: TabType) => void
+    onNewTab: (tabType: TabType, chats?: ChatItem[]) => string | undefined
     onFileActionClick: (tabID: string, messageId: string, filePath: string, actionName: string) => void
+    handleCommand: (chatPrompt: ChatPrompt, tabId: string) => void
+    sendStaticMessages: (tabID: string, messages: ChatItem[]) => void
+    onContextCommandDataReceived: (message: MynahUIDataModel['contextCommands']) => void
+    onShowCustomForm: (
+        tabId: string,
+        formItems?: ChatItemFormItem[],
+        buttons?: ChatItemButton[],
+        title?: string,
+        description?: string
+    ) => void
+    onOpenDetailedList: (data: DetailedListSheetProps) => {
+        update: (data: DetailedList) => void
+        close: () => void
+        changeTarget: (direction: 'up' | 'down', snapOnLastAndFirst?: boolean) => void
+        getTargetElementId: () => string | undefined
+    }
+    onSelectTab: (tabID: string, eventID: string) => void
+    onExportChat: (tabID: string, format: 'markdown' | 'html') => string
     tabsStorage: TabsStorage
 }
 
@@ -59,22 +120,25 @@ export class Connector {
     private readonly sendMessageToExtension
     private readonly onMessageReceived
     private readonly cwChatConnector
-    private readonly featureDevChatConnector
     private readonly gumbyChatConnector
+    private readonly scanChatConnector
     private readonly tabsStorage
     private readonly amazonqCommonsConnector: AmazonQCommonsConnector
 
-    private isUIReady = false
+    isUIReady = false
 
     constructor(props: ConnectorProps) {
         this.sendMessageToExtension = props.sendMessageToExtension
         this.onMessageReceived = props.onMessageReceived
         this.cwChatConnector = new CWChatConnector(props as ConnectorProps)
-        this.featureDevChatConnector = new FeatureDevChatConnector(props)
         this.gumbyChatConnector = new GumbyChatConnector(props)
+        this.scanChatConnector = new ScanChatConnector(props)
         this.amazonqCommonsConnector = new AmazonQCommonsConnector({
             sendMessageToExtension: this.sendMessageToExtension,
             onWelcomeFollowUpClicked: props.onWelcomeFollowUpClicked,
+            onNewTab: props.onNewTab,
+            handleCommand: props.handleCommand,
+            sendStaticMessages: props.sendStaticMessages,
         })
         this.tabsStorage = props.tabsStorage
     }
@@ -87,16 +151,24 @@ export class Connector {
         }
     }
 
+    onLinkClick = (link: string): void => {
+        this.sendMessageToExtension({
+            command: 'open-link',
+            link,
+        })
+    }
+
     onResponseBodyLinkClick = (tabID: string, messageId: string, link: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
                 this.cwChatConnector.onResponseBodyLinkClick(tabID, messageId, link)
                 break
-            case 'featuredev':
-                this.featureDevChatConnector.onResponseBodyLinkClick(tabID, messageId, link)
-                break
             case 'gumby':
                 this.gumbyChatConnector.onResponseBodyLinkClick(tabID, messageId, link)
+                break
+            case 'review':
+                this.scanChatConnector.onResponseBodyLinkClick(tabID, messageId, link)
+                break
         }
     }
 
@@ -115,18 +187,16 @@ export class Connector {
         }
     }
 
-    requestGenerativeAIAnswer = (tabID: string, payload: ChatPayload): Promise<any> =>
+    requestGenerativeAIAnswer = (tabID: string, messageId: string, payload: ChatPayload): Promise<any> =>
         new Promise((resolve, reject) => {
             if (this.isUIReady) {
                 switch (this.tabsStorage.getTab(tabID)?.type) {
-                    case 'featuredev':
-                        return this.featureDevChatConnector.requestGenerativeAIAnswer(tabID, payload)
                     default:
-                        return this.cwChatConnector.requestGenerativeAIAnswer(tabID, payload)
+                        return this.cwChatConnector.requestGenerativeAIAnswer(tabID, messageId, payload)
                 }
             } else {
                 return setTimeout(() => {
-                    return this.requestGenerativeAIAnswer(tabID, payload)
+                    return this.requestGenerativeAIAnswer(tabID, messageId, payload)
                 }, 2000)
             }
         })
@@ -142,7 +212,14 @@ export class Connector {
     help = (tabID: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
+                /**
+                 * TODO remove cwc helper and switch to the generic one
+                 * that welcome uses
+                 */
                 this.cwChatConnector.help(tabID)
+                break
+            case 'welcome':
+                this.amazonqCommonsConnector.sendMessage(tabID, 'help')
                 break
         }
     }
@@ -151,11 +228,22 @@ export class Connector {
         this.gumbyChatConnector.transform(tabID)
     }
 
+    scans = (tabID: string): void => {
+        this.scanChatConnector.scan(tabID)
+    }
+
+    onStopChatResponse = (tabID: string): void => {
+        switch (this.tabsStorage.getTab(tabID)?.type) {
+            case 'cwc':
+                this.cwChatConnector.onStopChatResponse(tabID)
+                break
+        }
+    }
+
     handleMessageReceive = async (message: MessageEvent): Promise<void> => {
         if (message.data === undefined) {
             return
         }
-
         // TODO: potential json parsing error exists. Need to determine the failing case.
         const messageData = JSON.parse(message.data)
 
@@ -165,13 +253,19 @@ export class Connector {
 
         if (messageData.sender === 'CWChat') {
             await this.cwChatConnector.handleMessageReceive(messageData)
-        } else if (messageData.sender === 'featureDevChat') {
-            await this.featureDevChatConnector.handleMessageReceive(messageData)
         } else if (messageData.sender === 'gumbyChat') {
             await this.gumbyChatConnector.handleMessageReceive(messageData)
+        } else if (messageData.sender === 'scanChat') {
+            await this.scanChatConnector.handleMessageReceive(messageData)
+        } else if (messageData.sender === 'amazonqCore') {
+            await this.amazonqCommonsConnector.handleMessageReceive(messageData)
         }
+
+        // Reset lastCommand after message is rendered.
+        this.tabsStorage.updateTabLastCommand(messageData.tabID, '')
     }
 
+    // Run when user opens new tab in UI
     onTabAdd = (tabID: string): void => {
         this.tabsStorage.addTab({
             id: tabID,
@@ -190,13 +284,8 @@ export class Connector {
             case 'gumby':
                 this.gumbyChatConnector.onTabAdd(tabID)
                 break
-        }
-    }
-
-    onKnownTabOpen = (tabID: string): void => {
-        switch (this.tabsStorage.getTab(tabID)?.type) {
-            case 'featuredev':
-                this.featureDevChatConnector.onTabOpen(tabID)
+            case 'review':
+                this.scanChatConnector.onTabAdd(tabID)
                 break
         }
     }
@@ -214,7 +303,9 @@ export class Connector {
         codeReference?: CodeReference[],
         eventId?: string,
         codeBlockIndex?: number,
-        totalCodeBlocks?: number
+        totalCodeBlocks?: number,
+        userIntent?: string,
+        codeBlockLanguage?: string
     ): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
@@ -226,13 +317,70 @@ export class Connector {
                     codeReference,
                     eventId,
                     codeBlockIndex,
-                    totalCodeBlocks
+                    totalCodeBlocks,
+                    userIntent,
+                    codeBlockLanguage
                 )
                 break
-            case 'featuredev':
-                this.featureDevChatConnector.onCodeInsertToCursorPosition(tabID, code, type, codeReference)
-                break
         }
+    }
+
+    onAcceptDiff = (
+        tabId: string,
+        messageId: string,
+        actionId: string,
+        data?: string,
+        code?: string,
+        type?: CodeSelectionType,
+        referenceTrackerInformation?: ReferenceTrackerInformation[],
+        eventId?: string,
+        codeBlockIndex?: number,
+        totalCodeBlocks?: number
+    ) => {
+        const tabType = this.tabsStorage.getTab(tabId)?.type
+        this.sendMessageToExtension({
+            tabType,
+            tabID: tabId,
+            command: 'accept_diff',
+            messageId,
+            actionId,
+            data,
+            code,
+            type,
+            referenceTrackerInformation,
+            eventId,
+            codeBlockIndex,
+            totalCodeBlocks,
+        })
+    }
+
+    onViewDiff = (
+        tabId: string,
+        messageId: string,
+        actionId: string,
+        data?: string,
+        code?: string,
+        type?: CodeSelectionType,
+        referenceTrackerInformation?: ReferenceTrackerInformation[],
+        eventId?: string,
+        codeBlockIndex?: number,
+        totalCodeBlocks?: number
+    ) => {
+        const tabType = this.tabsStorage.getTab(tabId)?.type
+        this.sendMessageToExtension({
+            tabType,
+            tabID: tabId,
+            command: 'view_diff',
+            messageId,
+            actionId,
+            data,
+            code,
+            type,
+            referenceTrackerInformation,
+            eventId,
+            codeBlockIndex,
+            totalCodeBlocks,
+        })
     }
 
     onCopyCodeToClipboard = (
@@ -243,7 +391,9 @@ export class Connector {
         codeReference?: CodeReference[],
         eventId?: string,
         codeBlockIndex?: number,
-        totalCodeBlocks?: number
+        totalCodeBlocks?: number,
+        userIntent?: string,
+        codeBlockLanguage?: string
     ): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
             case 'cwc':
@@ -255,11 +405,10 @@ export class Connector {
                     codeReference,
                     eventId,
                     codeBlockIndex,
-                    totalCodeBlocks
+                    totalCodeBlocks,
+                    userIntent,
+                    codeBlockLanguage
                 )
-                break
-            case 'featuredev':
-                this.featureDevChatConnector.onCopyCodeToClipboard(tabID, code, type, codeReference)
                 break
         }
     }
@@ -271,11 +420,11 @@ export class Connector {
             case 'cwc':
                 this.cwChatConnector.onTabRemove(tabID)
                 break
-            case 'featuredev':
-                this.featureDevChatConnector.onTabRemove(tabID)
-                break
             case 'gumby':
                 this.gumbyChatConnector.onTabRemove(tabID)
+                break
+            case 'review':
+                this.scanChatConnector.onTabRemove(tabID)
                 break
         }
     }
@@ -325,7 +474,6 @@ export class Connector {
         const tabType = this.tabsStorage.getTab(tabID)?.type
         switch (tabType) {
             case 'cwc':
-            case 'featuredev':
                 this.amazonqCommonsConnector.authFollowUpClicked(tabID, tabType, authType)
         }
     }
@@ -338,8 +486,8 @@ export class Connector {
             case 'unknown':
                 this.amazonqCommonsConnector.followUpClicked(tabID, followUp)
                 break
-            case 'featuredev':
-                this.featureDevChatConnector.followUpClicked(tabID, followUp)
+            case 'review':
+                this.scanChatConnector.followUpClicked(tabID, messageId, followUp)
                 break
             default:
                 this.cwChatConnector.followUpClicked(tabID, messageId, followUp)
@@ -347,41 +495,45 @@ export class Connector {
         }
     }
 
-    onFileActionClick = (tabID: string, messageId: string, filePath: string, actionName: string): void => {
+    onFileClick = (tabID: string, filePath: string, deleted: boolean, messageId?: string): void => {
         switch (this.tabsStorage.getTab(tabID)?.type) {
-            case 'featuredev':
-                this.featureDevChatConnector.onFileActionClick(tabID, messageId, filePath, actionName)
-                break
-        }
-    }
-
-    onOpenDiff = (tabID: string, filePath: string, deleted: boolean): void => {
-        switch (this.tabsStorage.getTab(tabID)?.type) {
-            case 'featuredev':
-                this.featureDevChatConnector.onOpenDiff(tabID, filePath, deleted)
-                break
-        }
-    }
-
-    onStopChatResponse = (tabID: string): void => {
-        switch (this.tabsStorage.getTab(tabID)?.type) {
-            case 'featuredev':
-                this.featureDevChatConnector.onStopChatResponse(tabID)
+            case 'review':
+                this.scanChatConnector.onFileClick(tabID, filePath, messageId)
                 break
             case 'cwc':
-                this.cwChatConnector.onStopChatResponse(tabID)
+                this.cwChatConnector.onFileClick(tabID, filePath, messageId)
                 break
         }
     }
 
     sendFeedback = (tabId: string, feedbackPayload: FeedbackPayload): void | undefined => {
         switch (this.tabsStorage.getTab(tabId)?.type) {
-            case 'featuredev':
-                this.featureDevChatConnector.sendFeedback(tabId, feedbackPayload)
-                break
             case 'cwc':
                 this.cwChatConnector.onSendFeedback(tabId, feedbackPayload)
                 break
+        }
+    }
+
+    onQuickCommandGroupActionClick = (tabId: string, action: { id: string }) => {
+        switch (this.tabsStorage.getTab(tabId)?.type) {
+            case 'welcome':
+            case 'unknown':
+            case 'cwc':
+                this.tabsStorage.updateTabTypeFromUnknown(tabId, 'cwc')
+                this.cwChatConnector.onQuickCommandGroupActionClick(tabId, action)
+                break
+        }
+    }
+
+    onContextSelected = (contextItem: QuickActionCommand, tabId: string) => {
+        switch (this.tabsStorage.getTab(tabId)?.type) {
+            case 'welcome':
+            case 'unknown':
+            case 'cwc':
+                this.tabsStorage.updateTabTypeFromUnknown(tabId, 'cwc')
+                return this.cwChatConnector.onContextSelected(tabId, contextItem)
+            default:
+                return true
         }
     }
 
@@ -390,10 +542,34 @@ export class Connector {
             case 'cwc':
                 this.cwChatConnector.onChatItemVoted(tabId, messageId, vote)
                 break
-            case 'featuredev':
-                this.featureDevChatConnector.onChatItemVoted(tabId, messageId, vote)
+            case 'review':
+                this.scanChatConnector.onChatItemVoted(tabId, messageId, vote)
                 break
         }
+    }
+
+    onFormTextualItemKeyPress = (
+        event: KeyboardEvent,
+        formData: Record<string, string>,
+        itemId: string,
+        tabId: string,
+        eventId?: string
+    ) => {
+        switch (this.tabsStorage.getTab(tabId)?.type) {
+            case 'cwc':
+                return this.cwChatConnector.onFormTextualItemKeyPress(tabId, event, formData, itemId, eventId)
+        }
+        return false
+    }
+
+    onTabBarButtonClick = async (tabId: string, buttonId: string, eventId?: string) => {
+        this.sendMessageToExtension({
+            command: 'tab-bar-button-clicked',
+            buttonId,
+            type: '',
+            tabID: tabId,
+            tabType: 'cwc',
+        })
     }
 
     onCustomFormAction = (
@@ -406,6 +582,9 @@ export class Connector {
             case 'gumby':
                 this.gumbyChatConnector.onCustomFormAction(tabId, action)
                 break
+            case 'review':
+                this.scanChatConnector.onCustomFormAction(tabId, action)
+                break
             case 'cwc':
                 if (action.id === `open-settings`) {
                     this.sendMessageToExtension({
@@ -413,7 +592,10 @@ export class Connector {
                         type: '',
                         tabType: 'cwc',
                     })
+                } else {
+                    this.cwChatConnector.onCustomFormAction(tabId, action)
                 }
+                break
         }
     }
 }

@@ -52,12 +52,16 @@ describe('AsyncCollection', function () {
 
     it('can turn into a map using property key', async function () {
         const map = await toCollection(genItem).toMap('name')
-        items.forEach((v) => assert.strictEqual(map.get(v.name), v))
+        for (const v of items) {
+            assert.strictEqual(map.get(v.name), v)
+        }
     })
 
     it('can turn into a map using function', async function () {
         const map = await toCollection(genItem).toMap((i) => i.data.toString())
-        items.forEach((v) => assert.strictEqual(map.get(v.data.toString()), v))
+        for (const v of items) {
+            assert.strictEqual(map.get(v.data.toString()), v)
+        }
     })
 
     it('can map', async function () {

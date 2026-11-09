@@ -12,6 +12,21 @@ export async function saveFileMessageHandler(request: SaveFileRequestMessage, co
     // If filePath is empty, save contents in default template file
     const filePath =
         request.filePath === '' ? context.defaultTemplatePath : path.join(context.workSpacePath, request.filePath)
+    const normalizedPath = path.resolve(filePath)
+    if (
+        !normalizedPath.startsWith(path.resolve(context.workSpacePath) + path.sep) &&
+        normalizedPath !== path.resolve(context.defaultTemplatePath)
+    ) {
+        await context.panel.webview.postMessage({
+            messageType: MessageType.RESPONSE,
+            command: Command.SAVE_FILE,
+            eventId: request.eventId,
+            filePath: filePath,
+            isSuccess: false,
+            failureReason: `Path is outside of workspace: ${request.filePath}`,
+        } satisfies SaveFileResponseMessage)
+        return
+    }
     try {
         if (!context.textDocument.isDirty) {
             const contents = Buffer.from(request.fileContents, 'utf8')

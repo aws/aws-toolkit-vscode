@@ -79,14 +79,14 @@ describe('Settings', function () {
             settings = vscode.workspace.getConfiguration()
         })
 
-        scenarios.forEach((scenario) => {
+        for (const scenario of scenarios) {
             it(scenario.desc, async () => {
                 await settings.update(settingKey, scenario.testValue, settingsTarget)
 
                 const actualValue = sut.get(settingKey)
                 assert.deepStrictEqual(actualValue, scenario.testValue)
             })
-        })
+        }
 
         it('failure modes', async () => {
             //
@@ -112,7 +112,7 @@ describe('Settings', function () {
     })
 
     describe('update', function () {
-        scenarios.forEach((scenario) => {
+        for (const scenario of scenarios) {
             it(scenario.desc, async () => {
                 await sut.update(settingKey, scenario.testValue)
 
@@ -122,7 +122,7 @@ describe('Settings', function () {
 
                 assert.deepStrictEqual(savedValue, scenario.testValue)
             })
-        })
+        }
 
         it('shows message on failure', async () => {
             // TODO: could avoid sinon if we can force vscode to use a dummy settings.json file.
@@ -276,7 +276,7 @@ describe('Settings', function () {
 })
 
 describe('DevSetting', function () {
-    const testSetting = 'forceCloud9'
+    const testSetting = 'renderDebugDetails'
 
     let settings: ClassToInterfaceType<Settings>
     let sut: DevSettings
@@ -325,6 +325,122 @@ describe('DevSetting', function () {
     it('does not change active settings when reading objects as defaults', function () {
         assert.deepStrictEqual(sut.get('endpoints', {}), {})
         assert.deepStrictEqual(sut.activeSettings, {})
+    })
+
+    describe('endpoints', function () {
+        const userEndpoints = { s3: 'https://user.example.com' }
+        const workspaceEndpoints = { codecatalyst: 'https://evil.attacker.com' }
+
+        beforeEach(async function () {
+            // VS Code merges object-valued settings across scopes
+            await settings.update('aws.dev.endpoints', { ...userEndpoints, ...workspaceEndpoints })
+        })
+
+        function stubInspect(info: object) {
+            return sinon.stub(vscode.workspace, 'getConfiguration').returns({ inspect: () => info } as any)
+        }
+
+        it('ignores workspace-scoped values', function () {
+            const inspectStub = stubInspect({ globalValue: userEndpoints, workspaceValue: workspaceEndpoints })
+
+            try {
+                assert.deepStrictEqual(sut.get('endpoints', {}), userEndpoints)
+                assert.deepStrictEqual(sut.activeSettings, { endpoints: userEndpoints })
+            } finally {
+                inspectStub.restore()
+            }
+        })
+
+        it('ignores workspace-folder-scoped values', function () {
+            const inspectStub = stubInspect({ globalValue: userEndpoints, workspaceFolderValue: workspaceEndpoints })
+
+            try {
+                assert.deepStrictEqual(sut.get('endpoints', {}), userEndpoints)
+            } finally {
+                inspectStub.restore()
+            }
+        })
+
+        it('returns the default if only workspace-scoped values exist', function () {
+            const inspectStub = stubInspect({ workspaceValue: workspaceEndpoints })
+
+            try {
+                assert.deepStrictEqual(sut.get('endpoints', {}), {})
+                assert.deepStrictEqual(sut.activeSettings, {})
+            } finally {
+                inspectStub.restore()
+            }
+        })
+
+        it('returns the effective value if only user-level values exist', function () {
+            const inspectStub = stubInspect({ globalValue: { ...userEndpoints, ...workspaceEndpoints } })
+
+            try {
+                assert.deepStrictEqual(sut.get('endpoints', {}), { ...userEndpoints, ...workspaceEndpoints })
+            } finally {
+                inspectStub.restore()
+            }
+        })
+    })
+
+    describe('workspace-scoped values', function () {
+        function stubInspect(info: object) {
+            return sinon.stub(vscode.workspace, 'getConfiguration').returns({ inspect: () => info } as any)
+        }
+
+        it('are ignored for all dev settings', async function () {
+            await settings.update('aws.dev.ssoCacheDirectory', '/malicious/path')
+            const inspectStub = stubInspect({ workspaceValue: '/malicious/path' })
+
+            try {
+                assert.strictEqual(sut.get('ssoCacheDirectory', ''), '')
+                assert.strictEqual(sut._isSet('ssoCacheDirectory'), false)
+                assert.deepStrictEqual(sut.activeSettings, {})
+            } finally {
+                inspectStub.restore()
+            }
+        })
+
+        it('fall back to the user-level value', async function () {
+            await settings.update('aws.dev.ssoCacheDirectory', '/malicious/path')
+            const inspectStub = stubInspect({ globalValue: '/user/path', workspaceFolderValue: '/malicious/path' })
+
+            try {
+                assert.strictEqual(sut.get('ssoCacheDirectory', ''), '/user/path')
+                assert.strictEqual(sut._isSet('ssoCacheDirectory'), true)
+            } finally {
+                inspectStub.restore()
+            }
+        })
+
+        it('do not force dev mode', async function () {
+            await settings.update('aws.dev.forceDevMode', true)
+            const inspectStub = stubInspect({ workspaceValue: true })
+
+            try {
+                assert.strictEqual(sut.isDevMode(), false)
+            } finally {
+                inspectStub.restore()
+            }
+        })
+
+        it('do not override the user-level service config', async function () {
+            const userConfig = { region: 'user', endpoint: 'user', hostname: 'user', gitHostname: 'user' }
+            const defaultConfig = {
+                region: 'default',
+                endpoint: 'default',
+                hostname: 'default',
+                gitHostname: 'default',
+            }
+            await settings.update('aws.dev.codecatalystService', { ...userConfig, endpoint: 'malicious' })
+            const inspectStub = stubInspect({ globalValue: userConfig, workspaceValue: { endpoint: 'malicious' } })
+
+            try {
+                assert.deepStrictEqual(sut.getServiceConfig('codecatalystService', defaultConfig), userConfig)
+            } finally {
+                inspectStub.restore()
+            }
+        })
     })
 
     describe('isDevMode()', function () {
@@ -421,6 +537,49 @@ describe('DevSetting', function () {
                 assert.deepStrictEqual(sut.getServiceConfig('codewhispererService', defaultConfig), defaultConfig)
             })
         })
+
+        it('rejects workspace-scoped overrides', function () {
+            const defaultConfig = {
+                region: 'default',
+                endpoint: 'default',
+                hostname: 'default',
+                gitHostname: 'default',
+            }
+
+            const inspectStub = sinon.stub(vscode.workspace, 'getConfiguration').returns({
+                inspect: () => ({ workspaceValue: { path: '/malicious/path' }, key: 'cloudformationLsp' }),
+            } as any)
+
+            try {
+                const result = sut.getServiceConfig('codecatalystService', defaultConfig)
+                assert.deepStrictEqual(result, defaultConfig)
+            } finally {
+                inspectStub.restore()
+            }
+        })
+
+        it('rejects workspace-folder-scoped overrides', function () {
+            const defaultConfig = {
+                region: 'default',
+                endpoint: 'default',
+                hostname: 'default',
+                gitHostname: 'default',
+            }
+
+            const inspectStub = sinon.stub(vscode.workspace, 'getConfiguration').returns({
+                inspect: () => ({
+                    workspaceFolderValue: { path: '/malicious/path' },
+                    key: 'cloudformationLsp',
+                }),
+            } as any)
+
+            try {
+                const result = sut.getServiceConfig('codecatalystService', defaultConfig)
+                assert.deepStrictEqual(result, defaultConfig)
+            } finally {
+                inspectStub.restore()
+            }
+        })
     })
 })
 
@@ -452,7 +611,7 @@ describe('PromptSetting', function () {
                 desc: 'suppresses prompt',
             },
         ]
-        scenarios.forEach((scenario) => {
+        for (const scenario of scenarios) {
             it(scenario.desc, async () => {
                 const defaultSetting = settings.get(promptSettingKey, Object)
                 await settings.update(promptSettingKey, scenario.testValue)
@@ -461,7 +620,7 @@ describe('PromptSetting', function () {
                 const expected = { ...defaultSetting, ...scenario.expected }
                 assert.deepStrictEqual(actual, expected)
             })
-        })
+        }
     })
 
     describe('isPromptEnabled', async function () {
@@ -494,11 +653,11 @@ describe('PromptSetting', function () {
             },
         ]
 
-        scenarios.forEach((scenario) => {
+        for (const scenario of scenarios) {
             it(scenario.desc, async () => {
                 await settings.update(promptSettingKey, scenario.testValue)
                 const before = settings.get(promptSettingKey, Object, {})
-                const result = await sut.isPromptEnabled(promptName)
+                const result = sut.isPromptEnabled(promptName)
 
                 assert.deepStrictEqual(result, scenario.expected)
                 assert.deepStrictEqual(
@@ -506,7 +665,7 @@ describe('PromptSetting', function () {
                     { ...before, ...scenario.promptAfter }
                 )
             })
-        })
+        }
     })
 })
 
@@ -521,17 +680,17 @@ describe('Experiments', function () {
     // The `Experiments` class is basically an immutable form of `PromptSettings`
 
     it('returns false when the setting is missing', async function () {
-        assert.strictEqual(await sut.isExperimentEnabled('jsonResourceModification'), false)
+        assert.strictEqual(sut.isExperimentEnabled('jsonResourceModification'), false)
     })
 
     it('returns false for invalid types', async function () {
         await sut.update('jsonResourceModification', 'definitely a boolean' as unknown as boolean)
-        assert.strictEqual(await sut.isExperimentEnabled('jsonResourceModification'), false)
+        assert.strictEqual(sut.isExperimentEnabled('jsonResourceModification'), false)
     })
 
     it('returns true when the flag is set', async function () {
         await sut.update('jsonResourceModification', true)
-        assert.strictEqual(await sut.isExperimentEnabled('jsonResourceModification'), true)
+        assert.strictEqual(sut.isExperimentEnabled('jsonResourceModification'), true)
     })
 
     it('fires events from nested settings', async function () {

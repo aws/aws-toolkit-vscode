@@ -7,7 +7,7 @@ import assert from 'assert'
 import { MoreResultsNode } from '../../../../awsexplorer/moreResultsNode'
 import { S3FileNode } from '../../../../awsService/s3/explorer/s3FileNode'
 import { S3FolderNode } from '../../../../awsService/s3/explorer/s3FolderNode'
-import { S3Client, File, Folder, Bucket } from '../../../../shared/clients/s3Client'
+import { S3Client, File, Folder, S3Bucket } from '../../../../shared/clients/s3'
 import { AWSTreeNodeBase } from '../../../../shared/treeview/nodes/awsTreeNodeBase'
 import { LoadMoreNode } from '../../../../shared/treeview/nodes/loadMoreNode'
 import { TestSettings } from '../../../utilities/testSettingsConfiguration'
@@ -17,7 +17,7 @@ describe('S3FolderNode', function () {
     const bucketName = 'bucket-name'
     const path = 'folder/path'
     const continuationToken = 'continuationToken'
-    const bucket: Bucket = { name: bucketName, region: 'region', arn: 'arn' }
+    const bucket: S3Bucket = { Name: bucketName, BucketRegion: 'region', Arn: 'arn' }
     const file: File = { name: 'name', key: 'key', arn: 'arn' }
     const folder: Folder = { name: 'folder', path, arn: 'arn' }
     const subFolder: Folder = { name: 'subFolder', path: 'subPath', arn: 'subArn' }

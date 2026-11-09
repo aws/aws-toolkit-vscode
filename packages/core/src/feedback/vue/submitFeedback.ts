@@ -4,13 +4,14 @@
  */
 
 import globals from '../../shared/extensionGlobals'
-import { getLogger } from '../../shared/logger'
+import { getLogger } from '../../shared/logger/logger'
 import * as vscode from 'vscode'
 import { TelemetryService } from '../../shared/telemetry/telemetryService'
 import { localize } from '../../shared/utilities/vsCodeUtils'
 import { VueWebview, VueWebviewPanel } from '../../webviews/main'
 import { telemetry } from '../../shared/telemetry/telemetry'
 import { Commands, RegisteredCommand, VsCodeCommandArg, placeholder } from '../../shared/vscode/commands2'
+import { i18n } from '../../shared/i18n-helper'
 
 export interface FeedbackMessage {
     comment: string
@@ -38,6 +39,10 @@ export class FeedbackWebview extends VueWebview {
 
         if (!message.sentiment) {
             return 'Choose a reaction (smile/frown)'
+        }
+
+        if (message.comment.length < 188) {
+            return 'Please add atleast 100 characters in the template describing your issue.'
         }
 
         if (this.commentData) {
@@ -70,7 +75,7 @@ export class FeedbackWebview extends VueWebview {
     }
 }
 
-type FeedbackId = 'AWS Toolkit' | 'Amazon Q' | 'Application Composer' | 'Threat Composer'
+type FeedbackId = 'AWS Toolkit' | 'Amazon Q' | 'Infrastructure Composer' | 'Threat Composer' | 'Workflow Studio'
 
 let _submitFeedback:
     | RegisteredCommand<(_: VsCodeCommandArg, id: FeedbackId, commentData?: string) => Promise<void>>
@@ -87,7 +92,7 @@ export function submitFeedback(_: VsCodeCommandArg, id: FeedbackId, commentData?
             'Attempted to access "submitFeedback" command, but it was never initialized.' +
                 '\nThis should be initialized during extension activation.'
         )
-        throw new Error("'submitFeedback' command was called programmitically, but its not registered.")
+        throw new Error(i18n('AWS.amazonq.featureDev.error.submitFeedback'))
     }
     return _submitFeedback.execute(_, id, commentData)
 }

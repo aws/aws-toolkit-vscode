@@ -14,7 +14,7 @@ import { openCodeCatalystUrl } from './utils'
 import { CodeCatalystAuthenticationProvider } from './auth'
 import { Commands, VsCodeCommandArg, placeholder } from '../shared/vscode/commands2'
 import { CodeCatalystClient, CodeCatalystResource, createClient } from '../shared/clients/codecatalystClient'
-import { DevEnvironmentId, getConnectedDevEnv, openDevEnv } from './model'
+import { DevEnvironmentId, deleteBearerTokenCache, getConnectedDevEnv, openDevEnv } from './model'
 import { showConfigureDevEnv } from './vue/configure/backend'
 import { showCreateDevEnv } from './vue/create/backend'
 import { CancellationError } from '../shared/utilities/timeoutUtils'
@@ -22,10 +22,10 @@ import { ToolkitError, errorCode } from '../shared/errors'
 import { telemetry } from '../shared/telemetry/telemetry'
 import { showConfirmationMessage } from '../shared/utilities/messages'
 import { AccountStatus } from '../shared/telemetry/telemetryClient'
-import { CreateDevEnvironmentRequest, UpdateDevEnvironmentRequest } from 'aws-sdk/clients/codecatalyst'
 import { SsoConnection } from '../auth/connection'
 import { isInDevEnv, isRemoteWorkspace } from '../shared/vscode/env'
 import { commandPalette } from '../codewhisperer/commands/types'
+import { CreateDevEnvironmentRequest, UpdateDevEnvironmentRequest } from '@aws-sdk/client-codecatalyst'
 
 /** "List CodeCatalyst Commands" command. */
 export async function listCommands(): Promise<void> {
@@ -99,6 +99,8 @@ export async function stopDevEnv(
         projectName: devenv.project.name,
         spaceName: devenv.org.name,
     })
+
+    await deleteBearerTokenCache(devenv.id)
 }
 
 export async function deleteDevEnv(client: CodeCatalystClient, devenv: DevEnvironmentId): Promise<void> {
@@ -335,7 +337,7 @@ export class CodeCatalystCommands {
         return devenv
     }
 
-    public static fromContext(ctx: Pick<vscode.ExtensionContext, 'secrets' | 'globalState'>) {
+    public static fromContext(ctx: Pick<vscode.ExtensionContext, 'secrets'>) {
         const auth = CodeCatalystAuthenticationProvider.fromContext(ctx)
 
         return new this(auth)

@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { writeFileSync } from 'fs'
-import { remove } from 'fs-extra'
+import { writeFileSync } from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { CloudFormationClient } from '../shared/clients/cloudFormationClient'
+import { CloudFormationClient } from '../shared/clients/cloudFormation'
 import {
     getNonexistentFilename,
     makeTemporaryToolkitFolder,
@@ -18,8 +17,8 @@ import { getLogger } from '../shared/logger/logger'
 import { getTabSizeSetting } from '../shared/utilities/editorUtilities'
 import { ResourceNode } from './explorer/nodes/resourceNode'
 import { ResourceTypeNode } from './explorer/nodes/resourceTypeNode'
-import { isCloud9 } from '../shared/extensionUtilities'
 import globals from '../shared/extensionGlobals'
+import { fs } from '../shared/fs/fs'
 
 export const resourceFileGlobPattern = '**/*.awsResource.json'
 
@@ -72,7 +71,7 @@ export class AwsResourceManager {
             }
 
             const doc = await vscode.workspace.openTextDocument(uri)
-            if (existing && !isCloud9()) {
+            if (existing) {
                 await this.close(existing)
             }
 
@@ -97,7 +96,7 @@ export class AwsResourceManager {
             }
 
             if (uri.scheme === 'file') {
-                await remove(uri.fsPath)
+                await fs.delete(uri.fsPath)
 
                 globals.schemaService.registerMapping({
                     uri,

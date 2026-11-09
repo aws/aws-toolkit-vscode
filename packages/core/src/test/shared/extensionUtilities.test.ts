@@ -5,105 +5,64 @@
 
 import assert from 'assert'
 
-import { AWSError } from 'aws-sdk'
-import { writeFile, remove } from 'fs-extra'
-import * as path from 'path'
+import { ServiceException } from '@smithy/smithy-client'
 import * as sinon from 'sinon'
 import { DefaultEc2MetadataClient } from '../../shared/clients/ec2MetadataClient'
 import * as vscode from 'vscode'
 import {
     UserActivity,
     getComputeRegion,
+    getIdeType,
     initializeComputeRegion,
-    mostRecentVersionKey,
+    isCn,
 } from '../../shared/extensionUtilities'
 import { isDifferentVersion, setMostRecentVersion } from '../../shared/extensionUtilities'
-import * as filesystemUtilities from '../../shared/filesystemUtilities'
-import { FakeExtensionContext } from '../fakeExtensionContext'
 import { InstanceIdentity } from '../../shared/clients/ec2MetadataClient'
 import { extensionVersion } from '../../shared/vscode/env'
 import { sleep } from '../../shared/utilities/timeoutUtils'
 import globals from '../../shared/extensionGlobals'
-import { createQuickStartWebview } from '../../shared/extensionStartup'
+import { maybeShowMinVscodeWarning } from '../../shared/extensionStartup'
+import { getTestWindow } from './vscode/window'
+import { assertTelemetry } from '../testUtil'
+import { isSageMaker } from '../../shared/extensionUtilities'
+import { hasSageMakerEnvVars } from '../../shared/vscode/env'
 
 describe('extensionUtilities', function () {
-    describe('createQuickStartWebview', async function () {
-        const context = await FakeExtensionContext.create()
-        let tempDir: string | undefined
-
-        beforeEach(async function () {
-            tempDir = await filesystemUtilities.makeTemporaryToolkitFolder()
-            context.extensionPath = tempDir
-        })
-
-        afterEach(async function () {
-            if (tempDir) {
-                await remove(tempDir)
-            }
-        })
-
-        it("throws error if a quick start page doesn't exist", async () => {
-            await assert.rejects(createQuickStartWebview(context, 'irresponsibly-named-file'))
-        })
-
-        it('returns a webview with unaltered text if a valid file is passed without tokens', async function () {
-            const filetext = 'this temp page does not have any tokens'
-            const filepath = 'tokenless'
-            await writeFile(path.join(context.extensionPath, filepath), filetext)
-            const webview = await createQuickStartWebview(context, filepath)
-
-            assert.strictEqual(typeof webview, 'object')
-            const forcedWebview = webview as vscode.WebviewPanel
-            assert.strictEqual(forcedWebview.webview.html.includes(filetext), true)
-        })
-
-        it('returns a webview with tokens replaced', async function () {
-            const token = '!!EXTENSIONROOT!!'
-            const basetext = 'this temp page has tokens: '
-            const filetext = basetext + token
-            const filepath = 'tokenless'
-            await writeFile(path.join(context.extensionPath, filepath), filetext)
-            const webview = await createQuickStartWebview(context, filepath)
-
-            assert.strictEqual(typeof webview, 'object')
-            const forcedWebview = webview as vscode.WebviewPanel
-
-            const pathAsVsCodeResource = forcedWebview.webview.asWebviewUri(vscode.Uri.file(context.extensionPath))
-            assert.strictEqual(forcedWebview.webview.html.includes(`${basetext}${pathAsVsCodeResource}`), true)
-        })
+    it('maybeShowMinVscodeWarning', async () => {
+        const testVscodeVersion = '99.0.0'
+        await maybeShowMinVscodeWarning(testVscodeVersion)
+        const expectedMsg =
+            /will soon require .* 99\.0\.0 or newer. The currently running version .* will no longer receive updates./
+        const msg = await getTestWindow().waitForMessage(expectedMsg)
+        msg.close()
+        assertTelemetry('toolkit_showNotification', [])
     })
 
     describe('isDifferentVersion', function () {
         it('returns false if the version exists and matches the existing version exactly', async function () {
             const goodVersion = '1.2.3'
-            const extContext = await FakeExtensionContext.create()
-            await extContext.globalState.update(mostRecentVersionKey, goodVersion)
+            await globals.globalState.update('globalsMostRecentVersion', goodVersion)
 
-            assert.strictEqual(isDifferentVersion(extContext, goodVersion), false)
+            assert.strictEqual(isDifferentVersion(goodVersion), false)
         })
 
         it("returns true if a most recent version isn't set", async () => {
-            const extContext = await FakeExtensionContext.create()
-
-            assert.ok(isDifferentVersion(extContext))
+            assert.ok(isDifferentVersion())
         })
 
         it("returns true if a most recent version doesn't match the current version", async () => {
             const oldVersion = '1.2.3'
             const newVersion = '4.5.6'
-            const extContext = await FakeExtensionContext.create()
-            await extContext.globalState.update(mostRecentVersionKey, oldVersion)
+            await globals.globalState.update('globalsMostRecentVersion', oldVersion)
 
-            assert.ok(isDifferentVersion(extContext, newVersion))
+            assert.ok(isDifferentVersion(newVersion))
         })
     })
 
     describe('setMostRecentVersion', function () {
         it('sets the most recent version', async function () {
-            const extContext = await FakeExtensionContext.create()
-            setMostRecentVersion(extContext)
-
-            assert.strictEqual(extContext.globalState.get<string>(mostRecentVersionKey), extensionVersion)
+            setMostRecentVersion()
+            assert.strictEqual(globals.globalState.get('globalsMostRecentVersion'), extensionVersion)
         })
     })
 })
@@ -145,14 +104,14 @@ describe('initializeComputeRegion, getComputeRegion', async function () {
     })
 
     it('returns "unknown" if cloud9 and the MetadataService request fails', async function () {
-        sandbox.stub(metadataService, 'getInstanceIdentity').rejects({} as AWSError)
+        sandbox.stub(metadataService, 'getInstanceIdentity').rejects({} as ServiceException)
 
         await initializeComputeRegion(metadataService, true)
         assert.strictEqual(getComputeRegion(), 'unknown')
     })
 
     it('returns "unknown" if sagemaker and the MetadataService request fails', async function () {
-        sandbox.stub(metadataService, 'getInstanceIdentity').rejects({} as AWSError)
+        sandbox.stub(metadataService, 'getInstanceIdentity').rejects({} as ServiceException)
 
         await initializeComputeRegion(metadataService, false, true)
         assert.strictEqual(getComputeRegion(), 'unknown')
@@ -181,6 +140,73 @@ describe('initializeComputeRegion, getComputeRegion', async function () {
 
     it('handles invalid endpoint or invalid response', async function () {
         await assert.rejects(metadataService.invoke('/bogus/path'))
+    })
+})
+
+describe('isCn', function () {
+    let sandbox: sinon.SinonSandbox
+    const metadataService = new DefaultEc2MetadataClient()
+
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(function () {
+        sandbox.restore()
+    })
+
+    it('returns false when compute region is not defined', async function () {
+        // Reset the compute region to undefined first
+        const utils = require('../../shared/extensionUtilities')
+        Object.defineProperty(utils, 'computeRegion', {
+            value: undefined,
+            configurable: true,
+        })
+
+        const result = isCn()
+
+        assert.strictEqual(result, false, 'isCn() should return false when compute region is undefined')
+    })
+
+    it('returns false when compute region is not initialized', async function () {
+        // Set the compute region to "notInitialized"
+        const utils = require('../../shared/extensionUtilities')
+        Object.defineProperty(utils, 'computeRegion', {
+            value: 'notInitialized',
+            configurable: true,
+        })
+
+        const result = isCn()
+
+        assert.strictEqual(result, false, 'isCn() should return false when compute region is notInitialized')
+    })
+
+    it('returns true for CN regions', async function () {
+        sandbox.stub(metadataService, 'getInstanceIdentity').resolves({ region: 'cn-north-1' })
+        await initializeComputeRegion(metadataService, false, true)
+
+        const result = isCn()
+
+        assert.strictEqual(result, true, 'isCn() should return true for China regions')
+    })
+
+    it('returns false for non-CN regions', async function () {
+        sandbox.stub(metadataService, 'getInstanceIdentity').resolves({ region: 'us-east-1' })
+        await initializeComputeRegion(metadataService, false, true)
+
+        const result = isCn()
+
+        assert.strictEqual(result, false, 'isCn() should return false for non-China regions')
+    })
+
+    it('returns false when an error occurs', async function () {
+        const utils = require('../../shared/extensionUtilities')
+
+        sandbox.stub(utils, 'getComputeRegion').throws(new Error('Test error'))
+
+        const result = isCn()
+
+        assert.strictEqual(result, false, 'isCn() should return false when an error occurs')
     })
 })
 
@@ -309,6 +335,21 @@ describe('UserActivity', function () {
             assert.strictEqual(userActivitySubscriber.callCount, 1)
         })
 
+        it('does not fire onDidChangeTerminalState when window is not focused', function () {
+            stubUserActivityEvent(vscode.window, 'onDidChangeTerminalState')
+            const stateStub = sandbox.stub(vscode.window, 'state')
+
+            const triggerUserActivity = createTriggerActivityFunc()
+
+            stateStub.value({ focused: false })
+            triggerUserActivity({})
+            assert.strictEqual(userActivitySubscriber.callCount, 0)
+
+            stateStub.value({ focused: true })
+            triggerUserActivity({})
+            assert.strictEqual(userActivitySubscriber.callCount, 1)
+        })
+
         /**
          * Helper to stub a vscode event object.
          *
@@ -342,4 +383,171 @@ describe('UserActivity', function () {
         globals.clock.setTimeout(() => event.fire(), millisUntilFire)
         return event.event
     }
+})
+
+describe('isSageMaker', function () {
+    let sandbox: sinon.SinonSandbox
+    const env = require('../../shared/vscode/env')
+    const utils = require('../../shared/extensionUtilities')
+
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
+        utils.resetSageMakerState()
+    })
+
+    afterEach(function () {
+        sandbox.restore()
+    })
+
+    describe('SMAI detection', function () {
+        it('returns true when both app name and env vars match', function () {
+            sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
+            sandbox.stub(env, 'hasSageMakerEnvVars').returns(true)
+
+            assert.strictEqual(isSageMaker('SMAI'), true)
+        })
+
+        it('returns true when app name is Visual Studio Code with env vars', function () {
+            sandbox.stub(vscode.env, 'appName').value('Visual Studio Code')
+            sandbox.stub(env, 'hasSageMakerEnvVars').returns(true)
+
+            assert.strictEqual(isSageMaker('SMAI'), true)
+        })
+
+        it('returns false when env vars are missing', function () {
+            sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
+            sandbox.stub(env, 'hasSageMakerEnvVars').returns(false)
+
+            assert.strictEqual(isSageMaker('SMAI'), false)
+        })
+
+        it('defaults to SMAI when no parameter provided', function () {
+            sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
+            sandbox.stub(env, 'hasSageMakerEnvVars').returns(true)
+
+            assert.strictEqual(isSageMaker(), true)
+        })
+    })
+
+    describe('SMUS detection', function () {
+        it('returns true when all conditions are met', function () {
+            sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
+            sandbox.stub(env, 'hasSageMakerEnvVars').returns(true)
+            sandbox.stub(process, 'env').value({ SERVICE_NAME: 'SageMakerUnifiedStudio' })
+            utils.resetSageMakerState()
+
+            assert.strictEqual(isSageMaker('SMUS'), true)
+        })
+
+        it('returns false when unified studio is missing', function () {
+            sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
+            sandbox.stub(env, 'hasSageMakerEnvVars').returns(true)
+            sandbox.stub(process, 'env').value({ SERVICE_NAME: 'SomeOtherService' })
+            utils.resetSageMakerState()
+
+            assert.strictEqual(isSageMaker('SMUS'), false)
+        })
+
+        it('returns false when env vars are missing', function () {
+            sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
+            sandbox.stub(env, 'hasSageMakerEnvVars').returns(false)
+            sandbox.stub(process, 'env').value({ SERVICE_NAME: 'SageMakerUnifiedStudio' })
+            utils.resetSageMakerState()
+
+            assert.strictEqual(isSageMaker('SMUS'), false)
+        })
+
+        it('returns false when app name is different', function () {
+            sandbox.stub(vscode.env, 'appName').value('Visual Studio Code')
+            sandbox.stub(env, 'hasSageMakerEnvVars').returns(true)
+            sandbox.stub(process, 'env').value({ SERVICE_NAME: 'SageMakerUnifiedStudio' })
+            utils.resetSageMakerState()
+
+            assert.strictEqual(isSageMaker('SMUS'), false)
+        })
+    })
+
+    it('returns false for invalid appName parameter', function () {
+        sandbox.stub(vscode.env, 'appName').value('SageMaker Code Editor')
+        sandbox.stub(env, 'hasSageMakerEnvVars').returns(true)
+
+        // @ts-ignore - Testing invalid input
+        assert.strictEqual(isSageMaker('INVALID'), false)
+    })
+})
+
+describe('hasSageMakerEnvVars', function () {
+    let sandbox: sinon.SinonSandbox
+
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(function () {
+        sandbox.restore()
+    })
+
+    it('detects SageMaker environment variables', function () {
+        // Test SAGEMAKER_ prefix
+        sandbox.stub(process, 'env').value({ SAGEMAKER_APP_TYPE: 'JupyterServer' })
+        assert.strictEqual(hasSageMakerEnvVars(), true)
+
+        // Test SM_ prefix
+        sandbox.stub(process, 'env').value({ SM_APP_TYPE: 'CodeEditor' })
+        assert.strictEqual(hasSageMakerEnvVars(), true)
+
+        // Test SERVICE_NAME with correct value
+        sandbox.stub(process, 'env').value({ SERVICE_NAME: 'SageMakerUnifiedStudio' })
+        assert.strictEqual(hasSageMakerEnvVars(), true)
+
+        // Test STUDIO_LOGGING_DIR with correct path
+        sandbox.stub(process, 'env').value({ STUDIO_LOGGING_DIR: '/var/log/studio/app.log' })
+        assert.strictEqual(hasSageMakerEnvVars(), true)
+
+        // Test invalid SERVICE_NAME
+        sandbox.stub(process, 'env').value({ SERVICE_NAME: 'SomeOtherService' })
+        assert.strictEqual(hasSageMakerEnvVars(), false)
+
+        // Test invalid STUDIO_LOGGING_DIR
+        sandbox.stub(process, 'env').value({ STUDIO_LOGGING_DIR: '/var/log/other/app.log' })
+        assert.strictEqual(hasSageMakerEnvVars(), false)
+
+        // Test multiple env vars
+        sandbox.stub(process, 'env').value({
+            SAGEMAKER_APP_TYPE: 'JupyterServer',
+            SM_APP_TYPE: 'CodeEditor',
+        })
+        assert.strictEqual(hasSageMakerEnvVars(), true)
+
+        // Test no env vars
+        sandbox.stub(process, 'env').value({})
+        assert.strictEqual(hasSageMakerEnvVars(), false)
+    })
+})
+
+describe('getIdeType', function () {
+    let sandbox: sinon.SinonSandbox
+
+    beforeEach(function () {
+        sandbox = sinon.createSandbox()
+    })
+
+    afterEach(function () {
+        sandbox.restore()
+    })
+
+    it('returns kiro when appName contains Kiro', function () {
+        sandbox.stub(vscode.env, 'appName').value('Kiro')
+        assert.strictEqual(getIdeType(), 'kiro')
+    })
+
+    it('returns cursor when appName contains Cursor', function () {
+        sandbox.stub(vscode.env, 'appName').value('Cursor')
+        assert.strictEqual(getIdeType(), 'cursor')
+    })
+
+    it('returns cursor case-insensitively', function () {
+        sandbox.stub(vscode.env, 'appName').value('CURSOR IDE')
+        assert.strictEqual(getIdeType(), 'cursor')
+    })
 })

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { getLogger } from '../logger'
+import { getLogger } from '../logger/logger'
 
 // Parses the endpoints.json file into a usable structure
 

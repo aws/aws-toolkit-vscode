@@ -5,9 +5,13 @@
 
 import * as path from 'path'
 import * as vscode from 'vscode'
-import { fileExists } from '../filesystemUtilities'
 import { isNonNullable } from '../utilities/tsUtils'
-import { getConfigFilename, getCredentialsFilename } from '../../auth/credentials/sharedCredentialsFile'
+import {
+    createSharedCredentialsDir,
+    getConfigFilename,
+    getCredentialsFilename,
+    writeSharedCredentialsFile,
+} from '../../auth/credentials/sharedCredentialsFile'
 import { fs } from '../../shared/fs/fs'
 
 const header = `
@@ -77,10 +81,7 @@ export class UserCredentialsUtils {
      * at directory from getCredentialsFilename()
      */
     public static async generateCredentialDirectoryIfNonexistent(): Promise<void> {
-        const filepath = path.dirname(getCredentialsFilename())
-        if (!(await fileExists(filepath))) {
-            await fs.mkdir(filepath)
-        }
+        await createSharedCredentialsDir(path.dirname(getCredentialsFilename()))
     }
 
     /**
@@ -92,11 +93,11 @@ export class UserCredentialsUtils {
         const contents = credentialsContext ? ['', createNewCredentialsFile(credentialsContext)] : []
 
         if (await fs.exists(dest)) {
-            contents.unshift(await fs.readFileAsString(dest))
+            contents.unshift(await fs.readFileText(dest))
         } else {
             contents.unshift(header)
         }
 
-        await fs.writeFile(dest, contents.join('\n'))
+        await writeSharedCredentialsFile(dest, contents.join('\n'))
     }
 }

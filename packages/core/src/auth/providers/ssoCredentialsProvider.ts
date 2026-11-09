@@ -61,4 +61,9 @@ export class SsoCredentialsProvider implements CredentialsProvider {
     private async hasToken() {
         return (await this.tokenProvider.getToken()) !== undefined
     }
+
+    // SsoCredentials are managed internally in the AWS Toolkit, so the endpointUrl can't be configured
+    public getEndpointUrl(): undefined {
+        return undefined
+    }
 }

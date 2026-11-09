@@ -7,7 +7,7 @@ import * as nls from 'vscode-nls'
 const localize = nls.loadMessageBundle()
 
 import * as vscode from 'vscode'
-import { getLogger, Logger } from '../../shared/logger'
+import { getLogger, Logger } from '../../shared/logger/logger'
 import { Result } from '../../shared/telemetry/telemetry'
 import { getTabSizeSetting } from '../../shared/utilities/editorUtilities'
 import { SchemaItemNode } from '../explorer/schemaItemNode'
@@ -51,5 +51,5 @@ export async function showSchemaContent(
         language: 'json',
     })
     const editor = await vscode.window.showTextDocument(newDoc, vscode.ViewColumn.One, false)
-    await editor.edit((edit) => edit.insert(new vscode.Position(/*line*/ 0, /*character*/ 0), prettySchemaContent))
+    await editor.edit((edit) => edit.insert(new vscode.Position(/* line*/ 0, /* character*/ 0), prettySchemaContent))
 }

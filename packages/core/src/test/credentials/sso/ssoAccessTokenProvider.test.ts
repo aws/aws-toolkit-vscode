@@ -6,12 +6,12 @@
 import assert from 'assert'
 import * as FakeTimers from '@sinonjs/fake-timers'
 import * as sinon from 'sinon'
-import { SsoAccessTokenProvider } from '../../../auth/sso/ssoAccessTokenProvider'
+import { CreateTokenArgs, ReAuthState, SsoAccessTokenProvider } from '../../../auth/sso/ssoAccessTokenProvider'
 import { assertTelemetry, installFakeClock } from '../../testUtil'
 import { getCache } from '../../../auth/sso/cache'
 
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
-import { ClientRegistration, SsoToken, proceedToBrowser } from '../../../auth/sso/model'
+import { ClientRegistration, SsoProfile, SsoToken, proceedToBrowser } from '../../../auth/sso/model'
 import { OidcClient } from '../../../auth/sso/clients'
 import { CancellationError } from '../../../shared/utilities/timeoutUtils'
 import {
@@ -24,9 +24,10 @@ import { getOpenExternalStub } from '../../globalSetup.test'
 import { getTestWindow } from '../../shared/vscode/window'
 import { SeverityLevel } from '../../shared/vscode/message'
 import { ToolkitError } from '../../../shared/errors'
-import * as fs from 'fs'
+import * as fs from 'fs' // eslint-disable-line no-restricted-imports
 import * as path from 'path'
 import { Stub, stub } from '../../utilities/stubber'
+import { globals } from '../../../shared'
 
 const hourInMs = 3600000
 
@@ -37,13 +38,14 @@ describe('SsoAccessTokenProvider', function () {
     let oidcClient: Stub<OidcClient>
     let sut: SsoAccessTokenProvider
     let cache: ReturnType<typeof getCache>
-    let clock: FakeTimers.InstalledClock
+    let clock: FakeTimers.InstalledClock | undefined
     let tempDir: string
+    let reAuthState: TestReAuthState
 
     function createToken(timeDelta: number, extras: Partial<SsoToken> = {}) {
         return {
             accessToken: 'dummyAccessToken',
-            expiresAt: new clock.Date(clock.Date.now() + timeDelta),
+            expiresAt: new globals.clock.Date(globals.clock.Date.now() + timeDelta),
             ...extras,
         }
     }
@@ -53,7 +55,7 @@ describe('SsoAccessTokenProvider', function () {
             scopes: [],
             clientId: 'dummyClientId',
             clientSecret: 'dummyClientSecret',
-            expiresAt: new clock.Date(clock.Date.now() + timeDelta),
+            expiresAt: new globals.clock.Date(globals.clock.Date.now() + timeDelta),
             startUrl,
             ...extras,
         }
@@ -65,7 +67,7 @@ describe('SsoAccessTokenProvider', function () {
             deviceCode: 'dummyCode',
             userCode: 'dummyUserCode',
             verificationUri: 'dummyLink',
-            expiresAt: new clock.Date(clock.Date.now() + timeDelta),
+            expiresAt: new globals.clock.Date(globals.clock.Date.now() + timeDelta),
         }
     }
 
@@ -76,24 +78,17 @@ describe('SsoAccessTokenProvider', function () {
         return cacheDir
     }
 
-    before(function () {
-        clock = installFakeClock()
-    })
-
-    after(function () {
-        clock.uninstall()
-    })
-
     beforeEach(async function () {
         oidcClient = stub(OidcClient)
         tempDir = await makeTemporaryTokenCacheFolder()
         cache = getCache(tempDir)
-        sut = SsoAccessTokenProvider.create({ region, startUrl }, cache, oidcClient, () => true)
+        reAuthState = new TestReAuthState()
+        sut = SsoAccessTokenProvider.create({ region, startUrl }, cache, oidcClient, reAuthState, () => true)
     })
 
     afterEach(async function () {
         sinon.restore()
-        clock.reset()
+        clock?.uninstall()
         await tryRemoveFolder(tempDir)
     })
 
@@ -102,10 +97,13 @@ describe('SsoAccessTokenProvider', function () {
             const validToken = createToken(hourInMs)
             await cache.token.save(startUrl, { region, startUrl, token: validToken })
             await cache.registration.save({ startUrl, region }, createRegistration(hourInMs))
-            await sut.invalidate()
+            await sut.invalidate('test')
 
             assert.strictEqual(await cache.token.load(startUrl), undefined)
             assert.strictEqual(await cache.registration.load({ startUrl, region }), undefined)
+            assertTelemetry(`auth_modifyConnection`, [
+                { action: 'deleteSsoCache', source: 'SsoAccessTokenProvider#invalidate' },
+            ])
         })
     })
 
@@ -218,18 +216,33 @@ describe('SsoAccessTokenProvider', function () {
             return { token, registration, authorization }
         }
 
-        it('runs the full SSO flow', async function () {
-            const { token, registration } = setupFlow()
-            stubOpen()
+        // combinations of args for createToken()
+        const args: CreateTokenArgs[] = [{ isReAuth: true }, { isReAuth: false }]
 
-            assert.deepStrictEqual(await sut.createToken(), { ...token, identity: startUrl })
-            const cachedToken = await cache.token.load(startUrl).then((a) => a?.token)
-            assert.deepStrictEqual(cachedToken, token)
-            assert.deepStrictEqual(await cache.registration.load({ startUrl, region }), registration)
-            assertTelemetry('aws_loginWithBrowser', {
-                result: 'Succeeded',
-                isReAuth: undefined,
-                credentialStartUrl: startUrl,
+        // eslint-disable-next-line unicorn/no-array-for-each
+        args.forEach((args) => {
+            it(`runs the full SSO flow with args: ${JSON.stringify(args)}`, async function () {
+                const { token, registration } = setupFlow()
+                stubOpen()
+                reAuthState.set({ startUrl }, { reAuthReason: 'myReAuthReason' })
+                assert.deepStrictEqual(reAuthState.has({ startUrl }), true)
+
+                assert.deepStrictEqual(await sut.createToken(args), { ...token, identity: startUrl })
+
+                const cachedToken = await cache.token.load(startUrl).then((a) => a?.token)
+                assert.deepStrictEqual(cachedToken, token)
+                assert.deepStrictEqual(await cache.registration.load({ startUrl, region }), registration)
+                assertTelemetry('aws_loginWithBrowser', {
+                    result: 'Succeeded',
+                    isReAuth: args.isReAuth,
+                    credentialStartUrl: startUrl,
+                    reAuthReason: args.isReAuth ? 'myReAuthReason' : undefined,
+                    awsRegion: region,
+                    ssoRegistrationExpiresAt: registration.expiresAt.toISOString(),
+                    ssoRegistrationClientId: registration.clientId,
+                })
+                // re auth state is cleared on successful login
+                assert.deepStrictEqual(reAuthState.has({ startUrl }), false)
             })
         })
 
@@ -246,14 +259,53 @@ describe('SsoAccessTokenProvider', function () {
             assert.notDeepStrictEqual(await sut.getToken(), cachedToken)
         })
 
-        it('respects the device authorization expiration time', async function () {
-            // XXX: Don't know how to fix this "unhandled rejection" caused by this test:
-            //      rejected promise not handled within 1 second: Error: Timed-out waiting for browser login flow to complete
-            //          at poll (…/src/auth/sso/ssoAccessTokenProvider.ts:251:15)
-            //          at async SsoAccessTokenProvider.authorize (…/src/auth/sso/ssoAccessTokenProvider.ts:188:23)
-            //          at async SsoAccessTokenProvider.runFlow (…/src/auth/sso/ssoAccessTokenProvider.ts:113:20)
-            //          at async SsoAccessTokenProvider.createToken (…/src/auth/sso/ssoAccessTokenProvider.ts:102:24)
+        it(`emits session duration between logins of the same startUrl`, async function () {
+            clock = installFakeClock()
+            setupFlow()
+            stubOpen()
 
+            await sut.createToken()
+            clock.tick(5000)
+            await sut.createToken()
+            clock.tick(10_000)
+            await sut.createToken()
+
+            // Mimic when we sign out then in again with the same region+startUrl. The ID is the only thing different.
+            sut = SsoAccessTokenProvider.create(
+                { region, startUrl, identifier: 'bbb' },
+                cache,
+                oidcClient,
+                reAuthState,
+                () => true
+            )
+            await sut.createToken()
+
+            assertTelemetry('aws_loginWithBrowser', [
+                {
+                    credentialStartUrl: startUrl,
+                    awsRegion: region,
+                    sessionDuration: undefined, // A new login.
+                },
+                {
+                    credentialStartUrl: startUrl,
+                    awsRegion: region,
+                    sessionDuration: 5000, // A reauth. 5000 - 0, is the diff between this and previous login
+                },
+                {
+                    credentialStartUrl: startUrl,
+                    awsRegion: region,
+                    sessionDuration: 10000, // A reauth. 15_000 - 5000 is the diff between this and previous login
+                },
+                {
+                    credentialStartUrl: startUrl,
+                    awsRegion: region,
+                    sessionDuration: undefined, // A new login, since we signed out of the last.
+                },
+            ])
+        })
+
+        it('respects the device authorization expiration time', async function () {
+            clock = installFakeClock()
             setupFlow()
             stubOpen()
             const exception = new AuthorizationPendingException({ message: '', $metadata: {} })
@@ -261,13 +313,22 @@ describe('SsoAccessTokenProvider', function () {
             oidcClient.createToken.rejects(exception)
             oidcClient.startDeviceAuthorization.resolves(authorization)
 
-            const resp = sut.createToken()
+            const resp = sut
+                .createToken()
+                .then(() => assert.fail('Should not resolve'))
+                .catch((e) => {
+                    assert.ok(
+                        e instanceof ToolkitError &&
+                            e.message === 'Timed-out waiting for browser login flow to complete'
+                    )
+                })
+
             const progress = await getTestWindow().waitForMessage(/login page opened/i)
             await clock.tickAsync(750)
             assert.ok(progress.visible)
             await clock.tickAsync(750)
             assert.ok(!progress.visible)
-            await assert.rejects(resp, ToolkitError)
+            await resp
             assertTelemetry('aws_loginWithBrowser', {
                 result: 'Failed',
                 isReAuth: undefined,
@@ -286,7 +347,7 @@ describe('SsoAccessTokenProvider', function () {
             const registration = {
                 clientId: 'myExpiredClientId',
                 clientSecret: 'myExpiredClientSecret',
-                expiresAt: new clock.Date(clock.Date.now() - 1), // expired date
+                expiresAt: new globals.clock.Date(globals.clock.Date.now() - 1), // expired date
                 startUrl: key.startUrl,
             }
             await cache.registration.save(key, registration)
@@ -359,6 +420,18 @@ describe('SsoAccessTokenProvider', function () {
                 await assert.rejects(sut.createToken(), exception)
                 assert.deepStrictEqual(await cache.registration.load({ startUrl, region }), registration)
             })
+
+            it('does not clear the reAuthReason state on failed login', async () => {
+                oidcClient.createToken.rejects(new Error('random error')) // Forces failure during SSO flow
+                reAuthState.set({ startUrl }, { reAuthReason: 'thisReasonWillNotBeCleared' })
+
+                await assert.rejects(sut.createToken({ isReAuth: true })) // function under test
+
+                assert.deepStrictEqual(reAuthState.get({ startUrl }), {
+                    ...reAuthState.default,
+                    reAuthReason: 'thisReasonWillNotBeCleared',
+                })
+            })
         })
 
         describe('Cancellation', function () {
@@ -397,6 +470,42 @@ describe('SsoAccessTokenProvider', function () {
                 await assert.rejects(sut.createToken(), CancellationError)
                 assert.strictEqual(getTestWindow().shownMessages.length, 2)
             })
+        })
+    })
+
+    /**
+     * Exposes protected methods so we can test them
+     */
+    class TestReAuthState extends ReAuthState {
+        constructor() {
+            super()
+        }
+
+        override hash(profile: { readonly identifier?: string; readonly startUrl: string }): string {
+            return super.hash(profile)
+        }
+
+        override get default(): { reAuthReason?: string } {
+            return super.default
+        }
+    }
+
+    describe(ReAuthState.name, function () {
+        it(`hash()`, async () => {
+            const profile1: Pick<SsoProfile, 'identifier' | 'startUrl'> = {
+                identifier: 'abc-123',
+                startUrl: 'https://sameUrl.com',
+            }
+            const profile2: Pick<SsoProfile, 'identifier' | 'startUrl'> = {
+                startUrl: 'https://sameUrl.com',
+            }
+
+            assert.deepStrictEqual(reAuthState.hash(profile1), profile1.identifier)
+            assert.deepStrictEqual(reAuthState.hash(profile2), profile2.startUrl)
+        })
+
+        it('default', () => {
+            assert.deepStrictEqual(reAuthState.default, { reAuthReason: undefined })
         })
     })
 })

@@ -11,7 +11,7 @@ import {
     assertNodeListOnlyHasErrorNode,
     assertNodeListOnlyHasPlaceholderNode,
 } from '../../../utilities/explorerNodeAssertions'
-import { DefaultCloudWatchLogsClient } from '../../../../shared/clients/cloudWatchLogsClient'
+import { CloudWatchLogsClient } from '../../../../shared/clients/cloudWatchLogs'
 import { stub } from '../../../utilities/stubber'
 
 const fakeRegionCode = 'someregioncode'
@@ -25,7 +25,7 @@ describe('CloudWatchLogsNode', function () {
     let logGroupNames: string[]
 
     function createClient() {
-        const client = stub(DefaultCloudWatchLogsClient, { regionCode: fakeRegionCode })
+        const client = stub(CloudWatchLogsClient, { regionCode: fakeRegionCode })
         client.describeLogGroups.callsFake(() => asyncGenerator(logGroupNames.map((name) => ({ logGroupName: name }))))
 
         return client
@@ -49,19 +49,21 @@ describe('CloudWatchLogsNode', function () {
 
         assert.strictEqual(childNodes.length, logGroupNames.length, 'Unexpected child count')
 
-        childNodes.forEach((node) => assert.ok(node instanceof LogGroupNode, 'Expected child node to be LogGroupNode'))
+        for (const node of childNodes) {
+            assert.ok(node instanceof LogGroupNode, 'Expected child node to be LogGroupNode')
+        }
     })
 
     it('has child nodes with CloudWatch Log contextValue', async function () {
         const childNodes = await testNode.getChildren()
 
-        childNodes.forEach((node) =>
+        for (const node of childNodes) {
             assert.strictEqual(
                 node.contextValue,
                 contextValueCloudwatchLog,
                 'expected the node to have a CloudWatch Log contextValue'
             )
-        )
+        }
     })
 
     it('sorts child nodes', async function () {

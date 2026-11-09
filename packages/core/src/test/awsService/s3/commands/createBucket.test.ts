@@ -8,7 +8,7 @@ import * as sinon from 'sinon'
 import * as vscode from 'vscode'
 import { createBucketCommand } from '../../../../awsService/s3/commands/createBucket'
 import { S3Node } from '../../../../awsService/s3/explorer/s3Nodes'
-import { S3Client } from '../../../../shared/clients/s3Client'
+import { S3Client } from '../../../../shared/clients/s3'
 import { CancellationError } from '../../../../shared/utilities/timeoutUtils'
 import { getTestWindow } from '../../../shared/vscode/window'
 

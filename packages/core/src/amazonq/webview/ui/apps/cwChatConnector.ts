@@ -3,45 +3,37 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { ChatItem, ChatItemAction, ChatItemType, FeedbackPayload } from '@aws/mynah-ui'
-import { ExtensionMessage } from '../commands'
-import { CodeReference } from './amazonqCommonsConnector'
-import { TabOpenType, TabsStorage } from '../storages/tabsStorage'
-import { FollowUpGenerator } from '../followUps/generator'
+import { ChatItemButton, ChatItemFormItem, ChatItemType, MynahUIDataModel, QuickActionCommand } from '@aws/mynah-ui'
+import { TabType } from '../storages/tabsStorage'
+import { CWCChatItem } from '../connector'
+import { BaseConnector, BaseConnectorProps } from './baseConnector'
 
-interface ChatPayload {
-    chatMessage: string
-    chatCommand?: string
+export interface ConnectorProps extends BaseConnectorProps {
+    onCWCContextCommandMessage: (message: CWCChatItem, command?: string) => string | undefined
+    onContextCommandDataReceived: (data: MynahUIDataModel['contextCommands']) => void
+    onShowCustomForm: (
+        tabId: string,
+        formItems?: ChatItemFormItem[],
+        buttons?: ChatItemButton[],
+        title?: string,
+        description?: string
+    ) => void
 }
 
-export interface ConnectorProps {
-    sendMessageToExtension: (message: ExtensionMessage) => void
-    onMessageReceived?: (tabID: string, messageData: any, needToShowAPIDocsTab: boolean) => void
-    onChatAnswerReceived?: (tabID: string, message: ChatItem) => void
-    onCWCContextCommandMessage: (message: ChatItem, command?: string) => string | undefined
-    onError: (tabID: string, message: string, title: string) => void
-    onWarning: (tabID: string, message: string, title: string) => void
-    onOpenSettingsMessage: (tabID: string) => void
-    tabsStorage: TabsStorage
-}
-
-export class Connector {
-    private readonly sendMessageToExtension
-    private readonly onError
-    private readonly onWarning
-    private readonly onChatAnswerReceived
+export class Connector extends BaseConnector {
     private readonly onCWCContextCommandMessage
-    private readonly onOpenSettingsMessage
-    private readonly followUpGenerator: FollowUpGenerator
+    private readonly onContextCommandDataReceived
+    private readonly onShowCustomForm
+
+    override getTabType(): TabType {
+        return 'cwc'
+    }
 
     constructor(props: ConnectorProps) {
-        this.sendMessageToExtension = props.sendMessageToExtension
-        this.onChatAnswerReceived = props.onChatAnswerReceived
-        this.onWarning = props.onWarning
-        this.onError = props.onError
+        super(props)
         this.onCWCContextCommandMessage = props.onCWCContextCommandMessage
-        this.onOpenSettingsMessage = props.onOpenSettingsMessage
-        this.followUpGenerator = new FollowUpGenerator()
+        this.onContextCommandDataReceived = props.onContextCommandDataReceived
+        this.onShowCustomForm = props.onShowCustomForm
     }
 
     onSourceLinkClick = (tabID: string, messageId: string, link: string): void => {
@@ -50,171 +42,7 @@ export class Connector {
             tabID,
             messageId,
             link,
-            tabType: 'cwc',
-        })
-    }
-    onResponseBodyLinkClick = (tabID: string, messageId: string, link: string): void => {
-        this.sendMessageToExtension({
-            command: 'response-body-link-click',
-            tabID,
-            messageId,
-            link,
-            tabType: 'cwc',
-        })
-    }
-    onInfoLinkClick = (tabID: string, link: string): void => {
-        this.sendMessageToExtension({
-            command: 'footer-info-link-click',
-            tabID,
-            link,
-            tabType: 'cwc',
-        })
-    }
-
-    followUpClicked = (tabID: string, messageId: string, followUp: ChatItemAction): void => {
-        this.sendMessageToExtension({
-            command: 'follow-up-was-clicked',
-            followUp,
-            tabID,
-            messageId,
-            tabType: 'cwc',
-        })
-    }
-
-    onTabAdd = (tabID: string, tabOpenInteractionType?: TabOpenType): void => {
-        this.sendMessageToExtension({
-            tabID: tabID,
-            command: 'new-tab-was-created',
-            tabType: 'cwc',
-            tabOpenInteractionType,
-        })
-    }
-
-    onCodeInsertToCursorPosition = (
-        tabID: string,
-        messageId: string,
-        code?: string,
-        type?: 'selection' | 'block',
-        codeReference?: CodeReference[],
-        eventId?: string,
-        codeBlockIndex?: number,
-        totalCodeBlocks?: number
-    ): void => {
-        this.sendMessageToExtension({
-            tabID: tabID,
-            messageId,
-            code,
-            command: 'insert_code_at_cursor_position',
-            tabType: 'cwc',
-            insertionTargetType: type,
-            codeReference,
-            eventId,
-            codeBlockIndex,
-            totalCodeBlocks,
-        })
-    }
-
-    onCopyCodeToClipboard = (
-        tabID: string,
-        messageId: string,
-        code?: string,
-        type?: 'selection' | 'block',
-        codeReference?: CodeReference[],
-        eventId?: string,
-        codeBlockIndex?: number,
-        totalCodeBlocks?: number
-    ): void => {
-        this.sendMessageToExtension({
-            tabID: tabID,
-            messageId,
-            code,
-            command: 'code_was_copied_to_clipboard',
-            tabType: 'cwc',
-            insertionTargetType: type,
-            codeReference,
-            eventId,
-            codeBlockIndex,
-            totalCodeBlocks,
-        })
-    }
-
-    onTabRemove = (tabID: string): void => {
-        this.sendMessageToExtension({
-            tabID: tabID,
-            command: 'tab-was-removed',
-            tabType: 'cwc',
-        })
-    }
-
-    onTabChange = (tabID: string, prevTabID?: string) => {
-        this.sendMessageToExtension({
-            tabID: tabID,
-            command: 'tab-was-changed',
-            tabType: 'cwc',
-            prevTabID,
-        })
-    }
-
-    onStopChatResponse = (tabID: string): void => {
-        this.sendMessageToExtension({
-            tabID: tabID,
-            command: 'stop-response',
-            tabType: 'cwc',
-        })
-    }
-
-    onChatItemVoted = (tabID: string, messageId: string, vote: 'upvote' | 'downvote'): void => {
-        this.sendMessageToExtension({
-            tabID: tabID,
-            command: 'chat-item-voted',
-            messageId,
-            vote,
-            tabType: 'cwc',
-        })
-    }
-    onSendFeedback = (tabID: string, feedbackPayload: FeedbackPayload): void | undefined => {
-        this.sendMessageToExtension({
-            command: 'chat-item-feedback',
-            ...feedbackPayload,
-            tabType: 'cwc',
-            tabID: tabID,
-        })
-    }
-
-    requestGenerativeAIAnswer = (tabID: string, payload: ChatPayload): Promise<any> =>
-        new Promise((resolve, reject) => {
-            this.sendMessageToExtension({
-                tabID: tabID,
-                command: 'chat-prompt',
-                chatMessage: payload.chatMessage,
-                chatCommand: payload.chatCommand,
-                tabType: 'cwc',
-            })
-        })
-
-    clearChat = (tabID: string): void => {
-        this.sendMessageToExtension({
-            tabID: tabID,
-            command: 'clear',
-            chatMessage: '',
-            tabType: 'cwc',
-        })
-    }
-
-    help = (tabID: string): void => {
-        this.sendMessageToExtension({
-            tabID: tabID,
-            command: 'help',
-            chatMessage: '',
-            tabType: 'cwc',
-        })
-    }
-
-    private sendTriggerMessageProcessed = async (requestID: any): Promise<void> => {
-        this.sendMessageToExtension({
-            command: 'trigger-message-processed',
-            requestID: requestID,
-            tabType: 'cwc',
+            tabType: this.getTabType(),
         })
     }
 
@@ -237,7 +65,7 @@ export class Connector {
             command: 'trigger-tabID-received',
             triggerID,
             tabID,
-            tabType: 'cwc',
+            tabType: this.getTabType(),
         })
     }
 
@@ -258,13 +86,16 @@ export class Connector {
                       }
                     : undefined
 
-            const answer: ChatItem = {
+            const answer: CWCChatItem = {
                 type: messageData.messageType,
                 messageId: messageData.messageID ?? messageData.triggerID,
                 body: messageData.message,
                 followUp: followUps,
                 canBeVoted: true,
                 codeReference: messageData.codeReference,
+                userIntent: messageData.userIntent,
+                codeBlockLanguage: messageData.codeBlockLanguage,
+                contextList: messageData.contextList,
             }
 
             // If it is not there we will not set it
@@ -278,7 +109,7 @@ export class Connector {
                     content: messageData.relatedSuggestions,
                 }
             }
-            this.onChatAnswerReceived(messageData.tabID, answer)
+            this.onChatAnswerReceived(messageData.tabID, answer, messageData)
 
             // Exit the function if we received an answer from AI
             if (
@@ -291,12 +122,14 @@ export class Connector {
             return
         }
         if (messageData.messageType === ChatItemType.ANSWER) {
-            const answer: ChatItem = {
+            const answer: CWCChatItem = {
                 type: messageData.messageType,
                 body: undefined,
                 relatedContent: undefined,
                 messageId: messageData.messageID,
                 codeReference: messageData.codeReference,
+                userIntent: messageData.userIntent,
+                codeBlockLanguage: messageData.codeBlockLanguage,
                 followUp:
                     messageData.followUps !== undefined && messageData.followUps.length > 0
                         ? {
@@ -305,42 +138,52 @@ export class Connector {
                           }
                         : undefined,
             }
-            this.onChatAnswerReceived(messageData.tabID, answer)
+            this.onChatAnswerReceived(messageData.tabID, answer, messageData)
 
             return
         }
     }
 
-    private processAuthNeededException = async (messageData: any): Promise<void> => {
-        if (this.onChatAnswerReceived === undefined) {
-            return
+    processContextCommandData(messageData: any) {
+        if (messageData.data) {
+            this.onContextCommandDataReceived(messageData.data)
         }
-
-        this.onChatAnswerReceived(messageData.tabID, {
-            type: ChatItemType.ANSWER,
-            messageId: messageData.triggerID,
-            body: messageData.message,
-            followUp: this.followUpGenerator.generateAuthFollowUps('cwc', messageData.authType),
-            canBeVoted: false,
-        })
-
-        return
     }
 
-    private processOpenSettingsMessage = async (messageData: any): Promise<void> => {
-        this.onOpenSettingsMessage(messageData.tabID)
+    private showCustomFormMessage = (messageData: any) => {
+        this.onShowCustomForm(
+            messageData.tabID,
+            messageData.formItems,
+            messageData.buttons,
+            messageData.title,
+            messageData.description
+        )
+    }
+
+    onFormTextualItemKeyPress = (
+        tabId: string,
+        event: KeyboardEvent,
+        formData: Record<string, string>,
+        itemId: string,
+        eventId?: string
+    ) => {
+        if (itemId === 'prompt-name' && event.key === 'Enter') {
+            event.preventDefault()
+            this.sendMessageToExtension({
+                command: 'form-action-click',
+                action: {
+                    id: 'submit-create-prompt',
+                    formItemValues: formData,
+                },
+                tabType: this.getTabType(),
+                tabID: tabId,
+            })
+            return true
+        }
+        return false
     }
 
     handleMessageReceive = async (messageData: any): Promise<void> => {
-        if (messageData.type === 'errorMessage') {
-            this.onError(messageData.tabID, messageData.message, messageData.title)
-            return
-        }
-        if (messageData.type === 'showInvalidTokenNotification') {
-            this.onWarning(messageData.tabID, messageData.message, messageData.title)
-            return
-        }
-
         if (messageData.type === 'chatMessage') {
             await this.processChatMessage(messageData)
             return
@@ -351,14 +194,72 @@ export class Connector {
             return
         }
 
-        if (messageData.type === 'authNeededException') {
-            await this.processAuthNeededException(messageData)
+        if (messageData.type === 'contextCommandData') {
+            this.processContextCommandData(messageData)
+            return
+        }
+        if (messageData.type === 'showCustomFormMessage') {
+            this.showCustomFormMessage(messageData)
             return
         }
 
-        if (messageData.type === 'openSettingsMessage') {
-            await this.processOpenSettingsMessage(messageData)
+        if (messageData.type === 'customFormActionMessage') {
+            this.onCustomFormAction(messageData.tabID, messageData.action)
             return
         }
+        // For other message types, call the base class handleMessageReceive
+        await this.baseHandleMessageReceive(messageData)
+    }
+
+    onQuickCommandGroupActionClick = (tabID: string, action: { id: string }) => {
+        this.sendMessageToExtension({
+            command: 'quick-command-group-action-click',
+            actionId: action.id,
+            tabID,
+            tabType: this.getTabType(),
+        })
+    }
+
+    onContextSelected = (tabID: string, contextItem: QuickActionCommand) => {
+        this.sendMessageToExtension({
+            command: 'context-selected',
+            contextItem,
+            tabID,
+            tabType: this.getTabType(),
+        })
+        if (contextItem.id === 'create-saved-prompt') {
+            return false
+        }
+        return true
+    }
+
+    onCustomFormAction(
+        tabId: string,
+        action: {
+            id: string
+            text?: string | undefined
+            formItemValues?: Record<string, string> | undefined
+        }
+    ) {
+        if (action === undefined) {
+            return
+        }
+
+        this.sendMessageToExtension({
+            command: 'form-action-click',
+            action: action,
+            tabType: this.getTabType(),
+            tabID: tabId,
+        })
+    }
+
+    onFileClick = (tabID: string, filePath: string, messageId?: string) => {
+        this.sendMessageToExtension({
+            command: 'file-click',
+            tabID,
+            messageId,
+            filePath,
+            tabType: 'cwc',
+        })
     }
 }
