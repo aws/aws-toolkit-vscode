@@ -20,7 +20,7 @@ const installDirectory = path.join(
 const serverPath = path.join(installDirectory, CfnLspServerFile)
 
 /** The file extensions CloudFormation templates are commonly saved with. */
-const templateExtensions = ['yaml', 'yml', 'json', 'template', 'cfn', 'txt']
+const templateExtensions = ['yaml', 'yml', 'json', 'template', 'cfn']
 
 function serverModes(): { run: NodeModule; debug: NodeModule } {
     return cfnServerOptions(serverPath) as { run: NodeModule; debug: NodeModule }
@@ -59,6 +59,14 @@ describe('CloudFormation LSP CfnDocumentSelector', function () {
         for (const extension of templateExtensions) {
             assert.ok(patterns.includes(`**/*.${extension}`), `missing selector pattern for .${extension}`)
         }
+    })
+
+    it('does not attach to plaintext or generic .txt files', function () {
+        const languages = CfnDocumentSelector.map((filter) => filter.language)
+        const patterns = CfnDocumentSelector.map((filter) => filter.pattern)
+
+        assert.ok(!languages.includes('plaintext'), 'plaintext should not be registered')
+        assert.ok(!patterns.includes('**/*.txt'), '**/*.txt should not be registered')
     })
 
     it('only attaches to documents on disk', function () {
