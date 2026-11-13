@@ -104,6 +104,17 @@ describe('resolveCdkCli', function () {
         assert.strictEqual((await resolveCdkCli(appDir, env, undefined))?.command, cdk)
     })
 
+    it('searches the process PATH when env has none', async function () {
+        const cdk = await binDir.write(exe('cdk'))
+        const saved = process.env.PATH
+        process.env.PATH = binDir.path
+        try {
+            assert.strictEqual((await resolveCdkCli(appDir, {}, undefined))?.command, cdk)
+        } finally {
+            process.env.PATH = saved
+        }
+    })
+
     it('finds nothing when there is no CDK CLI anywhere', async function () {
         assert.strictEqual(await resolveCdkCli(appDir, env, undefined), undefined)
     })

@@ -274,6 +274,30 @@ describe('watchRestartTriggers', function () {
         assert.ok(restart.called)
     })
 
+    it('restarts when a cdk.json is created or deleted, except under node_modules', function () {
+        for (const d of disposables) {
+            d.dispose()
+        }
+        const onCreate = new vscode.EventEmitter<vscode.Uri>()
+        const onDelete = new vscode.EventEmitter<vscode.Uri>()
+        const stub = sinon.stub(vscode.workspace, 'createFileSystemWatcher').returns({
+            onDidCreate: onCreate.event,
+            onDidDelete: onDelete.event,
+            dispose: () => {},
+        } as unknown as vscode.FileSystemWatcher)
+        try {
+            disposables = watchRestartTriggers(restart)
+        } finally {
+            stub.restore()
+        }
+
+        onCreate.fire(vscode.Uri.file(path.join('/', 'app', 'node_modules', 'pkg', 'cdk.json')))
+        assert.ok(restart.notCalled)
+        onCreate.fire(vscode.Uri.file(path.join('/', 'app', 'cdk.json')))
+        onDelete.fire(vscode.Uri.file(path.join('/', 'app', 'cdk.json')))
+        assert.strictEqual(restart.callCount, 2)
+    })
+
     it('ignores unrelated setting changes', async function () {
         await vscode.workspace
             .getConfiguration('aws.samcli')
