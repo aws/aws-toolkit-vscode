@@ -223,7 +223,18 @@ export class Ec2Connecter implements vscode.Disposable {
             const message = err instanceof SshError ? `Testing SSM connection to instance failed: ${err.message}` : ''
             this.throwConnectionError(message, selection, { ...(err as Error), code: 'EC2SSMTestConnect' })
         } finally {
-            await this.ssm.terminateSession(testSession)
+            // Best-effort cleanup: never let it fail a successful connection or mask the real error above.
+            // After a successful test, SSM has usually already ended the AWS-StartSSHSession session (the SSH
+            // connection over it closed), so TerminateSession fails with ValidationException "Session is not in a
+            // valid state". That is expected; anything else is worth a warning.
+            await this.ssm.terminateSession(testSession).catch((e) => {
+                const message = `ec2: failed to terminate test session ${testSession.SessionId}: ${(e as Error).message}`
+                if ((e as Error).name === 'ValidationException') {
+                    getLogger().debug(message)
+                } else {
+                    getLogger().warn(message)
+                }
+            })
         }
     }
 
