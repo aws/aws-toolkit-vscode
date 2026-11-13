@@ -19,7 +19,6 @@ import {
     debugNewSamAppDocUrl,
     documentationUrl,
     launchConfigDocUrl,
-    samDeployDocUrl,
     samInitDocUrl,
 } from './constants'
 import {
@@ -342,9 +341,6 @@ export function getSamInitDocUrl() {
 }
 export function getLaunchConfigDocUrl() {
     return _getDocumentationUrl(launchConfigDocUrl)
-}
-export function getSamDeployDocUrl() {
-    return _getDocumentationUrl(samDeployDocUrl)
 }
 export function getDebugNewSamAppDocUrl() {
     return _getDocumentationUrl(debugNewSamAppDocUrl)
