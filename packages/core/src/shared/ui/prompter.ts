@@ -23,7 +23,7 @@ export abstract class Prompter<T> {
 
     constructor() {}
 
-    /** The total number of steps that occured during the prompt */
+    /** The total number of steps that occurred during the prompt */
     public get totalSteps(): number {
         return 1
     }
