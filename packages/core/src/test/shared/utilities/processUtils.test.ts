@@ -6,6 +6,7 @@
 import assert from 'assert'
 import * as os from 'os'
 import * as path from 'path'
+import * as proc from 'child_process' // eslint-disable-line no-restricted-imports
 import * as sinon from 'sinon'
 import { makeTemporaryToolkitFolder, tryRemoveFolder } from '../../../shared/filesystemUtilities'
 import {
@@ -383,6 +384,69 @@ function startSleepProcess(options?: ChildProcessOptions, timeout: number = 90):
     const result = childProcess.run().catch(() => assert.fail('sleep command threw an error'))
     return { childProcess, result }
 }
+
+describe('ChildProcessTracker.getUsage', function () {
+    const pid = 4321
+    /** A perfectly ordinary ~123 MiB working set, as reported by `Win32_Process.WorkingSetSize`. */
+    const workingSetSizeBytes = 128806912
+
+    let tracker: ChildProcessTracker
+
+    beforeEach(function () {
+        tracker = new ChildProcessTracker()
+    })
+
+    afterEach(function () {
+        tracker.clear()
+        sinon.restore()
+    })
+
+    /** Fakes the two `wmic`/`ps` invocations `getUsage()` makes, keyed on the requested property. */
+    function stubExecFileSync(fake: (args: string[]) => string) {
+        sinon.stub(proc, 'execFileSync').callsFake(((_file: string, args: string[]) => fake(args)) as any)
+    }
+
+    function stubWindowsUsage(memOutput: string, cpuOutput: string) {
+        sinon.stub(process, 'platform').value('win32')
+        stubExecFileSync((args) => (args.includes('WorkingSetSize') ? memOutput : cpuOutput))
+    }
+
+    it('reports Windows memory in bytes, not KiB', function () {
+        // WorkingSetSize is already in bytes. Scaling it by 1024 made this working set
+        // log as "125788.00 MB", which was read as a 125 GB leak.
+        stubWindowsUsage(
+            `WorkingSetSize  ${os.EOL}${workingSetSizeBytes}  ${os.EOL}${os.EOL}`,
+            `PercentProcessorTime  ${os.EOL}7  ${os.EOL}${os.EOL}`
+        )
+
+        assert.deepStrictEqual(tracker.getUsage(pid), { cpu: 7, memory: workingSetSizeBytes })
+    })
+
+    it('reports zero usage when wmic returns no data for the process', function () {
+        // An exited process: wmic succeeds but reports no instance.
+        stubWindowsUsage(`WorkingSetSize  ${os.EOL}${os.EOL}`, `PercentProcessorTime  ${os.EOL}${os.EOL}`)
+
+        assert.deepStrictEqual(tracker.getUsage(pid), { cpu: 0, memory: 0 })
+    })
+
+    it('reports zero usage when wmic is unavailable', function () {
+        // wmic is deprecated and absent on recent Windows builds.
+        sinon.stub(process, 'platform').value('win32')
+        sinon.stub(proc, 'execFileSync').throws(new Error('ENOENT'))
+
+        assert.deepStrictEqual(tracker.getUsage(pid), { cpu: 0, memory: 0 })
+    })
+
+    it('reports Unix rss in bytes', function () {
+        sinon.stub(process, 'platform').value('linux')
+        stubExecFileSync((args) =>
+            args.includes('rss') ? `RSS${os.EOL}2048${os.EOL}` : `%CPU %MEM${os.EOL} 3.5  1.0${os.EOL}`
+        )
+
+        // `ps -o rss` is in KiB, so the 1024 multiplier is correct here.
+        assert.deepStrictEqual(tracker.getUsage(pid), { cpu: 3.5, memory: 2048 * 1024 })
+    })
+})
 
 describe('ChildProcessTracker', function () {
     let tracker: ChildProcessTracker
