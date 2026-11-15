@@ -493,12 +493,36 @@ describe('Auth', function () {
 
     describe('Shared ini files', function () {
         let tmpDir: string
+        let factory: SharedCredentialsProviderFactory
 
         beforeEach(async function () {
             tmpDir = await makeTemporaryToolkitFolder()
             sinon.stub(fs, 'getUserHomeDir').returns(tmpDir)
             sinon.stub(globals.loginManager, 'validateCredentials').resolves('123')
-            auth.credentialsManager.addProviderFactory(new SharedCredentialsProviderFactory())
+            factory = new SharedCredentialsProviderFactory()
+            auth.credentialsManager.addProviderFactory(factory)
+        })
+
+        it('lists many profiles with two loads of the credentials files and one store write', async function () {
+            await UserCredentialsUtils.generateCredentialsFile()
+            const profiles = Array.from(
+                { length: 100 },
+                (_, i) => `[p${i}]\naws_access_key_id = AKIA123\naws_secret_access_key = secret${i}\n`
+            )
+            await fs.writeFile(getCredentialsFilename(), profiles.join('\n'))
+            await auth.profileStore.addProfile('profile:stale', { type: 'iam', subtype: 'unknown', name: 'stale' })
+            const loads = sinon.spy(factory as any, 'loadSharedCredentialsProviders')
+            const writes = sinon.spy(globals.globalState, 'update')
+            const profileWrites = () =>
+                writes.getCalls().filter((call) => (call.args[0] as string) === 'auth.profiles').length
+
+            const connections = await auth.listConnections()
+
+            assert.strictEqual(connections.filter((c) => c.type === 'iam').length, 100)
+            assert.strictEqual(loads.callCount, 2)
+            assert.strictEqual(profileWrites(), 1)
+            await auth.listConnections()
+            assert.strictEqual(profileWrites(), 1)
         })
 
         afterEach(async function () {

@@ -154,12 +154,12 @@ export async function handleInvalidConsoleCredentials(
  * Represents one profile from the AWS Shared Credentials files.
  */
 export class SharedCredentialsProvider implements CredentialsProvider {
-    private readonly section = getSectionOrThrow(this.sections, this.profileName, 'profile')
     private readonly profile = extractDataFromSection(this.section)
 
     public constructor(
         private readonly profileName: string,
-        private readonly sections: Section[]
+        private readonly sections: Section[],
+        private readonly section = getSectionOrThrow(sections, profileName, 'profile')
     ) {}
 
     public getCredentialsId(): CredentialsId {
