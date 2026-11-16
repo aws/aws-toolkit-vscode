@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert'
-import { ideProcessPatterns } from '../../../../awsService/sagemaker/detached-server/server'
+import { ideProcessPatterns } from '../../../../awsService/sagemaker/detached-server/utils'
 
 describe('ideProcessPatterns', () => {
     describe('darwin pattern', () => {

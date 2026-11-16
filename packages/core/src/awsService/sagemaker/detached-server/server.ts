@@ -16,18 +16,9 @@ import url from 'url'
 import * as os from 'os'
 import fs from 'fs'
 import { execFile } from 'child_process'
+import { ideProcessPatterns } from './utils'
 
 const pollInterval = 30 * 60 * 100 // 30 minutes
-
-/**
- * Generic IDE process patterns for detection across all VS Code forks.
- * Darwin uses a broad pattern to automatically support new Electron-based IDE forks.
- */
-export const ideProcessPatterns = {
-    windows: /Code\.exe|Cursor\.exe|Kiro\.exe|Windsurf\.exe/i,
-    darwin: /\.app\/Contents\/MacOS\//,
-    linux: /^(code(-insiders)?|cursor|kiro|windsurf|electron)$/i,
-}
 
 const server = http.createServer((req: IncomingMessage, res: ServerResponse) => {
     const parsedUrl = url.parse(req.url || '', true)

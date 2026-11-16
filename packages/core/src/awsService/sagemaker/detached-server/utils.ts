@@ -19,6 +19,16 @@ import { ConfiguredRetryStrategy } from '@smithy/util-retry'
 import { WriteQueue } from './writeQueue'
 export { open }
 
+/**
+ * Generic IDE process patterns for detection across all VS Code forks.
+ * Darwin uses a broad pattern to automatically support new Electron-based IDE forks.
+ */
+export const ideProcessPatterns = {
+    windows: /Code\.exe|Cursor\.exe|Kiro\.exe|Windsurf\.exe/i,
+    darwin: /\.app\/Contents\/MacOS\//,
+    linux: /^(code(-insiders)?|cursor|kiro|windsurf|electron)$/i,
+}
+
 export const mappingFilePath = join(os.homedir(), '.aws', '.sagemaker-space-profiles')
 const tempFilePath = `${mappingFilePath}.tmp`
 
