@@ -19,6 +19,10 @@ import { UserCredentialsUtils } from '../../../shared/credentials/userCredential
 import { EnvironmentVariables } from '../../../shared/environmentVariables'
 import { makeTemporaryToolkitFolder } from '../../../shared/filesystemUtilities'
 import { fs } from '../../../shared'
+import { isWin } from '../../../shared/vscode/env'
+import { chmod, stat } from 'fs/promises'
+import { getTestWindow } from '../vscode/window'
+import { waitUntil } from '../../../shared/utilities/timeoutUtils'
 
 describe('UserCredentialsUtils', function () {
     let tempFolder: string
@@ -133,6 +137,45 @@ describe('UserCredentialsUtils', function () {
 
             await assert.doesNotReject(async () => await fs.checkPerms(credentialsFilename, 'r--'))
             await assert.doesNotReject(async () => await fs.checkPerms(credentialsFilename, '-w-'))
+        })
+
+        it('creates the credentials file and directory readable only by the owner', async function () {
+            if (isWin()) {
+                this.skip()
+            }
+            const credentialsDir = path.join(tempFolder, 'new-aws-dir')
+            const credentialsFilename = path.join(credentialsDir, 'credentials')
+            sinon.stub(process, 'env').value({
+                AWS_SHARED_CREDENTIALS_FILE: credentialsFilename,
+            } as EnvironmentVariables)
+
+            await UserCredentialsUtils.generateCredentialsFile({ profileName: 'p', accessKey: '123', secretKey: 'ABC' })
+
+            assert.strictEqual((await stat(credentialsDir)).mode & 0o777, 0o700)
+            assert.strictEqual((await stat(credentialsFilename)).mode & 0o777, 0o600)
+        })
+
+        it('keeps permissions of an existing credentials file and offers to restrict them', async function () {
+            if (isWin()) {
+                this.skip()
+            }
+            const credentialsFilename = path.join(tempFolder, 'credentials-existing-perms-test')
+            sinon.stub(process, 'env').value({
+                AWS_SHARED_CREDENTIALS_FILE: credentialsFilename,
+            } as EnvironmentVariables)
+            await createCredentialsFile(credentialsFilename, ['default'])
+            await chmod(credentialsFilename, 0o644)
+
+            await UserCredentialsUtils.generateCredentialsFile({ profileName: 'p', accessKey: '123', secretKey: 'ABC' })
+            assert.strictEqual((await stat(credentialsFilename)).mode & 0o777, 0o644)
+
+            const message = await getTestWindow().waitForMessage(/can be read by other users/)
+            message.selectItem('Restrict Permissions')
+            await waitUntil(async () => ((await stat(credentialsFilename)).mode & 0o777) === 0o600, {
+                timeout: 5000,
+                interval: 50,
+            })
+            assert.strictEqual((await stat(credentialsFilename)).mode & 0o777, 0o600)
         })
     })
 

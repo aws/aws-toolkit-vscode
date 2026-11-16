@@ -63,15 +63,6 @@ export const launchConfigDocUrl = {
         'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps-run-debug-config-ref.html'
     ),
 } as const
-// URLs for samDeployWizard
-export const samDeployDocUrl = {
-    cloud9: vscode.Uri.parse(
-        'https://docs.aws.amazon.com/cloud9/latest/user-guide/serverless-apps-toolkit.html#deploy-serverless-app'
-    ),
-    toolkit: vscode.Uri.parse(
-        'https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/serverless-apps.html#serverless-apps-deploy'
-    ),
-} as const
 export const lambdaFunctionUrlConfigUrl: string = 'https://docs.aws.amazon.com/lambda/latest/dg/urls-configuration.html'
 // URLs for "sam sync" wizard.
 export const samSyncUrl = vscode.Uri.parse(

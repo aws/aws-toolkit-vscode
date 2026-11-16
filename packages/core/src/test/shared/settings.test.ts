@@ -327,6 +327,122 @@ describe('DevSetting', function () {
         assert.deepStrictEqual(sut.activeSettings, {})
     })
 
+    describe('endpoints', function () {
+        const userEndpoints = { s3: 'https://user.example.com' }
+        const workspaceEndpoints = { codecatalyst: 'https://evil.attacker.com' }
+
+        beforeEach(async function () {
+            // VS Code merges object-valued settings across scopes
+            await settings.update('aws.dev.endpoints', { ...userEndpoints, ...workspaceEndpoints })
+        })
+
+        function stubInspect(info: object) {
+            return sinon.stub(vscode.workspace, 'getConfiguration').returns({ inspect: () => info } as any)
+        }
+
+        it('ignores workspace-scoped values', function () {
+            const inspectStub = stubInspect({ globalValue: userEndpoints, workspaceValue: workspaceEndpoints })
+
+            try {
+                assert.deepStrictEqual(sut.get('endpoints', {}), userEndpoints)
+                assert.deepStrictEqual(sut.activeSettings, { endpoints: userEndpoints })
+            } finally {
+                inspectStub.restore()
+            }
+        })
+
+        it('ignores workspace-folder-scoped values', function () {
+            const inspectStub = stubInspect({ globalValue: userEndpoints, workspaceFolderValue: workspaceEndpoints })
+
+            try {
+                assert.deepStrictEqual(sut.get('endpoints', {}), userEndpoints)
+            } finally {
+                inspectStub.restore()
+            }
+        })
+
+        it('returns the default if only workspace-scoped values exist', function () {
+            const inspectStub = stubInspect({ workspaceValue: workspaceEndpoints })
+
+            try {
+                assert.deepStrictEqual(sut.get('endpoints', {}), {})
+                assert.deepStrictEqual(sut.activeSettings, {})
+            } finally {
+                inspectStub.restore()
+            }
+        })
+
+        it('returns the effective value if only user-level values exist', function () {
+            const inspectStub = stubInspect({ globalValue: { ...userEndpoints, ...workspaceEndpoints } })
+
+            try {
+                assert.deepStrictEqual(sut.get('endpoints', {}), { ...userEndpoints, ...workspaceEndpoints })
+            } finally {
+                inspectStub.restore()
+            }
+        })
+    })
+
+    describe('workspace-scoped values', function () {
+        function stubInspect(info: object) {
+            return sinon.stub(vscode.workspace, 'getConfiguration').returns({ inspect: () => info } as any)
+        }
+
+        it('are ignored for all dev settings', async function () {
+            await settings.update('aws.dev.ssoCacheDirectory', '/malicious/path')
+            const inspectStub = stubInspect({ workspaceValue: '/malicious/path' })
+
+            try {
+                assert.strictEqual(sut.get('ssoCacheDirectory', ''), '')
+                assert.strictEqual(sut._isSet('ssoCacheDirectory'), false)
+                assert.deepStrictEqual(sut.activeSettings, {})
+            } finally {
+                inspectStub.restore()
+            }
+        })
+
+        it('fall back to the user-level value', async function () {
+            await settings.update('aws.dev.ssoCacheDirectory', '/malicious/path')
+            const inspectStub = stubInspect({ globalValue: '/user/path', workspaceFolderValue: '/malicious/path' })
+
+            try {
+                assert.strictEqual(sut.get('ssoCacheDirectory', ''), '/user/path')
+                assert.strictEqual(sut._isSet('ssoCacheDirectory'), true)
+            } finally {
+                inspectStub.restore()
+            }
+        })
+
+        it('do not force dev mode', async function () {
+            await settings.update('aws.dev.forceDevMode', true)
+            const inspectStub = stubInspect({ workspaceValue: true })
+
+            try {
+                assert.strictEqual(sut.isDevMode(), false)
+            } finally {
+                inspectStub.restore()
+            }
+        })
+
+        it('do not override the user-level service config', async function () {
+            const userConfig = { region: 'user', endpoint: 'user', hostname: 'user', gitHostname: 'user' }
+            const defaultConfig = {
+                region: 'default',
+                endpoint: 'default',
+                hostname: 'default',
+                gitHostname: 'default',
+            }
+            await settings.update('aws.dev.codecatalystService', { ...userConfig, endpoint: 'malicious' })
+            const inspectStub = stubInspect({ globalValue: userConfig, workspaceValue: { endpoint: 'malicious' } })
+
+            try {
+                assert.deepStrictEqual(sut.getServiceConfig('codecatalystService', defaultConfig), userConfig)
+            } finally {
+                inspectStub.restore()
+            }
+        })
+    })
+
     describe('isDevMode()', function () {
         it('returns true if forceDevMode is true', async function () {
             await settings.update('aws.dev.forceDevMode', true)

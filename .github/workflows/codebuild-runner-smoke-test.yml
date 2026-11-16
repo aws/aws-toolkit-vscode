@@ -1,0 +1,35 @@
+# Verifies the CodeBuild-hosted runner (CodeBuild project `github-actions-runner` in the VS Code prod account)
+# can run the same package step as the Prerelease workflow, before release workflows are moved onto it.
+
+name: CodeBuild Runner Smoke Test
+
+on:
+    workflow_dispatch:
+
+jobs:
+    package:
+        runs-on: codebuild-github-actions-runner-${{ github.run_id }}-${{ github.run_attempt }}
+        timeout-minutes: 30
+        env:
+            NODE_OPTIONS: '--max-old-space-size=8192'
+        steps:
+            - name: Runner info
+              run: |
+                  echo "CODEBUILD_BUILD_ID=$CODEBUILD_BUILD_ID"
+                  nproc
+                  free -h
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: '18'
+                  cache: 'npm'
+            - run: npm ci
+            - name: vsix
+              run: |
+                  npm run -w packages/sagemaker-ssh-kiro package
+                  npm run -w packages/toolkit package
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: smoke-test-vsix
+                  path: '*.vsix'
+                  retention-days: 1

@@ -156,7 +156,7 @@ export async function writeMapping(mapping: SpaceMappings) {
                 const uniqueTempPath = `${tempFilePath}.${process.pid}.${Date.now()}`
 
                 const json = JSON.stringify(mapping, undefined, 2)
-                await fs.writeFile(uniqueTempPath, json)
+                await fs.writeFile(uniqueTempPath, json, { mode: 0o600 })
                 await fs.rename(uniqueTempPath, mappingFilePath)
                 resolve()
             } catch (err) {

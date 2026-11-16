@@ -66,7 +66,7 @@ export async function writeHyperpodMapping(mapping: HyperpodMappings): Promise<v
             try {
                 const uniqueTempPath = `${tempFilePath}.${process.pid}.${Date.now()}`
                 const json = JSON.stringify(mapping, undefined, 2)
-                await fs.writeFile(uniqueTempPath, json)
+                await fs.writeFile(uniqueTempPath, json, { mode: 0o600 })
                 await fs.rename(uniqueTempPath, hyperpodMappingFilePath)
                 resolve()
             } catch (err: any) {
