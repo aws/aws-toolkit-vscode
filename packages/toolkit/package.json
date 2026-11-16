@@ -123,6 +123,11 @@
                     "default": "",
                     "markdownDescription": "%AWS.configuration.description.samcli.location%"
                 },
+                "aws.cdk.lsp.enabled": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "%AWS.configuration.description.cdk.lsp.enabled%"
+                },
                 "aws.cdk.cliPath": {
                     "type": "string",
                     "scope": "machine",

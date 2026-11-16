@@ -25,6 +25,7 @@ describe('CdkLanguageServer', function () {
     let appDir: string
     let settings: { appDir?: string; cliPath?: string }
     let trusted: boolean
+    let enabled: boolean
     let appDirs: string[]
     let detectAppDirs: sinon.SinonSpy
     let clients: {
@@ -45,6 +46,7 @@ describe('CdkLanguageServer', function () {
         await root.write('node_modules/aws-cdk/package.json', JSON.stringify({ version: '2.1140.0' }))
         settings = {}
         trusted = true
+        enabled = true
         appDirs = [appDir]
         clients = []
         startResult = async () => {}
@@ -62,6 +64,7 @@ describe('CdkLanguageServer', function () {
             },
             detectAppDirs,
             getSetting: (name) => settings[name],
+            isEnabled: () => enabled,
             isTrusted: () => trusted,
         }
         server = new CdkLanguageServer(outputChannel, deps)
@@ -105,6 +108,17 @@ describe('CdkLanguageServer', function () {
 
         assert.strictEqual(clients.length, 0)
         assert.ok(detectAppDirs.notCalled)
+    })
+
+    it('does nothing when aws.cdk.lsp.enabled is off, and stops a running client', async function () {
+        await server.restart()
+        enabled = false
+
+        await server.restart()
+
+        assert.strictEqual(clients.length, 1)
+        assert.ok(clients[0].stop.calledOnce)
+        assert.strictEqual(detectAppDirs.callCount, 1)
     })
 
     it('does nothing without a CDK app', async function () {

@@ -24,6 +24,8 @@ export interface CdkLspDeps {
     /** Directories containing a cdk.json in the workspace. */
     detectAppDirs(): Promise<string[]>
     getSetting(name: 'appDir' | 'cliPath'): string | undefined
+    /** The aws.cdk.lsp.enabled setting. */
+    isEnabled(): boolean
     isTrusted(): boolean
 }
 
@@ -31,6 +33,7 @@ const defaultDeps: CdkLspDeps = {
     createClient: (executable, options) => new LanguageClient('cdkLsp', 'CDK Language Server', executable, options),
     detectAppDirs: async () => (await detectCdkProjects()).map((p) => path.dirname(p.cdkJsonUri.fsPath)),
     getSetting: (name) => vscode.workspace.getConfiguration('aws.cdk').get<string>(name)?.trim() || undefined,
+    isEnabled: () => vscode.workspace.getConfiguration('aws.cdk').get<boolean>('lsp.enabled', true),
     isTrusted: () => vscode.workspace.isTrusted,
 }
 
@@ -70,7 +73,11 @@ export function watchRestartTriggers(restart: () => void): vscode.Disposable[] {
         vscode.workspace.onDidChangeWorkspaceFolders(restart),
         vscode.workspace.onDidGrantWorkspaceTrust(restart),
         vscode.workspace.onDidChangeConfiguration((e) => {
-            if (e.affectsConfiguration('aws.cdk.appDir') || e.affectsConfiguration('aws.cdk.cliPath')) {
+            if (
+                e.affectsConfiguration('aws.cdk.lsp.enabled') ||
+                e.affectsConfiguration('aws.cdk.appDir') ||
+                e.affectsConfiguration('aws.cdk.cliPath')
+            ) {
                 restart()
             }
         }),
@@ -136,7 +143,7 @@ export class CdkLanguageServer implements vscode.Disposable {
     private async restartClient(): Promise<void> {
         await this.stop()
         // `cdk lsp` runs workspace code (the local CLI and the app's synth), so never in an untrusted workspace.
-        if (!this.deps.isTrusted()) {
+        if (!this.deps.isEnabled() || !this.deps.isTrusted()) {
             return
         }
         let version: string | undefined

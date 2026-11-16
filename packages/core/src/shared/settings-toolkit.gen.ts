@@ -15,6 +15,7 @@ export const toolkitSettings = {
     "aws.iot.maxItemsPerPage": {},
     "aws.s3.maxItemsPerPage": {},
     "aws.samcli.location": {},
+    "aws.cdk.lsp.enabled": {},
     "aws.cdk.cliPath": {},
     "aws.cdk.appDir": {},
     "aws.samcli.lambdaTimeout": {},
