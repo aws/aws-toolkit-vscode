@@ -1,3 +1,7 @@
+## 4.20.0 2026-11-19
+
+- **Feature** CDK: start the CDK Language Server (`cdk lsp`) from your installed CDK CLI, linking construct source, synthesized template, and policy violations
+
 ## 4.19.0 2026-11-04
 
 - **Bug Fix** Prevent workspace-level settings from overriding developer settings such as service endpoints, which could send credentials to an attacker-controlled host when trusting a specially crafted VSCode workspace
