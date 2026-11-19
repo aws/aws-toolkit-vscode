@@ -92,6 +92,16 @@ export class SshConfig {
             // SSH errors often include the full path like "/Users/name/.ssh/config: line 5: Bad configuration option"
             errorMessage = errorMessage.replace(new RegExp(`${sshConfigPath}:? `, 'g'), '').trim()
 
+            // Older Toolkit versions wrote `User '%r'`, which newer OpenSSH rejects. Tell the user how to fix it.
+            if (errorMessage.includes('unknown key %r')) {
+                errorMessage = localize(
+                    'AWS.sshConfig.error.userTokenR',
+                    'Your ~/.ssh/config has a "{0}" section with an outdated `User \'%r\'` line that your OpenSSH version rejects. Remove that line, then try again.\n{1}',
+                    this.configHostName,
+                    errorMessage
+                )
+            }
+
             if (result.error) {
                 // System level error
                 return Result.err(ToolkitError.chain(result.error, errorMessage))
@@ -223,7 +233,9 @@ Host ${this.configHostName}
         if (this.scriptPrefix === 'sagemaker_connect' || this.scriptPrefix === 'hyperpod_connect') {
             return `${this.getSageMakerSSHConfig(proxyCommand)}`
         } else if (this.keyPath) {
-            return `${this.getBaseSSHConfig(proxyCommand)}IdentityFile '${this.keyPath}'\n    User '%r'\n`
+            // Do not emit `User '%r'`: newer OpenSSH (10.0+, and recent Windows OpenSSH builds) rejects `%r` in `User`,
+            // which breaks `ssh -G`. Callers always connect as `user@host`, so the remote user is given explicitly anyway.
+            return `${this.getBaseSSHConfig(proxyCommand)}IdentityFile '${this.keyPath}'\n`
         }
         return this.getBaseSSHConfig(proxyCommand)
     }

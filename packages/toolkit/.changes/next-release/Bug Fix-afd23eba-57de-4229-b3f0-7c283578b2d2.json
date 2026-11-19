@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "EC2: \"Connect VS Code to EC2 Instance\" fails on Windows with \"Failed to update connect script\" (ec2_connect.ps1 not found)"
+}

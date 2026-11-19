@@ -21,12 +21,14 @@ import { StartDevEnvironmentSessionRequest } from '@aws-sdk/client-codecatalyst'
 import { mkdir, readFile } from 'fs/promises'
 import fs from '../../shared/fs/fs'
 import { globals } from '../../shared'
+import { getEc2SsmEnv } from '../../awsService/ec2/utils'
 
 class MockSshConfig extends SshConfig {
     // State variables to track logic flow.
     public testIsWin: boolean = false
     public configSection: string = ''
     public exitCodeOverride: number = 0
+    public stderrOverride: string = ''
 
     public async getProxyCommandWrapper(command: string): Promise<Result<string, ToolkitError>> {
         return await this.getProxyCommand(command)
@@ -55,7 +57,7 @@ class MockSshConfig extends SshConfig {
             exitCode: this.exitCodeOverride,
             error: undefined,
             stdout: this.configSection,
-            stderr: '',
+            stderr: this.stderrOverride,
         }
     }
 
@@ -108,6 +110,7 @@ describe('VscodeRemoteSshConfig', async function () {
     describe('matchSshSection', async function () {
         beforeEach(function () {
             config.exitCodeOverride = 0
+            config.stderrOverride = ''
         })
 
         it('returns ok with match when proxycommand is present', async function () {
@@ -134,6 +137,17 @@ describe('VscodeRemoteSshConfig', async function () {
             const error = result.err()
             assert.ok(error.message.includes('ssh check against host failed'))
             assert.ok(error.message.includes('255'))
+        })
+
+        it('explains how to fix an outdated `User %r` line rejected by OpenSSH', async function () {
+            config.exitCodeOverride = 255
+            config.stderrOverride = 'vdollar_percent_expand: unknown key %r\npercent_dollar_expand: failed'
+            const result = await config.testMatchSshSection('some config')
+            assert.ok(result.isErr())
+            const error = result.err()
+            assert.ok(error.message.includes(`User '%r'`), error.message)
+            assert.ok(error.message.includes('testHostNamePrefix*'), error.message)
+            assert.ok(error.message.includes('unknown key %r'), error.message)
         })
     })
 
@@ -176,7 +190,6 @@ describe('VscodeRemoteSshConfig', async function () {
     describe('createSSHConfigSection', async function () {
         const testKeyPath = 'path/to/keys'
         const newConfig = new MockSshConfig('sshPath', 'testHostNamePrefix', 'someScript', testKeyPath)
-        const expectedUserString = `User '%r'`
         const expectedIdentityFileString = `IdentityFile '${testKeyPath}'`
 
         it('section includes relevant script prefix', function () {
@@ -190,14 +203,16 @@ describe('VscodeRemoteSshConfig', async function () {
             assert.ok(section.match(expectedIdentityFileString))
         })
 
-        it('parses the remote username from the ssh execution', function () {
-            const section = newConfig.createSSHConfigSectionWrapper('proxyCommand')
-            assert.ok(section.match(expectedUserString))
+        it('does not set User, since OpenSSH 10+ rejects `User %r`', function () {
+            for (const c of [newConfig, config]) {
+                const section = c.createSSHConfigSectionWrapper('proxyCommand')
+                assert.ok(!/^\s*User\s/im.test(section), section)
+                assert.ok(!section.includes('%r'), section)
+            }
         })
 
-        it('omits User and IdentityFile fields when keyPath not given', function () {
+        it('omits IdentityFile field when keyPath not given', function () {
             const section = config.createSSHConfigSectionWrapper('proxyCommand')
-            assert.ok(!section.match(expectedUserString))
             assert.ok(!section.match(expectedIdentityFileString))
         })
 
@@ -323,5 +338,52 @@ describe('CodeCatalyst Connect Script', function () {
             await mkdir(path.join(tmpDir, '.ssh'), 0o777)
             ;(await ensureConnectScript(connectScriptPrefix, globals.context)).unwrap()
         })
+    })
+})
+
+describe('EC2 Connect Script', function () {
+    const selection = { instanceId: 'i-0123456789abcdef0', region: 'us-weast-1' }
+    const session = {
+        SessionId: 'test-session-id',
+        StreamUrl: 'wss://ssmmessages.example/v1?a=1&b=2',
+        TokenValue: 'a+token/=',
+    }
+
+    async function runScript(env: NodeJS.ProcessEnv) {
+        const script = (await ensureConnectScript('ec2_connect', globals.context)).unwrap().fsPath
+        const isWindows = process.platform === 'win32'
+        const cmd = isWindows ? 'powershell.exe' : script
+        const args = isWindows
+            ? ['-ExecutionPolicy', 'Bypass', '-File', script, 'aws-ec2-host']
+            : [script, 'aws-ec2-host']
+        return new ChildProcess(cmd, args).run({ spawnOptions: { env } })
+    }
+
+    it('provides a connect script for the current platform', async function () {
+        const script = (await ensureConnectScript('ec2_connect', globals.context)).unwrap().fsPath
+        assert.ok(await fileExists(script))
+        assert.strictEqual(path.extname(script), process.platform === 'win32' ? '.ps1' : '')
+    })
+
+    it('can run the script with environment variables', async function () {
+        const env = getEc2SsmEnv(selection, 'echo', session)
+        const output = await runScript(env)
+        if (output.exitCode !== 0) {
+            const logOutput = sshLogFileLocation('ec2', selection.instanceId)
+            assert.fail(
+                `Connect script should exit with a zero status:\nstderr:\n${output.stderr}\n\nlogs:\n${await readFile(logOutput)}`
+            )
+        }
+        assert.ok(output.stdout.includes(session.StreamUrl), output.stdout)
+        assert.ok(output.stdout.includes('StartSession'), output.stdout)
+    })
+
+    it('fails when a required variable is missing', async function () {
+        const env = getEc2SsmEnv(selection, 'echo', session)
+        delete env.TOKEN
+        const output = await runScript(env)
+        assert.notStrictEqual(output.exitCode, 0)
+        const logs = await readFile(sshLogFileLocation('ec2', selection.instanceId), 'utf8')
+        assert.ok(logs.includes('missing required arg: TOKEN'), logs)
     })
 })
