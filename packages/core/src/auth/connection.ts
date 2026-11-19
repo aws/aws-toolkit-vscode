@@ -366,6 +366,31 @@ export class ProfileStore {
         })
     }
 
+    // Each write re-sends the whole extension state, so write once per sync.
+    @withTelemetryContext({ name: 'syncIamProfiles', class: profileStoreClassName })
+    public async syncIamProfiles(add: { [id: string]: IamProfile }, remove: string[]): Promise<void> {
+        const added = Object.keys(add)
+        if (added.length === 0 && remove.length === 0) {
+            return
+        }
+        const data: { [id: string]: StoredProfile } = { ...this.getData() }
+        for (const id of remove) {
+            delete data[id]
+        }
+        for (const id of added) {
+            data[id] ??= this.initMetadata(add[id])
+        }
+        await this.updateData(data)
+
+        const source = asStringifiedStack(telemetry.getFunctionStack())
+        if (remove.length > 0) {
+            telemetry.auth_modifyConnection.emit({ action: 'deleteProfile', source, result: 'Succeeded' })
+        }
+        if (added.length > 0) {
+            telemetry.auth_modifyConnection.emit({ action: 'addProfile', source, result: 'Succeeded' })
+        }
+    }
+
     public getCurrentProfileId(): string | undefined {
         return this.memento.get<string>('auth.currentProfileId')
     }
@@ -400,6 +425,8 @@ export class ProfileStore {
 
 export async function loadIamProfilesIntoStore(store: ProfileStore, manager: CredentialsProviderManager) {
     const providers = await manager.getCredentialProviderNames()
+    const remove: string[] = []
+    const removedLinked: string[] = []
     for (const [id, profile] of store.listProfiles()) {
         if (profile.type !== 'iam') {
             continue
@@ -408,18 +435,24 @@ export async function loadIamProfilesIntoStore(store: ProfileStore, manager: Cre
         if (profile.subtype === 'linked') {
             const source = store.getProfile(profile.ssoSession)
             if (source === undefined || source.type !== 'sso') {
-                await store.deleteProfile(id)
-                manager.removeProvider(fromString(id))
+                remove.push(id)
+                removedLinked.push(id)
             }
         } else if (providers[id] === undefined) {
-            await store.deleteProfile(id)
+            remove.push(id)
         }
     }
 
+    const add: { [id: string]: IamProfile } = {}
     for (const id of Object.keys(providers)) {
         if (store.getProfile(id) === undefined && !id.startsWith('sso:')) {
-            await store.addProfile(id, { type: 'iam', subtype: 'unknown', name: providers[id].credentialTypeId })
+            add[id] = { type: 'iam', subtype: 'unknown', name: providers[id].credentialTypeId }
         }
+    }
+
+    await store.syncIamProfiles(add, remove)
+    for (const id of removedLinked) {
+        manager.removeProvider(fromString(id))
     }
 }
 

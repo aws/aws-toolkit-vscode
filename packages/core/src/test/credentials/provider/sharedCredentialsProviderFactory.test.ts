@@ -7,6 +7,8 @@ import assert from 'assert'
 import sinon from 'sinon'
 import { Uri, Range } from 'vscode'
 import { isEqual } from '../../../auth/providers/credentials'
+import { CredentialsProviderManager } from '../../../auth/providers/credentialsProviderManager'
+import { SharedCredentialsProvider } from '../../../auth/providers/sharedCredentialsProvider'
 import { SharedCredentialsProviderFactory } from '../../../auth/providers/sharedCredentialsProviderFactory'
 import * as sharedCredentials from '../../../auth/credentials/sharedCredentials'
 import fs from '../../../shared/fs/fs'
@@ -145,5 +147,80 @@ describe('SharedCredentialsProviderFactory', async function () {
         await sut.refresh()
 
         assert.ok(loadSharedCredentialsSectionsStub.calledTwice, 'Credentials should have been loaded from disk twice')
+    })
+
+    it('shares one load between concurrent refreshes', async function () {
+        const sut = new SharedCredentialsProviderFactory()
+
+        await Promise.all(Array.from({ length: 50 }, () => sut.refresh()))
+
+        assert.strictEqual(loadSharedCredentialsSectionsStub.callCount, 1)
+        assert.strictEqual(sut.listProviders().length, 2)
+    })
+
+    it('gives a refresh made during a load its own load, even if that load fails', async function () {
+        let entered!: () => void
+        const loading = new Promise<void>((resolve) => (entered = resolve))
+        let release!: () => void
+        const gate = new Promise<void>((resolve) => (release = resolve))
+        loadSharedCredentialsSectionsStub.onFirstCall().callsFake(async () => {
+            entered()
+            await gate
+            throw new Error('load failed')
+        })
+        const sut = new SharedCredentialsProviderFactory()
+
+        const first = sut.refresh()
+        await loading
+        sharedCredentialProfiles.set('added', validProfile)
+        const second = sut.refresh()
+        release()
+
+        assert.deepStrictEqual(
+            (await Promise.allSettled([first, second])).map((r) => r.status),
+            ['rejected', 'fulfilled']
+        )
+        assert.ok(sut.getProvider({ credentialSource: 'profile', credentialTypeId: 'added' }))
+    })
+
+    it('looks providers up by profile name', async function () {
+        const sut = new SharedCredentialsProviderFactory()
+        await sut.refresh()
+
+        assert.ok(sut.getProvider({ credentialSource: 'profile', credentialTypeId: validProfileName1 }))
+        assert.strictEqual(sut.getProvider({ credentialSource: 'profile', credentialTypeId: 'missing' }), undefined)
+        assert.strictEqual(sut.getProvider({ credentialSource: 'env', credentialTypeId: validProfileName1 }), undefined)
+
+        sharedCredentialProfiles.delete(validProfileName1)
+        await sut.refresh()
+
+        assert.strictEqual(
+            sut.getProvider({ credentialSource: 'profile', credentialTypeId: validProfileName1 }),
+            undefined
+        )
+    })
+
+    it('never exposes a partial list to a lookup that starts mid-load', async function () {
+        for (let i = 0; i < 100; i++) {
+            sharedCredentialProfiles.set(`p${i}`, validProfile)
+        }
+        const sut = new SharedCredentialsProviderFactory()
+        const manager = new CredentialsProviderManager()
+        manager.addProviderFactory(sut)
+        const lookups: Promise<unknown>[] = []
+        sandbox
+            .stub(SharedCredentialsProvider.prototype, 'isAvailable')
+            .callThrough()
+            .onCall(19)
+            .callsFake(async () => {
+                lookups.push(manager.getCredentialsProvider({ credentialSource: 'profile', credentialTypeId: 'p99' }))
+                return true
+            })
+
+        const all = await manager.getAllCredentialsProviders()
+        await Promise.all(lookups)
+
+        assert.strictEqual(new Set(all.map((p) => p.getCredentialsId().credentialTypeId)).size, 102)
+        assert.strictEqual(all.length, 102)
     })
 })

@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Credentials: VS Code freezes or the extension host crashes (out of memory) when ~/.aws/config or ~/.aws/credentials contains many profiles"
+}

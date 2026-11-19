@@ -4,6 +4,7 @@
  */
 
 import assert from 'assert'
+import sinon from 'sinon'
 import { CredentialsProviderFactory } from '../../../auth/providers/credentialsProviderFactory'
 import {
     CredentialsProvider,
@@ -181,6 +182,22 @@ describe('CredentialsProviderManager', async function () {
                 expectedCredentialsId,
                 'Manager did not return the expected provider'
             )
+        })
+
+        it('looks up factory providers by id instead of copying the whole list', async function () {
+            const factoryA = new TestCredentialsProviderFactory('profile', ['one', 'two', 'three'])
+            const listProviders = sinon.spy(factoryA, 'listProviders')
+            const getProvider = sinon.spy(factoryA, 'getProvider')
+            sut.addProviderFactory(factoryA)
+
+            const provider = await sut.getCredentialsProvider({ credentialSource: 'profile', credentialTypeId: 'two' })
+
+            assert.deepStrictEqual(provider?.getCredentialsId(), {
+                credentialSource: 'profile',
+                credentialTypeId: 'two',
+            })
+            assert.strictEqual(listProviders.callCount, 0)
+            assert.strictEqual(getProvider.callCount, 1)
         })
 
         it('returns undefined when there is a factory but the factory does not contain a provider', async function () {
