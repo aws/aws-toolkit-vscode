@@ -87,10 +87,9 @@ export class CredentialsProviderManager {
         for (const factory of this.providerFactories) {
             await factory.refresh()
 
-            for (const provider of factory.listProviders()) {
-                if (isEqual(provider.getCredentialsId(), credentials) && (await provider.isAvailable())) {
-                    return provider
-                }
+            const provider = factory.getProvider(credentials)
+            if (provider && (await provider.isAvailable())) {
+                return provider
             }
         }
 
