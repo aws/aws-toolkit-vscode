@@ -117,8 +117,10 @@ export class TelemetryHelper {
 
         telemetry.codewhisperer_userTriggerDecision.emit({
             codewhispererAutomatedTriggerType: session.autoTriggerType,
-            codewhispererClassifierResult: this.classifierResult,
-            codewhispererClassifierThreshold: this.classifierThreshold,
+            ...(this.classifierResult !== undefined ? { codewhispererClassifierResult: this.classifierResult } : {}),
+            ...(this.classifierThreshold !== undefined
+                ? { codewhispererClassifierThreshold: this.classifierThreshold }
+                : {}),
             codewhispererCompletionType: 'Line',
             codewhispererCursorOffset: session.startCursorOffset,
             codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
@@ -329,8 +331,10 @@ export class TelemetryHelper {
         const aggregated: CodewhispererUserTriggerDecision = {
             codewhispererAutomatedTriggerType: autoTriggerType,
             codewhispererCharactersAccepted: acceptedRecommendationContent.length,
-            codewhispererClassifierResult: this.classifierResult,
-            codewhispererClassifierThreshold: this.classifierThreshold,
+            ...(this.classifierResult !== undefined ? { codewhispererClassifierResult: this.classifierResult } : {}),
+            ...(this.classifierThreshold !== undefined
+                ? { codewhispererClassifierThreshold: this.classifierThreshold }
+                : {}),
             codewhispererCompletionType: aggregatedCompletionType,
             codewhispererCursorOffset: this.sessionDecisions[0].codewhispererCursorOffset,
             codewhispererCustomizationArn: selectedCustomization.arn === '' ? undefined : selectedCustomization.arn,
