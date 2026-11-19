@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "EC2: \"Connect VS Code to EC2 Instance\" shows a \"Session is not in a valid state\" error even though the remote window opened successfully"
+}
