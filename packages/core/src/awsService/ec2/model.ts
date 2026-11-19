@@ -43,10 +43,10 @@ export interface Ec2RemoteEnv extends VscodeRemoteConnection {
     ssmSession: StartSessionResponse
 }
 
-export type Ec2OS = 'Amazon Linux' | 'Ubuntu' | 'macOS'
 interface RemoteUser {
-    os: Ec2OS
+    os: string
     name: string
+    home: string
 }
 
 export class Ec2Connecter implements vscode.Disposable {
@@ -215,7 +215,7 @@ export class Ec2Connecter implements vscode.Disposable {
             await startVscodeRemote(
                 remoteEnv.SessionProcess,
                 remoteEnv.hostname,
-                '/',
+                remoteUser.home,
                 remoteEnv.vscPath,
                 remoteUser.name
             )
@@ -298,14 +298,9 @@ export class Ec2Connecter implements vscode.Disposable {
     }
 
     /** Removes old key(s) that we added to the remote ~/.ssh/authorized_keys file. */
-    public async tryCleanKeys(
-        instanceId: string,
-        hintComment: string,
-        hostOS: Ec2OS,
-        remoteAuthorizedKeysPath: string
-    ) {
+    public async tryCleanKeys(instanceId: string, hintComment: string, remoteAuthorizedKeysPath: string) {
         try {
-            const deleteExistingKeyCommand = getRemoveLinesCommand(hintComment, hostOS, remoteAuthorizedKeysPath)
+            const deleteExistingKeyCommand = getRemoveLinesCommand(hintComment, remoteAuthorizedKeysPath)
             await this.sendCommandAndWait(instanceId, deleteExistingKeyCommand)
         } catch (e) {
             getLogger().warn(`ec2: failed to clean keys: %O`, e)
@@ -326,26 +321,61 @@ export class Ec2Connecter implements vscode.Disposable {
         const sshPubKey = await sshKeyPair.getPublicKey()
         const hintComment = '#AWSToolkitForVSCode'
 
-        const remoteAuthorizedKeysPath = `/home/${remoteUser.name}/.ssh/authorized_keys`
+        const remoteSshPath = `${remoteUser.home}/.ssh`
+        const remoteAuthorizedKeysPath = `${remoteSshPath}/authorized_keys`
+        const user = shellQuote(remoteUser.name)
+        const sshPath = shellQuote(remoteSshPath)
+        const authorizedKeysPath = shellQuote(remoteAuthorizedKeysPath)
+        const prepareAuthorizedKeysCommand = [
+            `group=$(id -gn ${user})`,
+            `mkdir -p ${sshPath}`,
+            `chown ${user}:"$group" ${sshPath}`,
+            `chmod 700 ${sshPath}`,
+            `touch ${authorizedKeysPath}`,
+            `chown ${user}:"$group" ${authorizedKeysPath}`,
+            `chmod 600 ${authorizedKeysPath}`,
+        ].join(' && ')
+        const keyEntry = [sshPubKey.replace(/\r?\n/g, ''), hintComment].join(' ')
+        const writeKeyCommand = `printf '%s\\n' ${shellQuote(keyEntry)} >> ${authorizedKeysPath}`
 
-        const appendStr = (s: string) => `echo "${s}" >> ${remoteAuthorizedKeysPath}`
-        const writeKeyCommand = appendStr([sshPubKey.replace('\n', ''), hintComment].join(' '))
-
-        await this.tryCleanKeys(selection.instanceId, hintComment, remoteUser.os, remoteAuthorizedKeysPath)
+        await this.sendCommandAndWait(selection.instanceId, prepareAuthorizedKeysCommand)
+        await this.tryCleanKeys(selection.instanceId, hintComment, remoteAuthorizedKeysPath)
         await this.sendCommandAndWait(selection.instanceId, writeKeyCommand)
     }
 
     public async getRemoteUser(instanceId: string): Promise<RemoteUser> {
         const os = await this.ssm.getTargetPlatformName(instanceId)
+        let name: string
         if (os === 'Amazon Linux') {
-            return { name: 'ec2-user', os }
+            name = 'ec2-user'
+        } else if (os === 'Ubuntu') {
+            name = 'ubuntu'
+        } else {
+            const input = await vscode.window.showInputBox({
+                prompt: `Unrecognized OS "${os}". Enter the username for instance ${instanceId}:`,
+            })
+            name = input?.trim() ?? ''
+            if (!name) {
+                throw new ToolkitError(`Unrecognized OS name ${os} on instance ${instanceId}`, { code: 'UnknownEc2OS' })
+            }
         }
 
-        if (os === 'Ubuntu') {
-            return { name: 'ubuntu', os }
+        if (!/^[a-z_][a-z0-9._-]*\$?$/i.test(name)) {
+            throw new ToolkitError(`Invalid username ${name} for instance ${instanceId}`, { code: 'UnknownEc2User' })
         }
 
-        throw new ToolkitError(`Unrecognized OS name ${os} on instance ${instanceId}`, { code: 'UnknownEc2OS' })
+        const home = (
+            await this.ssm.sendCommandAndWaitForOutput(instanceId, 'AWS-RunShellScript', {
+                commands: [`getent passwd ${shellQuote(name)} | cut -d: -f6`],
+            })
+        ).trim()
+        if (!home.startsWith('/') || home.includes('\n')) {
+            throw new ToolkitError(`Unable to find a home directory for user ${name} on instance ${instanceId}`, {
+                code: 'UnknownEc2User',
+            })
+        }
+
+        return { name, os, home }
     }
 }
 
@@ -355,14 +385,13 @@ export class Ec2Connecter implements vscode.Disposable {
  * @param filepath filepath (as string) to target with the command.
  * @returns bash command to remove lines from file.
  */
-export function getRemoveLinesCommand(pattern: string, hostOS: Ec2OS, filepath: string): string {
+export function getRemoveLinesCommand(pattern: string, filepath: string): string {
     if (pattern.includes('/')) {
         throw new ToolkitError(`ec2: cannot match pattern containing '/', given: ${pattern}`)
     }
-    // Linux allows not passing extension to -i, whereas macOS requires zero length extension.
-    return `sed -i${isLinux(hostOS) ? '' : " ''"} /${pattern}/d ${filepath}`
+    return `sed -i.bak '/${pattern}/d' ${shellQuote(filepath)} && rm -f ${shellQuote(`${filepath}.bak`)}`
 }
 
-function isLinux(os: Ec2OS): boolean {
-    return os === 'Amazon Linux' || os === 'Ubuntu'
+function shellQuote(value: string): string {
+    return `'${value.replace(/'/g, `'"'"'`)}'`
 }
