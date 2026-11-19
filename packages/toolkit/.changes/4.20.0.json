@@ -1,0 +1,10 @@
+{
+	"date": "2026-11-19",
+	"version": "4.20.0",
+	"entries": [
+		{
+			"type": "Feature",
+			"description": "CDK: start the CDK Language Server (`cdk lsp`) from your installed CDK CLI, linking construct source, synthesized template, and policy violations"
+		}
+	]
+}
