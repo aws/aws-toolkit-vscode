@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Child process memory usage is no longer reported 1024x too high in the logs on Windows, where a ~123 MB process was logged as having exceeded its memory threshold with \"125788.00 MB\""
+}
