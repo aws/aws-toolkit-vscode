@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "Infrastructure Composer: resolve symbolic links when checking that a file is inside the template folder before the file is read or written"
+}

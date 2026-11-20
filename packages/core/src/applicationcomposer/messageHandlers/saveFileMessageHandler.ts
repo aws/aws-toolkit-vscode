@@ -6,17 +6,17 @@
 import vscode from 'vscode'
 import { SaveFileRequestMessage, SaveFileResponseMessage, WebviewContext, Command, MessageType } from '../types'
 import path from 'path'
+import { isRealPathInDirectory } from '../workspacePath'
 
 export async function saveFileMessageHandler(request: SaveFileRequestMessage, context: WebviewContext) {
     let saveFileResponseMessage: SaveFileResponseMessage
     // If filePath is empty, save contents in default template file
     const filePath =
         request.filePath === '' ? context.defaultTemplatePath : path.join(context.workSpacePath, request.filePath)
-    const normalizedPath = path.resolve(filePath)
-    if (
-        !normalizedPath.startsWith(path.resolve(context.workSpacePath) + path.sep) &&
-        normalizedPath !== path.resolve(context.defaultTemplatePath)
-    ) {
+    // The template that the user opened can always be saved. Any other file must be inside the
+    // template folder after symbolic links are resolved.
+    const isDefaultTemplate = path.resolve(filePath) === path.resolve(context.defaultTemplatePath)
+    if (!isDefaultTemplate && !(await isRealPathInDirectory(context.workSpacePath, filePath))) {
         await context.panel.webview.postMessage({
             messageType: MessageType.RESPONSE,
             command: Command.SAVE_FILE,
