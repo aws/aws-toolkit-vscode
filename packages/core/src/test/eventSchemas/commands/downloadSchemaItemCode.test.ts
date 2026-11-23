@@ -10,6 +10,7 @@ import * as vscode from 'vscode'
 import {
     DescribeCodeBindingResponse,
     GetCodeBindingSourceResponse,
+    NotFoundException,
     PutCodeBindingResponse,
 } from '@aws-sdk/client-schemas'
 import * as sinon from 'sinon'
@@ -64,49 +65,29 @@ describe('CodeDownloader', function () {
     const codeDownloader = new CodeDownloader(schemaClient)
 
     describe('codeDownloader', async function () {
-        it('should return an error if the response body is not Buffer', async function () {
+        it('should return an error if the response body is not Uint8Array', async function () {
             const response: GetCodeBindingSourceResponse = {
                 Body: 'Invalied body' as any,
             }
             sandbox.stub(schemaClient, 'getCodeBindingSource').returns(Promise.resolve(response))
 
-            await assert.rejects(
-                codeDownloader.download(request),
-                new TypeError('Response body should be Buffer type'),
-                'Should fail for same error'
-            )
+            await assert.rejects(codeDownloader.download(request), TypeError, 'Should fail for same error')
         })
 
-        it('should return arrayBuffer for valid Body type', async function () {
-            const myBuffer = Buffer.from('TEST STRING')
-            const response: GetCodeBindingSourceResponse = {
-                Body: myBuffer as any,
-            }
+        for (const [name, body] of [
+            ['Uint8Array', new Uint8Array([1, 2, 3])],
+            ['Uint8Array subarray', new Uint8Array([99, 1, 2, 3, 99]).subarray(1, 4)],
+            ['Buffer', Buffer.from([1, 2, 3])],
+            ['Buffer subarray', Buffer.from([99, 1, 2, 3, 99]).subarray(1, 4)],
+        ] as const) {
+            it(`returns only the response bytes for a ${name}`, async function () {
+                sandbox.stub(schemaClient, 'getCodeBindingSource').resolves({ Body: body })
 
-            sandbox.stub(schemaClient, 'getCodeBindingSource').returns(Promise.resolve(response))
-            const returnedBuffer = await codeDownloader.download(request)
-            const comparisonResult = arrayBuffersEqual(returnedBuffer, myBuffer.buffer)
-            assert.ok(
-                comparisonResult,
-                `Buffers do not match, string representation of expected buffer : TEST STRING, returned : ${String(
-                    returnedBuffer
-                )}`
-            )
-        })
+                const returnedBuffer = await codeDownloader.download(request)
 
-        function arrayBuffersEqual(buf1: ArrayBuffer, buf2: ArrayBuffer) {
-            if (buf1.byteLength !== buf2.byteLength) {
-                return false
-            }
-            const dv1 = new Int8Array(buf1)
-            const dv2 = new Int8Array(buf2)
-            for (let i = 0; i !== buf1.byteLength; i++) {
-                if (dv1[i] !== dv2[i]) {
-                    return false
-                }
-
-                return true
-            }
+                assert.strictEqual(returnedBuffer.byteLength, 3)
+                assert.deepStrictEqual(new Uint8Array(returnedBuffer), new Uint8Array([1, 2, 3]))
+            })
         }
     })
 })
@@ -392,7 +373,7 @@ describe('SchemaCodeDownload', function () {
             assert.strictEqual(response, fileContent, `${expectedFilePath} :file content do not match`)
         })
 
-        it('should return error if downloading code fails with anything other than ResourceNotFound', async function () {
+        it('should return error if downloading code fails with anything other than NotFoundException', async function () {
             const customError = new Error('Custom error')
             const codeDownloaderStub = sandbox.stub(downloader, 'download').returns(Promise.reject(customError))
 
@@ -403,7 +384,7 @@ describe('SchemaCodeDownload', function () {
             )
         })
 
-        it('should generate code if download fails with ResourceNotFound and place it into requested directory', async function () {
+        it('should generate code if download fails with NotFoundException and place it into requested directory', async function () {
             sandbox.stub(poller, 'pollForCompletion').returns(Promise.resolve('CREATE_COMPLETE'))
             const codeDownloaderStub = sandbox.stub(downloader, 'download')
             const codeGeneratorResponse: PutCodeBindingResponse = {
@@ -411,8 +392,12 @@ describe('SchemaCodeDownload', function () {
             }
             sandbox.stub(generator, 'generate').returns(Promise.resolve(codeGeneratorResponse))
 
-            const customError = new Error('Resource Not Found Exception')
-            customError.name = 'ResourceNotFound'
+            const customError = new NotFoundException({
+                Code: 'NotFoundException',
+                Message: 'Code binding not found',
+                message: 'Code binding not found',
+                $metadata: {},
+            })
 
             codeDownloaderStub.onCall(0).returns(Promise.reject(customError)) // should fail on first call
             codeDownloaderStub.onCall(1).returns(Promise.resolve(arrayBuffer)) // should succeed on second
@@ -427,6 +412,33 @@ describe('SchemaCodeDownload', function () {
             const expectedFilePath = path.join(request.destinationDirectory.fsPath, fileName)
             const response = await fs.readFileText(expectedFilePath)
             assert.strictEqual(response, fileContent, 'Extracted file content do not match with expected')
+        })
+
+        it('generates and extracts SDK v3 code bindings without copying unrelated bytes', async function () {
+            const padded = new Uint8Array(arrayBuffer.byteLength + 2)
+            padded[0] = 99
+            padded.set(arrayBuffer, 1)
+            padded[padded.length - 1] = 99
+            const source = sandbox.stub(schemaClient, 'getCodeBindingSource')
+            source.onFirstCall().rejects(
+                new NotFoundException({
+                    Code: 'NotFoundException',
+                    Message: 'Code binding not found',
+                    message: 'Code binding not found',
+                    $metadata: {},
+                })
+            )
+            source.onSecondCall().resolves({ Body: padded.subarray(1, -1) })
+            const generate = sandbox.stub(schemaClient, 'putCodeBinding').resolves({ Status: 'CREATE_IN_PROGRESS' })
+            const status = sandbox.stub(schemaClient, 'describeCodeBinding').resolves({ Status: 'CREATE_COMPLETE' })
+
+            const coreFilePath = await schemaCodeDownloader.downloadCode(request)
+
+            assert.strictEqual(source.callCount, 2)
+            assert.ok(generate.calledOnceWith(language, testRegistryName, testSchemaName, schemaVersion))
+            assert.ok(status.calledOnceWith(language, testRegistryName, testSchemaName, schemaVersion))
+            assert.strictEqual(coreFilePath, path.join(tempFolder, fileName))
+            assert.strictEqual(await fs.readFileText(coreFilePath!), fileContent)
         })
 
         it('should return coreCodeFilePath', async function () {
