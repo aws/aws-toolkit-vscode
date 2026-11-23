@@ -1,0 +1,4 @@
+{
+	"type": "Bug Fix",
+	"description": "EventBridge Schemas: Download code bindings when generation is needed and handle SDK v3 response bytes correctly"
+}

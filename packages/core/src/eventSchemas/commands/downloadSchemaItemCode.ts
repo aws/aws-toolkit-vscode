@@ -138,7 +138,7 @@ export class SchemaCodeDownloader {
             zipContents = await this.downloader.download(request)
         } catch (err) {
             const error = err as Error
-            if (error.name === 'ResourceNotFound') {
+            if (error.name === 'NotFoundException') {
                 // If the code generation wasn't previously kicked off, do so
                 void vscode.window.showInformationMessage(
                     localize(
@@ -267,13 +267,12 @@ export class CodeDownloader {
             codeDownloadRequest.schemaVersion
         )
 
-        if (Buffer.isBuffer(response.Body)) {
-            const zipContents = response.Body!.buffer
-
-            return zipContents
-        } else {
-            throw new TypeError('Response body should be Buffer type')
+        if (!(response.Body instanceof Uint8Array)) {
+            throw new TypeError('Response body should be Uint8Array type')
         }
+
+        // Copy the view's bytes, not the entire backing buffer (which may be shared).
+        return new Uint8Array(response.Body).buffer
     }
 }
 
