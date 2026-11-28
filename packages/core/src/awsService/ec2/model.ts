@@ -33,7 +33,9 @@ import { SshConfig } from '../../shared/sshConfig'
 import { SshKeyPair } from './sshKeyPair'
 import { Ec2SessionTracker } from './remoteSessionManager'
 import { getEc2SsmEnv } from './utils'
-import { Session, StartSessionResponse } from '@aws-sdk/client-ssm'
+import { StartSessionResponse } from '@aws-sdk/client-ssm'
+import globals from '../../shared/extensionGlobals'
+import { asEnvironmentVariables } from '../../auth/credentials/utils'
 
 export type Ec2ConnectErrorCode = 'EC2SSMStatus' | 'EC2SSMPermission' | 'EC2SSMTestConnect' | 'EC2SSMAgentStatus'
 
@@ -41,6 +43,21 @@ export interface Ec2RemoteEnv extends VscodeRemoteConnection {
     selection: Ec2Selection
     keyPair: SshKeyPair
     ssmSession: StartSessionResponse
+}
+
+export function getSsmPluginArgs(
+    session: StartSessionResponse,
+    selection: Ec2Selection,
+    endpointUrl: string
+): string[] {
+    return [
+        JSON.stringify(session),
+        selection.region,
+        'StartSession',
+        '',
+        JSON.stringify({ Target: selection.instanceId }),
+        endpointUrl,
+    ]
 }
 
 export type Ec2OS = 'Amazon Linux' | 'Ubuntu' | 'macOS'
@@ -174,13 +191,16 @@ export class Ec2Connecter implements vscode.Disposable {
         await this.checkForInstanceSsmError(selection)
     }
 
-    private async openSessionInTerminal(session: Session, selection: Ec2Selection) {
-        const ssmPlugin = await getOrInstallCli('session-manager-plugin', !isCloud9)
-        const shellArgs = [JSON.stringify(session), selection.region, 'StartSession']
+    private async openSessionInTerminal(session: StartSessionResponse, selection: Ec2Selection) {
+        const ssmPlugin = await getOrInstallCli('session-manager-plugin', !isCloud9())
+        const endpointUrl = await this.ssm.getEndpointUrl()
+        const credentials = await globals.awsContext.getCredentials()
+        const env = credentials ? { ...process.env, ...asEnvironmentVariables(credentials) } : process.env
         const terminalOptions = {
             name: `${selection.region}/${selection.instanceId}`,
             shellPath: ssmPlugin,
-            shellArgs: shellArgs,
+            shellArgs: getSsmPluginArgs(session, selection, endpointUrl),
+            env,
         }
 
         await openRemoteTerminal(terminalOptions, () => this.ssm.terminateSession(session)).catch((err) => {
@@ -194,7 +214,9 @@ export class Ec2Connecter implements vscode.Disposable {
             const response = await this.ssm.startSession(selection.instanceId)
             await this.openSessionInTerminal(response, selection)
         } catch (err: unknown) {
-            this.throwConnectionError('', selection, err as Error)
+            const message = err instanceof Error ? err.message : String(err)
+            getLogger().error('ec2: failed to open terminal: %O', err)
+            this.throwConnectionError(message, selection, err as Error)
         }
     }
 
